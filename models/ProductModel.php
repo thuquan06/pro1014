@@ -1,16 +1,10 @@
-<?php 
-// Có class chứa các function thực thi tương tác với cơ sở dữ liệu 
-class ProductModel 
-{
-    public $conn;
-    public function __construct()
-    {
-        $this->conn = connectDB();
+<?php
+// Cập nhật file này để kế thừa từ BaseModel
+class ProductModel extends BaseModel {
+    
+    public function __construct() {
+        parent::__construct();
     }
 
-    // Viết truy vấn danh sách sản phẩm 
-    public function getAllProduct()
-    {
-        
-    }
+    // Thêm các hàm xử lý CSDL cho Product (nếu có)
 }
