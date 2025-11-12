@@ -1,53 +1,40 @@
 <?php
 class BaseController {
-    
-    /**
-     * Tải view và truyền dữ liệu
-     *
-     * @param string $view Tên file view (ví dụ: 'admin/dashboard')
-     * @param array $data Dữ liệu cần truyền cho view
-     * @param string $layout Layout để bao bọc view (ví dụ: 'admin')
-     */
-    protected function loadView($view, $data = [], $layout = null) {
-        // Chuyển array $data thành các biến riêng lẻ
-        extract($data);
 
-        // Tạo đường dẫn đến file view
-        $viewPath = './views/' . $view . '.php';
+    protected function loadView($view, $data = [], $layout = 'admin/layout') {
+        // đưa data ra scope của view
+        if (is_array($data)) extract($data);
 
-        if ($layout) {
-            // Nếu có layout, tải layout
-            $layoutPath = './views/layouts/' . $layout . '.php';
-            
-            // Bắt đầu bộ đệm đầu ra để lưu nội dung view
-            ob_start();
-            if (file_exists($viewPath)) {
-                include $viewPath;
-            } else {
-                echo "Lỗi: Không tìm thấy view '$viewPath'";
-            }
-            // Lấy nội dung view và gán vào biến $content cho layout
-            $content = ob_get_clean();
-            
-            // Tải file layout (layout sẽ include $content)
-            if (file_exists($layoutPath)) {
-                include $layoutPath;
-            } else {
-                echo "Lỗi: Không tìm thấy layout '$layoutPath'";
-            }
+        // Project root = thư mục cha của /controllers
+        $ROOT = rtrim(dirname(__DIR__), '/\\');
+
+        // build absolute paths
+        $viewPath   = $ROOT . '/views/' . $view   . '.php';   // ví dụ: .../views/admin/tours/create.php
+        $layoutPath = $ROOT . '/views/' . $layout . '.php';   // ví dụ: .../views/admin/layout.php
+
+        // nạp view => $content
+        ob_start();
+        if (is_file($viewPath)) {
+            include $viewPath;
         } else {
-            // Nếu không có layout, chỉ cần tải view
-            if (file_exists($viewPath)) {
-                include $viewPath;
-            } else {
-                echo "Lỗi: Không tìm thấy view '$viewPath'";
-            }
+            echo "❌ Không tìm thấy view: " . $viewPath;
+        }
+        $content = ob_get_clean();
+
+        // nếu view không in gì, báo debug rõ ràng (để bạn nhìn thấy ngay)
+        if ($content === '' || $content === null) {
+            $content = "<div class='errorWrap'>View trống hoặc không in nội dung: <code>"
+                     . htmlspecialchars($viewPath) . "</code></div>";
+        }
+
+        // nạp layout
+        if (is_file($layoutPath)) {
+            include $layoutPath;
+        } else {
+            echo "❌ Không tìm thấy layout: " . $layoutPath;
         }
     }
 
-    /**
-     * Chuyển hướng bằng URL
-     */
     protected function redirect($url) {
         header('Location: ' . $url);
         exit();

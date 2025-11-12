@@ -1,10 +1,15 @@
 <?php
-// File: views/admin/tours/create.php (File mới)
+// File: views/admin/tours/create.php (ĐÃ SỬA LỖI DEPRECATED)
 
 /*
  * Biến $provinces (danh sách tỉnh) đã được AdminController::createTour()
  * chuẩn bị và truyền vào file layout.php
  */
+
+// Helper function để tránh lỗi htmlentities với null
+function safe_html($value) {
+    return htmlentities($value ?? '', ENT_QUOTES, 'UTF-8');
+}
 ?>
 <ol class="breadcrumb">
     <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>?act=admin">Trang chủ</a><i class="fa fa-angle-right"></i>Tạo tour</li>
@@ -12,8 +17,8 @@
 <div class="grid-form">
     <div class="grid-form1">
         <h3>Tạo tour</h3>
-        <?php if(isset($error) && $error){?><div class="errorWrap"><strong>LỖI</strong>:<?php echo htmlentities($error); ?> </div><?php } 
-        else if(isset($msg) && $msg){?><div class="succWrap"><strong>THÀNH CÔNG</strong>:<?php echo htmlentities($msg); ?> </div><?php }?>
+        <?php if(isset($error) && $error){?><div class="errorWrap"><strong>LỖI</strong>:<?php echo safe_html($error); ?> </div><?php } 
+        else if(isset($msg) && $msg){?><div class="succWrap"><strong>THÀNH CÔNG</strong>:<?php echo safe_html($msg); ?> </div><?php }?>
         
         <div class="tab-content">
             <div class="tab-pane active" id="horizontal-form">
@@ -49,11 +54,12 @@
                         <label for="ten_tinh" class="col-sm-2 control-label" style="max-width: 18.666667%;">Tỉnh:</label>
                         <div class="col-sm-8">
                             <select name="ten_tinh" class="form-control" id="ten_tinh" style="font-size: 16px;"> 
-                                <option value="0">Chọn tỉnh</option>
+                                <option value="">Chọn tỉnh</option>
                                 <?php 
                                 if (!empty($provinces)) {
                                     foreach ($provinces as $province) {
-                                        echo "<option value='".$province['ten_tinh']."'>".$province['ten_tinh']."</option>";
+                                        $provinceName = $province['ten_tinh'] ?? '';
+                                        echo "<option value='".safe_html($provinceName)."'>".safe_html($provinceName)."</option>";
                                     }
                                 }
                                 ?>
@@ -171,7 +177,8 @@
                     </div>
                 </form>
             </div>
-        </div> </div>
+        </div>
+    </div>
 </div>
 
 <script src="assets/js/nicEdit.js"></script>
@@ -196,12 +203,12 @@
             if (radioQuocTe.checked) {
                 fieldTinh.style.display = 'none';
                 fieldQuocGia.style.display = 'block';
-                selectTinh.value = '0'; // Reset Tỉnh
+                selectTinh.value = ''; // Reset Tỉnh
                 inputQuocGia.value = ''; // Xóa Quốc gia
             } else {
                 fieldTinh.style.display = 'block';
                 fieldQuocGia.style.display = 'none';
-                selectTinh.value = '0'; 
+                selectTinh.value = ''; 
                 inputQuocGia.value = 'Việt Nam'; // Tự điền 'Việt Nam'
             }
         }

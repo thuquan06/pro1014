@@ -1,10 +1,15 @@
 <?php
-// File: views/admin/tours/list.php (File mới)
+// File: views/admin/tours/list.php (ĐÃ SỬA LỖI DEPRECATED)
 
 /*
  * Biến $tours (chứa mảng tour) đã được AdminController::listTours()
  * chuẩn bị và truyền vào file layout.php
  */
+
+// Helper function để tránh lỗi htmlentities với null
+function safe_html($value) {
+    return htmlentities($value ?? '', ENT_QUOTES, 'UTF-8');
+}
 ?>
 <div class="agile-grids">	
     <div class="agile-tables" style="padding: 0px;">
@@ -33,37 +38,54 @@
                     $cnt = 1;
                     if (!empty($tours)) {
                         foreach ($tours as $tour) { 
+                            // Lấy giá trị an toàn
+                            $quocgia = $tour['quocgia'] ?? '';
+                            $ten_tinh = $tour['ten_tinh'] ?? '';
+                            $tengoi = $tour['tengoi'] ?? '';
+                            $noixuatphat = $tour['noixuatphat'] ?? '';
+                            $vitri = $tour['vitri'] ?? '';
+                            $giagoi = $tour['giagoi'] ?? '';
+                            $giatreem = $tour['giatreem'] ?? '';
+                            $giatrenho = $tour['giatrenho'] ?? '';
+                            $giaphongdon = $tour['giaphongdon'] ?? '';
+                            $songay = $tour['songay'] ?? '';
+                            $giodi = $tour['giodi'] ?? '';
+                            $ngayxuatphat = $tour['ngayxuatphat'] ?? '';
+                            $ngayve = $tour['ngayve'] ?? '';
+                            $phuongtien = $tour['phuongtien'] ?? '';
+                            $ngaydang = $tour['ngaydang'] ?? '';
+                            $id_goi = $tour['id_goi'] ?? '';
                     ?>		
                         <tr>
-                            <td><?php echo htmlentities($cnt);?></td>
-                            <td><?php echo htmlentities($tour['quocgia']);?></td>
-                            <td><?php echo htmlentities($tour['ten_tinh']);?></td>
-                            <td><?php echo htmlentities($tour['tengoi']);?></td>
-                            <td><?php echo htmlentities($tour['noixuatphat']);?></td>
-                            <td><?php echo htmlentities($tour['vitri']);?></td>
-                            <td style="width: 150px;">Người lớn: <?php echo htmlentities($tour['giagoi']);?>
-                                <br>Trẻ em: <?php echo htmlentities($tour['giatreem']);?>
-                                <br>Trẻ nhỏ: <?php echo htmlentities($tour['giatrenho']);?>
-                                <br>Phòng: <?php echo htmlentities($tour['giaphongdon']);?>
+                            <td><?php echo safe_html($cnt);?></td>
+                            <td><?php echo safe_html($quocgia);?></td>
+                            <td><?php echo safe_html($ten_tinh);?></td>
+                            <td><?php echo safe_html($tengoi);?></td>
+                            <td><?php echo safe_html($noixuatphat);?></td>
+                            <td><?php echo safe_html($vitri);?></td>
+                            <td style="width: 150px;">Người lớn: <?php echo safe_html($giagoi);?>
+                                <br>Trẻ em: <?php echo safe_html($giatreem);?>
+                                <br>Trẻ nhỏ: <?php echo safe_html($giatrenho);?>
+                                <br>Phòng: <?php echo safe_html($giaphongdon);?>
                             </td>
-                            <td><?php echo htmlentities($tour['songay']);?></td>
-                            <td><?php echo htmlentities($tour['giodi']);?>
-                                <br><?php echo date("d-m-Y", strtotime($tour['ngayxuatphat'])); ?>
+                            <td><?php echo safe_html($songay);?></td>
+                            <td><?php echo safe_html($giodi);?>
+                                <br><?php echo $ngayxuatphat ? date("d-m-Y", strtotime($ngayxuatphat)) : ''; ?>
                             </td>
-                            <td><?php echo date("d-m-Y", strtotime($tour['ngayve'])); ?></td>
-                            <td><?php echo htmlentities($tour['phuongtien']);?></td>
-                            <td><?php echo date("d-m-Y", strtotime($tour['ngaydang'])); ?></td>
+                            <td><?php echo $ngayve ? date("d-m-Y", strtotime($ngayve)) : ''; ?></td>
+                            <td><?php echo safe_html($phuongtien);?></td>
+                            <td><?php echo $ngaydang ? date("d-m-Y", strtotime($ngaydang)) : ''; ?></td>
                             <td style="width: 194px;">
-                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo htmlentities($tour['id_goi']);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
+                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo safe_html($id_goi);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
                                     <button type="button" class="btn btn-primary btn-block" style="border-bottom: 2px solid;">Xóa</button>
                                 </a>
-                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-edit&id=<?php echo htmlentities($tour['id_goi']);?>">
+                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-edit&id=<?php echo safe_html($id_goi);?>">
                                     <button type="button" class="btn btn-primary btn-block" >Chỉnh sửa</button>
                                 </a>
                             </td>
                         </tr>
                     <?php 
-                        $cnt=$cnt+1;
+                        $cnt++;
                         } // end foreach
                     } // end if
                     ?>
