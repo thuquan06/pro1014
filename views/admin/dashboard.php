@@ -65,10 +65,6 @@ $blog = $stats['blog'] ?? 0;     // Blog
         <div class="lbl">Hóa đơn</div>
       </a>
       <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$ks) ?></div>
-        <div class="lbl">Khách sạn</div>
-      </a>
-      <a class="box card" href="#">
         <div class="num"><?= htmlspecialchars((string)$cnt2) ?></div>
         <div class="lbl">Góp ý</div>
       </a>

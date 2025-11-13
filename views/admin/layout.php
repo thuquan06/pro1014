@@ -59,7 +59,6 @@ $msg   = $msg   ?? null;
           </ul>
         </li>
 
-        <li><a href="#"><i class="fa fa-hotel"></i><span> Khách sạn</span></a></li>
         <li><a href="#"><i class="glyphicon glyphicon-file"></i><span> Blog</span></a></li>
         <li><a href="#"><i class="glyphicon glyphicon-list"></i><span> Tỉnh</span></a></li>
         <li><a href="#"><i class="fa fa-file-invoice-dollar"></i><span> Hóa đơn</span></a></li>

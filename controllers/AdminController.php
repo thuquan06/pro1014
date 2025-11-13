@@ -226,5 +226,16 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=login');
         }
     }
+
+    public function toggleTourStatus() {
+    $id = $_GET['id'] ?? null;
+    if ($id) {
+        $model = new TourModel();
+        $model->toggleStatus($id);
+    }
+    header("Location: " . BASE_URL . "?act=admin-tours");
+    exit();
+}
+
 }
 ?>

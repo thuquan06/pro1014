@@ -106,12 +106,6 @@ function safe_html($value) {
                             <input type="text" class="form-control1" name="giatrenho" id="giatrenho" placeholder="Giá trẻ nhỏ VND" required>
                         </div>
                     </div>
-                     <div class="form-group">
-                        <label for="giaphongdon" class="col-sm-2 control-label">Giá phòng đơn</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control1" name="giaphongdon" id="giaphongdon" placeholder="Giá phòng đơn VND" required>
-                        </div>
-                    </div>
 
                     <div class="form-group">
                         <label for="chitietgoi" class="col-sm-2 control-label">Chi tiết</label>

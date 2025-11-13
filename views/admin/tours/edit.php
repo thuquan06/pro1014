@@ -12,7 +12,6 @@ $khuyenmai=isset($tour['khuyenmai'])?(int)$tour['khuyenmai']:0;$quocgia=safe_val
 $ten_tinh=safe_value($tour['ten_tinh']??'');$tengoi=safe_value($tour['tengoi']??'');
 $noixuatphat=safe_value($tour['noixuatphat']??'');$vitri=safe_value($tour['vitri']??'');
 $giagoi=safe_value($tour['giagoi']??'');$giatreem=safe_value($tour['giatreem']??'');
-$giatrenho=safe_value($tour['giatrenho']??'');$giaphongdon=safe_value($tour['giaphongdon']??'');
 $chitietgoi=safe_value($tour['chitietgoi']??'');$chuongtrinh=safe_value($tour['chuongtrinh']??'');
 $luuy=safe_value($tour['luuy']??'');$songay=safe_value($tour['songay']??'');
 $giodi=safe_value($tour['giodi']??'');$ngayxuatphat=safe_value($tour['ngayxuatphat']??'');
@@ -38,7 +37,6 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
 <div class="form-group"><label for="giagoi" class="col-sm-2 control-label">Giá người lớn</label><div class="col-sm-8"><input type="text" class="form-control1" name="giagoi" id="giagoi" value="<?=$giagoi?>" required></div></div>
 <div class="form-group"><label for="giatreem" class="col-sm-2 control-label">Giá trẻ em</label><div class="col-sm-8"><input type="text" class="form-control1" name="giatreem" id="giatreem" value="<?=$giatreem?>" required></div></div>
 <div class="form-group"><label for="giatrenho" class="col-sm-2 control-label">Giá trẻ nhỏ</label><div class="col-sm-8"><input type="text" class="form-control1" name="giatrenho" id="giatrenho" value="<?=$giatrenho?>" required></div></div>
-<div class="form-group"><label for="giaphongdon" class="col-sm-2 control-label">Giá phòng đơn</label><div class="col-sm-8"><input type="text" class="form-control1" name="giaphongdon" id="giaphongdon" value="<?=$giaphongdon?>" required></div></div>
 <div class="form-group"><label for="chitietgoi" class="col-sm-2 control-label">Chi tiết</label><div class="col-sm-8"><textarea class="form-control" rows="5" cols="50" name="chitietgoi" id="packagedetails" required><?=$chitietgoi?></textarea></div></div>
 <div class="form-group"><label for="chuongtrinh" class="col-sm-2 control-label">Chương trình</label><div class="col-sm-8"><textarea class="form-control" rows="5" cols="50" name="chuongtrinh" id="packagedetails1" required><?=$chuongtrinh?></textarea></div></div>
 <div class="form-group"><label for="luuy" class="col-sm-2 control-label">Lưu ý</label><div class="col-sm-8"><textarea class="form-control" rows="5" cols="50" name="luuy" id="packagedetails2" required><?=$luuy?></textarea></div></div>

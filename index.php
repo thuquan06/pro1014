@@ -120,6 +120,10 @@ try {
         case 'admin-tour-update-image':
             (new AdminController())->updateTourImage();
             break;
+            case 'admin-tour-toggle':
+    (new AdminController())->toggleTourStatus();
+    break;
+
 
         // ===== 404 NOT FOUND =====
         default:

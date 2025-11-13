@@ -30,6 +30,7 @@ function safe_html($value) {
                         <th style="text-align: center;">Ngày về</th>
                         <th style="text-align: center;">Phương tiện</th>
                         <th style="text-align: center;">Ngày tạo</th>
+                        <th style="text-align: center;">Trạng thái</th>
                         <th style="text-align: center;">Hoạt động</th>
                     </tr>
                 </thead>
@@ -47,7 +48,6 @@ function safe_html($value) {
                             $giagoi = $tour['giagoi'] ?? '';
                             $giatreem = $tour['giatreem'] ?? '';
                             $giatrenho = $tour['giatrenho'] ?? '';
-                            $giaphongdon = $tour['giaphongdon'] ?? '';
                             $songay = $tour['songay'] ?? '';
                             $giodi = $tour['giodi'] ?? '';
                             $ngayxuatphat = $tour['ngayxuatphat'] ?? '';
@@ -66,7 +66,6 @@ function safe_html($value) {
                             <td style="width: 150px;">Người lớn: <?php echo safe_html($giagoi);?>
                                 <br>Trẻ em: <?php echo safe_html($giatreem);?>
                                 <br>Trẻ nhỏ: <?php echo safe_html($giatrenho);?>
-                                <br>Phòng: <?php echo safe_html($giaphongdon);?>
                             </td>
                             <td><?php echo safe_html($songay);?></td>
                             <td><?php echo safe_html($giodi);?>
@@ -75,6 +74,14 @@ function safe_html($value) {
                             <td><?php echo $ngayve ? date("d-m-Y", strtotime($ngayve)) : ''; ?></td>
                             <td><?php echo safe_html($phuongtien);?></td>
                             <td><?php echo $ngaydang ? date("d-m-Y", strtotime($ngaydang)) : ''; ?></td>
+                            <td style="text-align:center;">
+  <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
+      <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-success btn-xs">Hiển thị</a>
+  <?php else: ?>
+      <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-warning btn-xs">Ẩn</a>
+  <?php endif; ?>
+</td>
+
                             <td style="width: 194px;">
                                 <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo safe_html($id_goi);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
                                     <button type="button" class="btn btn-primary btn-block" style="border-bottom: 2px solid;">Xóa</button>
