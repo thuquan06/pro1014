@@ -368,5 +368,21 @@ class TourChiTietModel extends BaseModel
         ];
     }
 
-    
+    /**
+ * Lấy tất cả tour
+ */
+public function layTatCaTour() {
+    try {
+        $sql = "SELECT id_goi as id, tengoi as ten_goi 
+                FROM goidulich 
+                WHERE trangthai = 1 
+                ORDER BY id_goi DESC";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log("layTatCaTour Error: " . $e->getMessage());
+        return [];
+    }
+}
 }

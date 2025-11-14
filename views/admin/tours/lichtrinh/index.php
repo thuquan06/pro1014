@@ -15,13 +15,30 @@ ob_start();
     <li class="active">Lịch trình Tour #<?= $idGoi ?></li>
 </ol>
 
-<!-- Header -->
+<!-- Header với Dropdown chọn tour -->
 <div class="row" style="margin-bottom: 20px;">
-    <div class="col-md-8">
-        <h2 style="margin: 0;">📅 Quản lý Lịch trình</h2>
-        <p class="text-muted">Tour ID: <?= $idGoi ?></p>
+    <div class="col-md-4">
+        <h2 style="margin: 0 0 15px 0;">📅 Quản lý Lịch trình</h2>
+        
+        <!-- Dropdown chọn tour -->
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="select-tour" style="font-weight: 600; margin-bottom: 8px; display: block;">
+                <i class="fa fa-map"></i> Chọn tour để xem:
+            </label>
+            <select id="select-tour" class="form-control input-lg" style="font-size: 15px;" onchange="if(this.value) window.location.href='<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=' + this.value">
+                <option value="">-- Chọn tour --</option>
+                <?php if (!empty($allTours)): ?>
+                    <?php foreach ($allTours as $tour): ?>
+                        <option value="<?= $tour['id'] ?>" <?= $tour['id'] == $idGoi ? 'selected' : '' ?>>
+                            #<?= $tour['id'] ?> - <?= htmlspecialchars($tour['ten_goi']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
     </div>
-    <div class="col-md-4 text-right">
+    
+    <div class="col-md-8 text-right" style="padding-top: 45px;">
         <a href="<?= BASE_URL ?>?act=tour-lichtrinh-them&id_goi=<?= $idGoi ?>" class="btn btn-primary">
             <i class="fa fa-plus"></i> Thêm ngày mới
         </a>
@@ -194,6 +211,24 @@ ob_start();
 
 .panel {
     transition: all 0.3s ease;
+}
+/* Dropdown chọn tour */
+#select-tour {
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-size: 15px;
+    transition: all 0.3s;
+}
+
+#select-tour:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+#select-tour option {
+    padding: 10px;
 }
 </style>
 
