@@ -1,31 +1,26 @@
 <?php
 /**
  * Index.php - Main Router
- * ĐÃ CẬP NHẬT: Session security, error handling, validation
+ * ĐÃ CẬP NHẬT: Session security, error handling, validation, CHI TIẾT TOUR
  */
 
 // 1. CẤU HÌNH SESSION AN TOÀN
-ini_set('session.cookie_httponly', 1); // Không cho JavaScript đọc cookie
-ini_set('session.cookie_secure', 0);   // Set = 1 nếu dùng HTTPS
-ini_set('session.use_strict_mode', 1); // Chặn session fixation
-ini_set('session.cookie_samesite', 'Lax'); // CSRF protection
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_secure', 0);
+ini_set('session.use_strict_mode', 1);
+ini_set('session.cookie_samesite', 'Lax');
 
-// Khởi động session
 session_start();
 
 // 2. CẤU HÌNH ERROR REPORTING
-// Trong development: hiện lỗi
-// Trong production: log lỗi, không hiện
-$isProduction = false; // Đổi thành true khi deploy
+$isProduction = false;
 
 if ($isProduction) {
-    // PRODUCTION: Log lỗi, không hiển thị
     error_reporting(E_ALL);
     ini_set('display_errors', 0);
     ini_set('log_errors', 1);
     ini_set('error_log', PATH_ROOT . '/logs/error.log');
 } else {
-    // DEVELOPMENT: Hiển thị lỗi
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 }
@@ -34,10 +29,10 @@ if ($isProduction) {
 require_once './commons/env.php';
 require_once './commons/function.php';
 
-// 4. LẤY ACTION (với validation)
+// 4. LẤY ACTION
 $act = $_GET['act'] ?? 'home';
 
-// Validate action để tránh injection
+// Validate action
 if (!preg_match('/^[a-z0-9-]+$/i', $act)) {
     http_response_code(400);
     die("Invalid action");
@@ -47,34 +42,33 @@ if (!preg_match('/^[a-z0-9-]+$/i', $act)) {
 try {
     
     // Load models & controllers cho admin routes
-    if (strpos($act, 'admin') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
-    // Nạp các model nền tảng
-    require_once './models/BaseModel.php';
-    require_once './models/DashboardModel.php';
-    require_once './models/TourModel.php';
-    require_once './models/AdminModel.php';
-    require_once './models/ProvinceModel.php';
-
-    // Nạp lớp controller nền tảng trước các controller khác
-    require_once './controllers/BaseController.php';
-    require_once './controllers/AdminController.php';
-}
-
-
-
+    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
+        require_once './models/BaseModel.php';
+        require_once './models/DashboardModel.php';
+        require_once './models/TourModel.php';
+        require_once './models/AdminModel.php';
+        require_once './models/ProvinceModel.php';
+        
+        // Controller
+        require_once './controllers/BaseController.php';
+        require_once './controllers/AdminController.php';
+        
+        // CHI TIẾT TOUR (MỚI)
+        require_once './models/TourChiTietModel.php';
+        require_once './controllers/TourChiTietController.php';
+    }
 
     // 6. ROUTING
     switch ($act) {
         // ===== PUBLIC ROUTES =====
         case 'home':
-        require_once './models/BaseModel.php';
-        require_once './models/ProductModel.php';
-        require_once './controllers/ProductController.php';
-        (new ProductController())->Home();
-        break;
+            require_once './models/BaseModel.php';
+            require_once './models/ProductModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->Home();
+            break;
 
-
-        // ===== AUTH ROUTES (không cần login) =====
+        // ===== AUTH ROUTES =====
         case 'login':
             (new AdminController())->login();
             break;
@@ -87,7 +81,7 @@ try {
             (new AdminController())->logout();
             break;
 
-        // ===== ADMIN ROUTES (cần login) =====
+        // ===== ADMIN ROUTES =====
         case 'admin':
             (new AdminController())->dashboard();
             break;
@@ -120,24 +114,89 @@ try {
         case 'admin-tour-update-image':
             (new AdminController())->updateTourImage();
             break;
-            case 'admin-tour-toggle':
-    (new AdminController())->toggleTourStatus();
-    break;
+            
+        case 'admin-tour-toggle':
+            (new AdminController())->toggleTourStatus();
+            break;
 
+        // ==================== CHI TIẾT TOUR (MỚI) ====================
+        
+        // LỊCH TRÌNH
+        case 'tour-lichtrinh':
+            (new TourChiTietController())->danhSachLichTrinh();
+            break;
+        
+        case 'tour-lichtrinh-them':
+            (new TourChiTietController())->themLichTrinh();
+            break;
+        
+        case 'tour-lichtrinh-sua':
+            (new TourChiTietController())->suaLichTrinh();
+            break;
+        
+        case 'tour-lichtrinh-xoa':
+            (new TourChiTietController())->xoaLichTrinh();
+            break;
+        
+        // GALLERY
+        case 'tour-gallery':
+            (new TourChiTietController())->danhSachHinhAnh();
+            break;
+        
+        case 'tour-gallery-them':
+            (new TourChiTietController())->themHinhAnh();
+            break;
+        
+        case 'tour-gallery-dai-dien':
+            (new TourChiTietController())->datAnhDaiDien();
+            break;
+        
+        case 'tour-gallery-xoa':
+            (new TourChiTietController())->xoaHinhAnh();
+            break;
+        
+        // CHÍNH SÁCH
+        case 'tour-chinhsach':
+            (new TourChiTietController())->danhSachChinhSach();
+            break;
+        
+        case 'tour-chinhsach-them':
+            (new TourChiTietController())->themChinhSach();
+            break;
+        
+        case 'tour-chinhsach-xoa':
+            (new TourChiTietController())->xoaChinhSach();
+            break;
+        
+        // PHÂN LOẠI
+        case 'tour-phanloai':
+            (new TourChiTietController())->quanLyPhanLoai();
+            break;
+        
+        case 'tour-phanloai-loai':
+            (new TourChiTietController())->capNhatLoaiTour();
+            break;
+        
+        case 'tour-phanloai-tags':
+            (new TourChiTietController())->capNhatTags();
+            break;
+        
+        // API
+        case 'api-tour-chitiet':
+            (new TourChiTietController())->apiChiTiet();
+            break;
 
         // ===== 404 NOT FOUND =====
         default:
             http_response_code(404);
             
             if ($isProduction) {
-                // Production: Trang 404 đẹp
                 if (file_exists('./views/errors/404.php')) {
                     require './views/errors/404.php';
                 } else {
                     echo "404 - Trang không tìm thấy";
                 }
             } else {
-                // Development: Hiển thị thông tin debug
                 echo "<h1>404 - Page Not Found</h1>";
                 echo "<p>Action requested: <strong>" . htmlspecialchars($act) . "</strong></p>";
                 echo "<p>Available actions:</p>";
@@ -146,25 +205,23 @@ try {
                 echo "<li>login</li>";
                 echo "<li>admin</li>";
                 echo "<li>admin-tours</li>";
+                echo "<li>tour-lichtrinh&id_goi=71</li>";
+                echo "<li>tour-gallery&id_goi=71</li>";
+                echo "<li>tour-chinhsach&id_goi=71</li>";
+                echo "<li>tour-phanloai&id_goi=71</li>";
                 echo "</ul>";
             }
             break;
     }
 
 } catch (Exception $e) {
-    // 7. GLOBAL ERROR HANDLER
-    
-    // Log lỗi
     error_log("Exception: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
     
-    // Hiển thị cho user
     http_response_code(500);
     
     if ($isProduction) {
-        // Production: Thông báo chung chung
-        echo "Đã có lỗi xảy ra. Vui lòng thử lại sau hoặc liên hệ quản trị viên.";
+        echo "Đã có lỗi xảy ra. Vui lòng thử lại sau.";
     } else {
-        // Development: Hiển thị chi tiết lỗi
         echo "<h1>Error</h1>";
         echo "<p><strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "</p>";
         echo "<p><strong>File:</strong> " . htmlspecialchars($e->getFile()) . "</p>";

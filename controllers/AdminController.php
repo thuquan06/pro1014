@@ -24,11 +24,13 @@ class AdminController extends BaseController {
 
     // Hiển thị form đăng nhập
     public function login() {
-        if (!empty($_SESSION['alogin'])) {
-            $this->redirect(BASE_URL . '?act=admin');
-        }
-        $this->loadView('admin/login');
+    if (!empty($_SESSION['alogin'])) {
+        $this->redirect(BASE_URL . '?act=admin');
     }
+    
+    // ✅ DÙNG require_once TRỰC TIẾP thay vì loadView
+    require_once './views/admin/login.php';
+}
 
     // Xử lý đăng nhập
     public function handleLogin() {

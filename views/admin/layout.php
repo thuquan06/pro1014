@@ -1,5 +1,5 @@
 <?php
-// ✅ views/admin/layout.php - phiên bản FIX 2025
+// ✅ views/admin/layout.php - PHIÊN BẢN CẬP NHẬT 2025 (CHI TIẾT TOUR)
 $error = $error ?? null;
 $msg   = $msg   ?? null;
 ?>
@@ -7,7 +7,7 @@ $msg   = $msg   ?? null;
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <title>Trang quản trị</title>
+  <title>Trang quản trị - StarVel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- ===== CSS ===== -->
@@ -29,16 +29,97 @@ $msg   = $msg   ?? null;
     .errorWrap {
       padding: 10px; margin: 10px 0; background:#fff;
       border-left:4px solid #dd3d36; box-shadow:0 1px 1px rgba(0,0,0,.1);
+      cursor: pointer;
     }
     .succWrap {
       padding: 10px; margin: 10px 0; background:#fff;
       border-left:4px solid #5cb85c; box-shadow:0 1px 1px rgba(0,0,0,.1);
+      cursor: pointer;
+    }
+    
+    /* ===== CSS CHI TIẾT TOUR (MỚI) ===== */
+    .dropdown-header {
+      padding: 10px 20px;
+      font-weight: bold;
+      color: #999;
+      text-transform: uppercase;
+      font-size: 11px;
+    }
+    
+    .divider {
+      height: 1px;
+      margin: 9px 0;
+      overflow: hidden;
+      background-color: rgba(255,255,255,0.1);
+    }
+    
+    /* Breadcrumb đẹp hơn */
+    .breadcrumb {
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 10px 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .breadcrumb > li + li:before {
+      content: "›";
+      padding: 0 8px;
+      color: #999;
+    }
+    
+    .breadcrumb > .active {
+      color: #5cb85c;
+      font-weight: bold;
+    }
+    
+    /* Timeline styles */
+    .timeline-container {
+      position: relative;
+    }
+    
+    /* Gallery grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    
+    /* Badge colors */
+    .badge-primary { background: #5cb85c; }
+    .badge-info { background: #5bc0de; }
+    .badge-warning { background: #f0ad4e; }
+    
+    /* Loading overlay */
+    #loadingOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+    }
+    
+    #loadingOverlay .spinner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .timeline-container { padding-left: 30px; }
     }
   </style>
 </head>
 <body>
 
-<div class="page-container"><!-- KHÔNG có sidebar-collapsed -->
+<div class="page-container">
   <!-- ===== SIDEBAR ===== -->
   <div class="sidebar-menu">
     <header class="logo1">
@@ -50,12 +131,21 @@ $msg   = $msg   ?? null;
       <ul id="menu">
         <li><a href="<?= BASE_URL ?>?act=admin"><i class="fa fa-tachometer"></i><span> Quản lý</span></a></li>
 
+        <!-- ===== MENU TOUR (CẬP NHẬT) ===== -->
         <li id="menu-academico">
           <a href="#"><i class="glyphicon glyphicon-road"></i><span> Tour</span>
             <span class="fa fa-angle-right" style="float:right"></span></a>
           <ul id="menu-academico-sub">
-            <li><a href="<?= BASE_URL ?>?act=admin-tour-create">Tạo</a></li>
+            <li><a href="<?= BASE_URL ?>?act=admin-tour-create">Tạo mới</a></li>
             <li><a href="<?= BASE_URL ?>?act=admin-tours">Quản lý</a></li>
+            
+            <!-- ✨ MENU CHI TIẾT TOUR (MỚI) -->
+            <li class="divider"></li>
+            <li class="dropdown-header">Chi tiết Tour</li>
+            <li><a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=71">📅 Lịch trình</a></li>
+            <li><a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=71">📸 Gallery</a></li>
+            <li><a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=71">📋 Chính sách</a></li>
+            <li><a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=71">🏷️ Phân loại</a></li>
           </ul>
         </li>
 
@@ -108,12 +198,20 @@ $msg   = $msg   ?? null;
       </div>
 
       <div class="copyrights">
-        <p>© 2025 StarVel. All Rights Reserved</p>
+        <p>© 2025 StarVel. All Rights Reserved | Powered by StarVel Team</p>
       </div>
 
     </div><!-- /mother-grid-inner -->
   </div><!-- /left-content -->
 </div><!-- /page-container -->
+
+<!-- ===== LOADING OVERLAY ===== -->
+<div id="loadingOverlay">
+  <div class="spinner">
+    <i class="fa fa-spinner fa-spin fa-4x"></i>
+    <p style="margin-top: 20px; font-size: 18px;">Đang xử lý...</p>
+  </div>
+</div>
 
 <!-- ===== JS (THỨ TỰ CHUẨN) ===== -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -128,9 +226,9 @@ $msg   = $msg   ?? null;
 <script src="assets/js/scripts.js"></script>
 
 <script>
-  // Sidebar toggle fix
+  // ===== SIDEBAR TOGGLE =====
   (function($){
-    let toggle = false; // Mặc định sidebar mở
+    let toggle = false;
     $(".sidebar-icon").on("click", function(){
       if (!toggle) {
         $(".page-container").addClass("sidebar-collapsed").removeClass("sidebar-collapsed-back");
@@ -143,7 +241,7 @@ $msg   = $msg   ?? null;
     });
   })(jQuery);
 
-  // Header fixed on scroll
+  // ===== HEADER FIXED =====
   $(function(){
     var navOff = $(".header-main").offset().top;
     $(window).on("scroll", function(){
@@ -152,6 +250,72 @@ $msg   = $msg   ?? null;
       else $(".header-main").removeClass("fixed");
     });
   });
+  
+  // ===== AUTO HIDE NOTIFICATIONS =====
+  $(function() {
+    setTimeout(function() {
+      $('.succWrap, .errorWrap').fadeOut('slow');
+    }, 5000);
+    
+    $('.succWrap, .errorWrap').on('click', function() {
+      $(this).fadeOut('fast');
+    });
+  });
+  
+  // ===== ACTIVE MENU =====
+  $(function() {
+    var currentUrl = window.location.href;
+    $('#menu a').each(function() {
+      var href = $(this).attr('href');
+      if (href && currentUrl.indexOf(href) > -1 && href.length > 10) {
+        $(this).parent().addClass('active');
+        $(this).closest('ul').show();
+        $(this).closest('li[id^="menu-"]').addClass('active');
+      }
+    });
+  });
+  
+  // ===== LOADING ON FORM SUBMIT =====
+  $(function() {
+    $('form').on('submit', function(e) {
+      // Không hiện loading nếu có lỗi validation
+      if (this.checkValidity && !this.checkValidity()) {
+        return true;
+      }
+      $('#loadingOverlay').fadeIn();
+    });
+  });
+  
+  // ===== CONFIRM DELETE =====
+  window.confirmDelete = function(message) {
+    return confirm(message || 'Bạn có chắc muốn xóa?');
+  };
+  
+  // ===== PREVIEW IMAGES =====
+  window.previewImages = function(input, container) {
+    if (input.files) {
+      $(container).html('');
+      Array.from(input.files).forEach(function(file) {
+        if (file.type.startsWith('image/')) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            $(container).append(
+              '<div class="col-md-2" style="margin-bottom:10px;">' +
+              '<img src="' + e.target.result + '" class="img-thumbnail" style="width:100%;height:150px;object-fit:cover;">' +
+              '</div>'
+            );
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+  };
 </script>
+
+<!-- ===== CUSTOM SCRIPTS CHO TỪNG TRANG (TÙY CHỌN) ===== -->
+<?php if (isset($extra_scripts)): ?>
+  <?= $extra_scripts ?>
+<?php endif; ?>
+
 </body>
 </html>

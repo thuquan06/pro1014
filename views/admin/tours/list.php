@@ -1,5 +1,5 @@
 <?php
-// File: views/admin/tours/list.php (ĐÃ SỬA LỖI DEPRECATED)
+// File: views/admin/tours/list.php (ĐÃ THÊM CỘT CHI TIẾT)
 
 /*
  * Biến $tours (chứa mảng tour) đã được AdminController::listTours()
@@ -32,6 +32,8 @@ function safe_html($value) {
                         <th style="text-align: center;">Ngày tạo</th>
                         <th style="text-align: center;">Trạng thái</th>
                         <th style="text-align: center;">Hoạt động</th>
+                        <!-- ✨ CỘT MỚI -->
+                        <th style="text-align: center;">Chi tiết</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,12 +77,12 @@ function safe_html($value) {
                             <td><?php echo safe_html($phuongtien);?></td>
                             <td><?php echo $ngaydang ? date("d-m-Y", strtotime($ngaydang)) : ''; ?></td>
                             <td style="text-align:center;">
-  <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
-      <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-success btn-xs">Hiển thị</a>
-  <?php else: ?>
-      <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-warning btn-xs">Ẩn</a>
-  <?php endif; ?>
-</td>
+                                <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
+                                    <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-success btn-xs">Hiển thị</a>
+                                <?php else: ?>
+                                    <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-warning btn-xs">Ẩn</a>
+                                <?php endif; ?>
+                            </td>
 
                             <td style="width: 194px;">
                                 <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo safe_html($id_goi);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
@@ -89,6 +91,35 @@ function safe_html($value) {
                                 <a href="<?php echo BASE_URL; ?>?act=admin-tour-edit&id=<?php echo safe_html($id_goi);?>">
                                     <button type="button" class="btn btn-primary btn-block" >Chỉnh sửa</button>
                                 </a>
+                            </td>
+
+                            <!-- ✨ CỘT CHI TIẾT MỚI -->
+                            <td style="text-align: center; width: 120px;">
+                                <div class="btn-group-vertical" style="width: 100%;">
+                                    <a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=<?= $id_goi ?>" 
+                                       class="btn btn-info btn-xs" 
+                                       style="margin-bottom: 3px;"
+                                       title="Quản lý lịch trình tour">
+                                        <i class="fa fa-calendar"></i> Lịch trình
+                                    </a>
+                                    <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $id_goi ?>" 
+                                       class="btn btn-success btn-xs"
+                                       style="margin-bottom: 3px;"
+                                       title="Quản lý hình ảnh tour">
+                                        <i class="fa fa-picture-o"></i> Gallery
+                                    </a>
+                                    <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $id_goi ?>" 
+                                       class="btn btn-warning btn-xs"
+                                       style="margin-bottom: 3px;"
+                                       title="Quản lý chính sách hủy/đổi">
+                                        <i class="fa fa-file-text"></i> Chính sách
+                                    </a>
+                                    <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $id_goi ?>" 
+                                       class="btn btn-primary btn-xs"
+                                       title="Quản lý loại tour & tags">
+                                        <i class="fa fa-tags"></i> Phân loại
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php 
@@ -136,4 +167,24 @@ function safe_html($value) {
 </script>
 <style type="text/css">
 	.dataTables_wrapper{ margin-top: 20px; }
+    
+    /* ✨ CSS CHO CỘT CHI TIẾT MỚI */
+    .btn-group-vertical .btn {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border-radius: 3px;
+    }
+    
+    .btn-group-vertical .btn i {
+        margin-right: 5px;
+        width: 15px;
+        text-align: center;
+    }
+    
+    .btn-xs {
+        padding: 5px 10px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
 </style>
