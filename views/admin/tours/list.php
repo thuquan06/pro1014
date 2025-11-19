@@ -114,6 +114,12 @@ function safe_html($value) {
                                        title="Quản lý chính sách hủy/đổi">
                                         <i class="fa fa-file-text"></i> Chính sách
                                     </a>
+                                    <a href="<?= BASE_URL ?>?act=tour-versions&id_goi=<?= $id_goi ?>" 
+                                        class="btn btn-danger btn-xs"
+                                        style="margin-bottom: 3px;"
+                                        title="Quản lý phiên bản">
+                                        <i class="fa fa-code-fork"></i> Versions
+                                    </a>
                                     <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $id_goi ?>" 
                                        class="btn btn-primary btn-xs"
                                        title="Quản lý loại tour & tags">
@@ -121,6 +127,7 @@ function safe_html($value) {
                                     </a>
                                 </div>
                             </td>
+                            
                         </tr>
                     <?php 
                         $cnt++;

@@ -48,15 +48,18 @@ class TourChiTietController
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'id_goi'   => $idGoi,
-                'ngay_thu' => $_POST['ngay_thu'],
-                'tieude'   => trim($_POST['tieude']),
-                'mota'     => trim($_POST['mota']),
-                'hoatdong' => trim($_POST['hoatdong'] ?? ''),
-                'buaan'    => $_POST['buaan'] ?? '',
-                'noinghi'  => trim($_POST['noinghi'] ?? '')
-            ];
+        $data = [
+            'id_goi'     => $idGoi,
+            'ngay_thu'   => $_POST['ngay_thu'],
+            'tieude'     => trim($_POST['tieude']),
+            'mota'       => trim($_POST['mota']),
+            'diemden'    => trim($_POST['diemden'] ?? ''),      // ← THÊM
+            'thoiluong'  => trim($_POST['thoiluong'] ?? ''),    // ← THÊM
+            'hoatdong'   => trim($_POST['hoatdong'] ?? ''),
+            'buaan'      => $_POST['buaan'] ?? '',
+            'noinghi'    => trim($_POST['noinghi'] ?? ''),
+            'ghichu_hdv' => trim($_POST['ghichu_hdv'] ?? '')    // ← THÊM
+        ];
             
             // Validate
             $errors = [];
@@ -118,9 +121,12 @@ public function suaLichTrinh() {
         
         $tieude = trim($_POST['tieude'] ?? '');
         $mota = trim($_POST['mota'] ?? '');
+        $diemden = trim($_POST['diemden'] ?? '');        // ← THÊM
+        $thoiluong = trim($_POST['thoiluong'] ?? '');    // ← THÊM
         $hoatdong = trim($_POST['hoatdong'] ?? '');
         $buaan = trim($_POST['buaan'] ?? '');
         $noinghi = trim($_POST['noinghi'] ?? '');
+        $ghichu_hdv = trim($_POST['ghichu_hdv'] ?? '');  // ← THÊM
         
         if (empty($tieude)) {
             $errors[] = 'Tiêu đề không được để trống!';
@@ -130,21 +136,17 @@ public function suaLichTrinh() {
             $errors[] = 'Mô tả không được để trống!';
         }
         
-        if (!empty($errors)) {
-            $_SESSION['errors'] = $errors;
-            $lichTrinh['tieude'] = $tieude;
-            $lichTrinh['mota'] = $mota;
-            $lichTrinh['hoatdong'] = $hoatdong;
-            $lichTrinh['buaan'] = $buaan;
-            $lichTrinh['noinghi'] = $noinghi;
-        } else {
-            $data = [
-                'tieude' => $tieude,
-                'mota' => $mota,
-                'hoatdong' => $hoatdong,
-                'buaan' => $buaan,
-                'noinghi' => $noinghi
-            ];
+        if (empty($errors)) {
+        $data = [
+            'tieude'     => $tieude,
+            'mota'       => $mota,
+            'diemden'    => $diemden,        // ← THÊM
+            'thoiluong'  => $thoiluong,      // ← THÊM
+            'hoatdong'   => $hoatdong,
+            'buaan'      => $buaan,
+            'noinghi'    => $noinghi,
+            'ghichu_hdv' => $ghichu_hdv      // ← THÊM
+        ];
             
             if ($this->model->suaLichTrinh($id, $data)) {
                 $_SESSION['success'] = 'Cập nhật lịch trình thành công!';
@@ -281,58 +283,161 @@ public function suaLichTrinh() {
      * Trang quản lý chính sách
      */
     public function danhSachChinhSach() {
-        $idGoi = $_GET['id_goi'] ?? 0;
-        
-        if (!$idGoi) {
-            $_SESSION['error'] = 'Không tìm thấy tour!';
-            header('Location: ?act=admin-tours');
-            exit;
-        }
-        
-        $chinhsach = $this->model->layChinhSach($idGoi);
-        
-        require_once './views/admin/tours/chinhsach/index.php';
+    $idGoi = $_GET['id_goi'] ?? 0;
+    
+    if (!$idGoi) {
+        $_SESSION['error'] = 'Không tìm thấy tour!';
+        header('Location: ?act=admin-tours');
+        exit;
     }
+    
+    // Lấy chính sách theo từng loại
+    $chinhsach = [
+        'huy_doi'    => $this->model->layChinhSachTheoLoai($idGoi, 'huy_doi'),
+        'suc_khoe'   => $this->model->layChinhSachTheoLoai($idGoi, 'suc_khoe'),
+        'hanh_ly'    => $this->model->layChinhSachTheoLoai($idGoi, 'hanh_ly'),
+        'thanh_toan' => $this->model->layChinhSachTheoLoai($idGoi, 'thanh_toan'),
+        'visa'       => $this->model->layChinhSachTheoLoai($idGoi, 'visa'),
+        'bao_hiem'   => $this->model->layChinhSachTheoLoai($idGoi, 'bao_hiem'),
+        'khac'       => $this->model->layChinhSachTheoLoai($idGoi, 'khac')
+    ];
+      // ✨ THÊM DÒNG NÀY: Lấy tất cả tour để hiển thị dropdown
+    $allTours = $this->model->layTatCaTour();
+
+    require_once './views/admin/tours/chinhsach/index.php';
+    }
+
     
     /**
      * Thêm chính sách
      */
     public function themChinhSach() {
-        $idGoi = $_GET['id_goi'] ?? 0;
+    $idGoi = $_GET['id_goi'] ?? 0;
+    
+    if (!$idGoi) {
+        $_SESSION['error'] = 'Không tìm thấy tour!';
+        header('Location: ?act=admin-tours');
+        exit;
+    }
+    
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $errors = [];
         
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $loai = $_POST['loai_chinhsach'] ?? '';
+        $noidung = trim($_POST['noidung'] ?? '');
+        
+        if (empty($loai)) {
+            $errors[] = 'Vui lòng chọn loại chính sách!';
+        }
+        
+        
+        if (empty($noidung)) {
+            $errors[] = 'Nội dung không được để trống!';
+        }
+        
+        if (empty($errors)) {
             $data = [
                 'id_goi'            => $idGoi,
-                'loai_chinhsach'    => $_POST['loai_chinhsach'],
-                'so_ngay_truoc'     => (int)$_POST['so_ngay_truoc'],
-                'phantram_hoantien' => (float)$_POST['phantram_hoantien'],
-                'noidung'           => trim($_POST['noidung'])
+                'loai_chinhsach'    => $loai,
+                'noidung'           => $noidung,
+                'so_ngay_truoc'     => !empty($_POST['so_ngay_truoc']) ? intval($_POST['so_ngay_truoc']) : null,
+                'phantram_hoantien' => !empty($_POST['phantram_hoantien']) ? floatval($_POST['phantram_hoantien']) : null,
+                'thutu_hienthi'     => intval($_POST['thutu_hienthi'] ?? 0)
             ];
             
             if ($this->model->themChinhSach($data)) {
                 $_SESSION['success'] = 'Thêm chính sách thành công!';
-                header("Location: ?act=admin-tours-chinhsach&id_goi=$idGoi");
+                header("Location: ?act=tour-chinhsach&id_goi=$idGoi");
                 exit;
+            } else {
+                $_SESSION['error'] = 'Có lỗi khi thêm chính sách!';
             }
+        } else {
+            $_SESSION['errors'] = $errors;
         }
-        
-        require_once './views/admin/tours/chinhsach/create.php';
     }
     
+    require_once './views/admin/tours/chinhsach/create.php';
+    }   
+
+    /**
+ * Form sửa chính sách
+ */
+public function suaChinhSach() {
+    $id = $_GET['id'] ?? 0;
+    $idGoi = $_GET['id_goi'] ?? 0;
+    
+    if (!$id || !$idGoi) {
+        $_SESSION['error'] = 'Thiếu thông tin!';
+        header('Location: ?act=admin-tours');
+        exit;
+    }
+    
+    $chinhsach = $this->model->layMotChinhSach($id);
+    
+    if (!$chinhsach) {
+        $_SESSION['error'] = 'Không tìm thấy chính sách!';
+        header('Location: ?act=tour-chinhsach&id_goi=' . $idGoi);
+        exit;
+    }
+    
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $errors = [];
+        
+        $loai = $_POST['loai_chinhsach'] ?? '';
+        $noidung = trim($_POST['noidung'] ?? '');
+        
+        if (empty($loai)) {
+            $errors[] = 'Vui lòng chọn loại chính sách!';
+        }
+        
+        
+        if (empty($noidung)) {
+            $errors[] = 'Nội dung không được để trống!';
+        }
+        
+        if (empty($errors)) {
+            $data = [
+                'loai_chinhsach'    => $loai,
+                'noidung'           => $noidung,
+                'so_ngay_truoc'     => !empty($_POST['so_ngay_truoc']) ? intval($_POST['so_ngay_truoc']) : null,
+                'phantram_hoantien' => !empty($_POST['phantram_hoantien']) ? floatval($_POST['phantram_hoantien']) : null,
+                'thutu_hienthi'     => intval($_POST['thutu_hienthi'] ?? 0)
+            ];
+            
+            if ($this->model->suaChinhSach($id, $data)) {
+                $_SESSION['success'] = 'Cập nhật chính sách thành công!';
+                header("Location: ?act=tour-chinhsach&id_goi=$idGoi");
+                exit;
+            } else {
+                $_SESSION['error'] = 'Có lỗi khi cập nhật!';
+            }
+        } else {
+            $_SESSION['errors'] = $errors;
+            $chinhsach['loai_chinhsach'] = $loai;
+            $chinhsach['noidung'] = $noidung;
+        }
+    }
+    
+    require_once './views/admin/tours/chinhsach/edit.php';
+    }
+
     /**
      * Xóa chính sách
      */
     public function xoaChinhSach() {
-        $id = $_GET['id'] ?? 0;
-        $idGoi = $_GET['id_goi'] ?? 0;
-        
-        if ($this->model->xoaChinhSach($id)) {
-            $_SESSION['success'] = 'Xóa thành công!';
-        }
-        
-        header("Location: ?act=admin-tours-chinhsach&id_goi=$idGoi");
-        exit;
+    $id = $_GET['id'] ?? 0;
+    $idGoi = $_GET['id_goi'] ?? 0;
+    
+    if ($this->model->xoaChinhSach($id)) {
+        $_SESSION['success'] = 'Xóa chính sách thành công!';
+    } else {
+        $_SESSION['error'] = 'Có lỗi khi xóa!';
     }
+    
+    header("Location: ?act=tour-chinhsach&id_goi=$idGoi");
+    exit;
+}
     
     // ==================== LOẠI TOUR & TAGS ====================
     

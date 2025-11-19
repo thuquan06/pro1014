@@ -26,45 +26,54 @@ class TourChiTietModel extends BaseModel
      * Thêm lịch trình 1 ngày
      */
     public function themLichTrinh($data) {
-        $sql = "INSERT INTO lichtrinhtheoday 
-                (id_goi, ngay_thu, tieude, mota, hoatdong, buaan, noinghi) 
-                VALUES 
-                (:id_goi, :ngay_thu, :tieude, :mota, :hoatdong, :buaan, :noinghi)";
-        
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            ':id_goi'    => $data['id_goi'],
-            ':ngay_thu'  => $data['ngay_thu'],
-            ':tieude'    => $data['tieude'],
-            ':mota'      => $data['mota'],
-            ':hoatdong'  => $data['hoatdong'] ?? null,
-            ':buaan'     => $data['buaan'] ?? null,
-            ':noinghi'   => $data['noinghi'] ?? null
-        ]);
+    $sql = "INSERT INTO lichtrinhtheoday 
+            (id_goi, ngay_thu, tieude, mota, diemden, thoiluong, hoatdong, buaan, noinghi, ghichu_hdv) 
+            VALUES 
+            (:id_goi, :ngay_thu, :tieude, :mota, :diemden, :thoiluong, :hoatdong, :buaan, :noinghi, :ghichu_hdv)";
+    
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute([
+        ':id_goi'      => $data['id_goi'],
+        ':ngay_thu'    => $data['ngay_thu'],
+        ':tieude'      => $data['tieude'],
+        ':mota'        => $data['mota'],
+        ':diemden'     => $data['diemden'] ?? null,
+        ':thoiluong'   => $data['thoiluong'] ?? null,
+        ':hoatdong'    => $data['hoatdong'] ?? null,
+        ':buaan'       => $data['buaan'] ?? null,
+        ':noinghi'     => $data['noinghi'] ?? null,
+        ':ghichu_hdv'  => $data['ghichu_hdv'] ?? null
+    ]);
     }
     
     /**
      * Cập nhật lịch trình 1 ngày
      */
     public function suaLichTrinh($id, $data) {
-        $sql = "UPDATE lichtrinhtheoday SET
-                tieude = :tieude,
-                mota = :mota,
-                hoatdong = :hoatdong,
-                buaan = :buaan,
-                noinghi = :noinghi
-                WHERE id = :id";
-        
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            ':tieude'    => $data['tieude'],
-            ':mota'      => $data['mota'],
-            ':hoatdong'  => $data['hoatdong'] ?? null,
-            ':buaan'     => $data['buaan'] ?? null,
-            ':noinghi'   => $data['noinghi'] ?? null,
-            ':id'        => $id
-        ]);
-    }
+    $sql = "UPDATE lichtrinhtheoday SET
+            tieude = :tieude,
+            mota = :mota,
+            diemden = :diemden,
+            thoiluong = :thoiluong,
+            hoatdong = :hoatdong,
+            buaan = :buaan,
+            noinghi = :noinghi,
+            ghichu_hdv = :ghichu_hdv
+            WHERE id = :id";
+    
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute([
+        ':tieude'      => $data['tieude'],
+        ':mota'        => $data['mota'],
+        ':diemden'     => $data['diemden'] ?? null,
+        ':thoiluong'   => $data['thoiluong'] ?? null,
+        ':hoatdong'    => $data['hoatdong'] ?? null,
+        ':buaan'       => $data['buaan'] ?? null,
+        ':noinghi'     => $data['noinghi'] ?? null,
+        ':ghichu_hdv'  => $data['ghichu_hdv'] ?? null,
+        ':id'          => $id
+    ]);
+}
     
     /**
      * Xóa lịch trình 1 ngày
@@ -190,19 +199,20 @@ class TourChiTietModel extends BaseModel
      * Thêm chính sách
      */
     public function themChinhSach($data) {
-        $sql = "INSERT INTO chinhsach_tour 
-                (id_goi, loai_chinhsach, so_ngay_truoc, phantram_hoantien, noidung) 
-                VALUES 
-                (:id_goi, :loai_chinhsach, :so_ngay_truoc, :phantram_hoantien, :noidung)";
-        
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            ':id_goi'            => $data['id_goi'],
-            ':loai_chinhsach'    => $data['loai_chinhsach'],
-            ':so_ngay_truoc'     => $data['so_ngay_truoc'],
-            ':phantram_hoantien' => $data['phantram_hoantien'] ?? 0,
-            ':noidung'           => $data['noidung']
-        ]);
+    $sql = "INSERT INTO chinhsach_tour 
+            (id_goi, loai_chinhsach, noidung, so_ngay_truoc, phantram_hoantien, thutu_hienthi) 
+            VALUES 
+            (:id_goi, :loai_chinhsach, :noidung, :so_ngay_truoc, :phantram_hoantien, :thutu_hienthi)";
+    
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute([
+        ':id_goi'            => $data['id_goi'],
+        ':loai_chinhsach'    => $data['loai_chinhsach'],
+        ':noidung'           => $data['noidung'],
+        ':so_ngay_truoc'     => $data['so_ngay_truoc'] ?? null,
+        ':phantram_hoantien' => $data['phantram_hoantien'] ?? null,
+        ':thutu_hienthi'     => $data['thutu_hienthi'] ?? 0
+    ]);
     }
     
     /**
@@ -369,14 +379,12 @@ class TourChiTietModel extends BaseModel
     }
 
     /**
- * Lấy tất cả tour
- */
-public function layTatCaTour() {
+     * Lấy tất cả tour
+     */
+    public function layTatCaTour() {
     try {
-        $sql = "SELECT id_goi as id, tengoi as ten_goi 
-                FROM goidulich 
-                WHERE trangthai = 1 
-                ORDER BY id_goi DESC";
+        // ✅ ĐÚNG: id_goi và tengoi (theo database của bạn)
+        $sql = "SELECT id_goi as id, tengoi as ten_goi FROM goidulich ORDER BY id_goi DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -384,5 +392,60 @@ public function layTatCaTour() {
         error_log("layTatCaTour Error: " . $e->getMessage());
         return [];
     }
+    }   
+
+    /**
+     * Lấy chính sách theo loại
+     */
+    public function layChinhSachTheoLoai($idGoi, $loai = null) {
+        if ($loai) {
+            $sql = "SELECT * FROM chinhsach_tour 
+                    WHERE id_goi = :id_goi AND loai_chinhsach = :loai 
+                    ORDER BY thutu_hienthi ASC, id ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id_goi' => $idGoi, ':loai' => $loai]);
+        } else {
+            $sql = "SELECT * FROM chinhsach_tour 
+                    WHERE id_goi = :id_goi 
+                    ORDER BY loai_chinhsach, thutu_hienthi ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id_goi' => $idGoi]);
+        }
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+ * Lấy 1 chính sách theo ID
+ */
+public function layMotChinhSach($id) {
+    $sql = "SELECT * FROM chinhsach_tour WHERE id = :id LIMIT 1";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->execute([':id' => $id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+/**
+ * Sửa chính sách
+ */
+public function suaChinhSach($id, $data) {
+    $sql = "UPDATE chinhsach_tour SET
+            loai_chinhsach = :loai_chinhsach,
+            noidung = :noidung,
+            so_ngay_truoc = :so_ngay_truoc,
+            phantram_hoantien = :phantram_hoantien,
+            thutu_hienthi = :thutu_hienthi
+            WHERE id = :id";
+    
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute([
+        ':loai_chinhsach'    => $data['loai_chinhsach'],
+        ':noidung'           => $data['noidung'],
+        ':so_ngay_truoc'     => $data['so_ngay_truoc'] ?? null,
+        ':phantram_hoantien' => $data['phantram_hoantien'] ?? null,
+        ':thutu_hienthi'     => $data['thutu_hienthi'] ?? 0,
+        ':id'                => $id
+    ]);
+}
+
+
 }

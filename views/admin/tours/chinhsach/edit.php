@@ -1,7 +1,7 @@
 <?php
 /**
- * File: views/admin/tours/chinhsach/create.php
- * Form thêm chính sách tour
+ * File: views/admin/tours/chinhsach/edit.php
+ * Form sửa chính sách tour
  */
 
 ob_start();
@@ -12,14 +12,14 @@ ob_start();
     <li><a href="<?= BASE_URL ?>?act=admin">Dashboard</a></li>
     <li><a href="<?= BASE_URL ?>?act=admin-tours">Tour</a></li>
     <li><a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $idGoi ?>">Chính sách</a></li>
-    <li class="active">Thêm mới</li>
+    <li class="active">Sửa chính sách</li>
 </ol>
 
 <!-- Header -->
 <div class="row" style="margin-bottom: 20px;">
     <div class="col-md-8">
-        <h2 style="margin: 0;">➕ Thêm Chính sách mới</h2>
-        <p class="text-muted">Tour ID: <?= $idGoi ?></p>
+        <h2 style="margin: 0;">✏️ Sửa Chính sách</h2>
+        <p class="text-muted">Tour ID: <?= $idGoi ?> | Policy ID: <?= $chinhsach['id'] ?></p>
     </div>
     <div class="col-md-4 text-right">
         <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $idGoi ?>" class="btn btn-default">
@@ -48,13 +48,14 @@ ob_start();
     <?php unset($_SESSION['error']); ?>
 <?php endif; ?>
 
-<!-- Form thêm -->
+<!-- Form sửa -->
 <div class="panel panel-default">
     <div class="panel-heading">
         <h3 class="panel-title">Thông tin chính sách</h3>
     </div>
     <div class="panel-body">
         <form method="POST" action="">
+            <input type="hidden" name="id" value="<?= $chinhsach['id'] ?>">
             <input type="hidden" name="id_goi" value="<?= $idGoi ?>">
 
             <!-- Loại chính sách -->
@@ -64,13 +65,13 @@ ob_start();
                 </label>
                 <select class="form-control" id="loai_chinhsach" name="loai_chinhsach" required onchange="toggleFields()">
                     <option value="">-- Chọn loại chính sách --</option>
-                    <option value="huy_doi">🔄 Hủy/Đổi Tour</option>
-                    <option value="suc_khoe">💊 Sức khỏe</option>
-                    <option value="hanh_ly">🎒 Hành lý</option>
-                    <option value="thanh_toan">💳 Thanh toán</option>
-                    <option value="visa">🛂 Visa</option>
-                    <option value="bao_hiem">🛡️ Bảo hiểm</option>
-                    <option value="khac">📝 Khác</option>
+                    <option value="huy_doi" <?= $chinhsach['loai_chinhsach'] == 'huy_doi' ? 'selected' : '' ?>>🔄 Hủy/Đổi Tour</option>
+                    <option value="suc_khoe" <?= $chinhsach['loai_chinhsach'] == 'suc_khoe' ? 'selected' : '' ?>>💊 Sức khỏe</option>
+                    <option value="hanh_ly" <?= $chinhsach['loai_chinhsach'] == 'hanh_ly' ? 'selected' : '' ?>>🎒 Hành lý</option>
+                    <option value="thanh_toan" <?= $chinhsach['loai_chinhsach'] == 'thanh_toan' ? 'selected' : '' ?>>💳 Thanh toán</option>
+                    <option value="visa" <?= $chinhsach['loai_chinhsach'] == 'visa' ? 'selected' : '' ?>>🛂 Visa</option>
+                    <option value="bao_hiem" <?= $chinhsach['loai_chinhsach'] == 'bao_hiem' ? 'selected' : '' ?>>🛡️ Bảo hiểm</option>
+                    <option value="khac" <?= $chinhsach['loai_chinhsach'] == 'khac' ? 'selected' : '' ?>>📝 Khác</option>
                 </select>
             </div>
 
@@ -86,7 +87,7 @@ ob_start();
                     rows="6"
                     placeholder="Nhập nội dung chính sách chi tiết..."
                     required
-                ></textarea>
+                ><?= htmlspecialchars($chinhsach['noidung']) ?></textarea>
                 <small class="text-muted">
                     <i class="fa fa-info-circle"></i> 
                     Mô tả chi tiết chính sách
@@ -94,7 +95,7 @@ ob_start();
             </div>
 
             <!-- Các trường đặc biệt cho Hủy/Đổi -->
-            <div id="huy_doi_fields" style="display: none;">
+            <div id="huy_doi_fields" style="<?= $chinhsach['loai_chinhsach'] == 'huy_doi' ? 'display: block;' : 'display: none;' ?>">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -107,6 +108,7 @@ ob_start();
                                 id="so_ngay_truoc" 
                                 name="so_ngay_truoc" 
                                 min="0"
+                                value="<?= $chinhsach['so_ngay_truoc'] ?? '' ?>"
                                 placeholder="VD: 30"
                             >
                             <small class="text-muted">Số ngày trước khi khởi hành</small>
@@ -125,6 +127,7 @@ ob_start();
                                 min="0" 
                                 max="100" 
                                 step="0.01"
+                                value="<?= $chinhsach['phantram_hoantien'] ?? '' ?>"
                                 placeholder="VD: 100"
                             >
                             <small class="text-muted">% tiền được hoàn lại</small>
@@ -143,7 +146,7 @@ ob_start();
                     class="form-control" 
                     id="thutu_hienthi" 
                     name="thutu_hienthi" 
-                    value="0"
+                    value="<?= $chinhsach['thutu_hienthi'] ?? 0 ?>"
                     min="0"
                 >
                 <small class="text-muted">Số thứ tự để sắp xếp (0 = mặc định)</small>
@@ -152,7 +155,7 @@ ob_start();
             <!-- Buttons -->
             <div class="form-group" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
                 <button type="submit" class="btn btn-primary btn-lg" style="min-width: 150px;">
-                    <i class="fa fa-save"></i> Lưu chính sách
+                    <i class="fa fa-save"></i> Lưu thay đổi
                 </button>
                 <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $idGoi ?>" class="btn btn-default btn-lg">
                     <i class="fa fa-times"></i> Hủy bỏ

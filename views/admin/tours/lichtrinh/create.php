@@ -99,6 +99,61 @@ ob_start();
                 </div>
             </div>
 
+                        <!-- Điểm đến -->
+            <div class="form-group">
+                <label for="diemden">
+                    <i class="fa fa-map-marker"></i> Điểm đến
+                </label>
+                <textarea 
+                    class="form-control" 
+                    id="diemden" 
+                    name="diemden" 
+                    rows="2"
+                    placeholder="VD: Hồ Gươm, Văn Miếu, Chùa Một Cột..."
+                ></textarea>
+                <small class="text-muted">
+                    <i class="fa fa-info-circle"></i> 
+                    Liệt kê các điểm đến trong ngày, cách nhau bởi dấu phẩy
+                </small>
+            </div>
+
+                        <!-- Thời lượng -->
+            <div class="form-group">
+                <label for="thoiluong">
+                    <i class="fa fa-clock-o"></i> Thời lượng
+                </label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="thoiluong" 
+                    name="thoiluong" 
+                    placeholder="VD: 2 giờ, Cả ngày, 3-4 tiếng..."
+                >
+                <small class="text-muted">
+                    <i class="fa fa-info-circle"></i> 
+                    Thời gian ước tính cho lịch trình ngày này
+                </small>
+            </div>
+
+                        <!-- Ghi chú HDV -->
+            <div class="form-group">
+                <label for="ghichu_hdv">
+                    <i class="fa fa-commenting"></i> Ghi chú cho HDV
+                </label>
+                <textarea 
+                    class="form-control" 
+                    id="ghichu_hdv" 
+                    name="ghichu_hdv" 
+                    rows="3"
+                    placeholder="Lưu ý đặc biệt cho hướng dẫn viên..."
+                    style="border-left: 4px solid #f39c12;"
+                ></textarea>
+                <small class="text-muted">
+                    <i class="fa fa-user-secret"></i> 
+                    Thông tin nội bộ cho HDV (không hiển thị cho khách)
+                </small>
+            </div>
+
             <!-- Hoạt động -->
             <div class="form-group">
                 <label class="col-sm-2 control-label">Hoạt động trong ngày</label>

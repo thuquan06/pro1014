@@ -1,7 +1,7 @@
 <?php
 /**
- * File: views/admin/tour/lichtrinh/index.php
- * Danh sách lịch trình - Dùng với layout 1 file
+ * File: views/admin/tours/lichtrinh/index.php
+ * Danh sách lịch trình - ĐÃ THÊM: Điểm đến, Thời lượng, Ghi chú HDV
  */
 
 // Bắt đầu buffer để gán vào $content
@@ -63,7 +63,6 @@ ob_start();
     <?php unset($_SESSION['error']); ?>
 <?php endif; ?>
 
-
 <!-- Danh sách lịch trình -->
 <div class="panel panel-default">
     <div class="panel-body">
@@ -109,10 +108,31 @@ ob_start();
                                     </div>
                                 </div>
                                 <div class="panel-body">
+                                    <!-- MÔ TẢ -->
                                     <p style="text-align: justify; line-height: 1.6;">
                                         <?= nl2br(htmlspecialchars($ngay['mota'])) ?>
                                     </p>
                                     
+                                    <!-- ✨ ĐIỂM ĐẾN (MỚI) -->
+                                    <?php if (!empty($ngay['diemden'])): ?>
+                                        <div class="alert alert-success" style="margin-top: 15px; border-left: 4px solid #5cb85c;">
+                                            <strong><i class="fa fa-map-marker"></i> Điểm đến:</strong><br>
+                                            <div style="margin-top: 8px;">
+                                                <?= nl2br(htmlspecialchars($ngay['diemden'])) ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <!-- ✨ THỜI LƯỢNG (MỚI) -->
+                                    <?php if (!empty($ngay['thoiluong'])): ?>
+                                        <div style="margin-top: 10px; margin-bottom: 10px;">
+                                            <span class="label label-warning" style="font-size: 14px; padding: 6px 12px;">
+                                                <i class="fa fa-clock-o"></i> Thời lượng: <?= htmlspecialchars($ngay['thoiluong']) ?>
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <!-- HOẠT ĐỘNG -->
                                     <?php if (!empty($ngay['hoatdong'])): ?>
                                         <div class="alert alert-info" style="margin-top: 15px;">
                                             <strong><i class="fa fa-list"></i> Hoạt động trong ngày:</strong>
@@ -120,6 +140,17 @@ ob_start();
                                         </div>
                                     <?php endif; ?>
                                     
+                                    <!-- ✨ GHI CHÚ HDV (MỚI) -->
+                                    <?php if (!empty($ngay['ghichu_hdv'])): ?>
+                                        <div class="alert alert-warning" style="margin-top: 15px; border-left: 4px solid #f39c12; background: #fff8e1;">
+                                            <strong><i class="fa fa-user-secret"></i> Ghi chú HDV (nội bộ):</strong><br>
+                                            <div style="margin-top: 8px; color: #856404;">
+                                                <?= nl2br(htmlspecialchars($ngay['ghichu_hdv'])) ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <!-- BỮA ĂN & NƠI NGHỈ -->
                                     <div class="row" style="margin-top: 15px;">
                                         <?php if (!empty($ngay['buaan'])): ?>
                                             <div class="col-md-6">
@@ -212,6 +243,7 @@ ob_start();
 .panel {
     transition: all 0.3s ease;
 }
+
 /* Dropdown chọn tour */
 #select-tour {
     border: 2px solid #ddd;

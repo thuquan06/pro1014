@@ -90,6 +90,49 @@ ob_start();
                 ><?= htmlspecialchars($lichTrinh['mota'] ?? '') ?></textarea>
             </div>
 
+                        <!-- Điểm đến -->
+            <div class="form-group">
+                <label for="diemden">
+                    <i class="fa fa-map-marker"></i> Điểm đến
+                </label>
+                <textarea 
+                    class="form-control" 
+                    id="diemden" 
+                    name="diemden" 
+                    rows="2"
+                    placeholder="VD: Hồ Gươm, Văn Miếu, Chùa Một Cột..."
+                ><?= htmlspecialchars($lichTrinh['diemden'] ?? '') ?></textarea>
+            </div>
+
+                        <!-- Thời lượng -->
+            <div class="form-group">
+                <label for="thoiluong">
+                    <i class="fa fa-clock-o"></i> Thời lượng
+                </label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="thoiluong" 
+                    name="thoiluong" 
+                    value="<?= htmlspecialchars($lichTrinh['thoiluong'] ?? '') ?>"
+                    placeholder="VD: 2 giờ, Cả ngày..."
+                >
+            </div>
+
+                        <!-- Ghi chú HDV -->
+            <div class="form-group">
+                <label for="ghichu_hdv">
+                    <i class="fa fa-commenting"></i> Ghi chú cho HDV
+                </label>
+                <textarea 
+                    class="form-control" 
+                    id="ghichu_hdv" 
+                    name="ghichu_hdv" 
+                    rows="3"
+                    style="border-left: 4px solid #f39c12;"
+                ><?= htmlspecialchars($lichTrinh['ghichu_hdv'] ?? '') ?></textarea>
+            </div>
+
             <!-- Hoạt động -->
             <div class="form-group">
                 <label for="hoatdong">

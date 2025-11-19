@@ -159,11 +159,15 @@ try {
         case 'tour-chinhsach':
             (new TourChiTietController())->danhSachChinhSach();
             break;
-        
+
         case 'tour-chinhsach-them':
             (new TourChiTietController())->themChinhSach();
             break;
-        
+
+        case 'tour-chinhsach-sua':
+            (new TourChiTietController())->suaChinhSach();
+            break;
+
         case 'tour-chinhsach-xoa':
             (new TourChiTietController())->xoaChinhSach();
             break;
@@ -180,6 +184,53 @@ try {
         case 'tour-phanloai-tags':
             (new TourChiTietController())->capNhatTags();
             break;
+
+        // TOURS VERSION
+        case 'tour-versions':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->danhSachVersions();
+            break;
+
+        case 'tour-version-them':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->themVersion();
+            break;
+
+        case 'tour-version-sua':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->suaVersion();
+            break;
+
+        case 'tour-version-xoa':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->xoaVersion();
+            break;
+
+        case 'tour-version-clone':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->cloneVersion();
+            break;
+
+        case 'tour-version-macdinh':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->datMacDinh();
+            break;
+
+        case 'tour-version-toggle':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->toggleActive();
+            break;
+
+        case 'tour-version-lichsu':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->lichSuVersion();
+            break;
+
+        case 'tour-version-sosanh':
+            require_once './controllers/TourVersionController.php';
+            (new TourVersionController())->soSanhVersions();
+            break;
+
         
         // API
         case 'api-tour-chitiet':
