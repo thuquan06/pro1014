@@ -146,13 +146,9 @@ $msg   = $msg   ?? null;
             <li><a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=71">📸 Gallery</a></li>
             <li><a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=71">📋 Chính sách</a></li>
             <!-- Versions (cần chọn tour trước) -->
-<li>
-    <a href="<?= BASE_URL ?>?act=tour-versions">
-        <i class="fa fa-code-fork"></i>
-        <span>Versions</span>
-    </a>
-</li>
+            <li><a href="<?= BASE_URL ?>?act=tour-versions"><i class="fa fa-code-fork"></i><span>Versions</span></a></li>
             <li><a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=71">🏷️ Phân loại</a></li>
+            <li><a href="<?= BASE_URL ?>?act=tour-publish-dashboard"><i class="fa fa-rocket"></i><span>Publish Dashboard</span></a></li>
           </ul>
         </li>
 

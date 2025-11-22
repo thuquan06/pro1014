@@ -230,6 +230,27 @@ try {
             require_once './controllers/TourVersionController.php';
             (new TourVersionController())->soSanhVersions();
             break;
+        
+            case 'tour-publish':
+                
+        // TOUR PUBLISH
+        require_once './controllers/TourPublishController.php';
+            (new TourPublishController())->trangPublish();
+            break;
+
+        case 'tour-publish-change':
+            require_once './controllers/TourPublishController.php';
+            (new TourPublishController())->doiTrangThaiPublish();
+            break;
+
+        case 'tour-publish-dashboard':
+            require_once './controllers/TourPublishController.php';
+            (new TourPublishController())->dashboard();
+            break;
+        case 'tour-publish-list':
+            require_once './controllers/TourPublishController.php';
+            (new TourPublishController())->danhSachTheoTrangThai();
+            break;
 
         
         // API
