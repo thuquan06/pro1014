@@ -19,6 +19,7 @@ $msg   = $msg   ?? null;
   <link href="assets/css/jquery-ui.css" rel="stylesheet">
   <link href="assets/css/icon-font.min.css" rel="stylesheet">
   <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+  
 
   <!-- Google Fonts -->
   <link href='//fonts.googleapis.com/css?family=Roboto:700,500,300,100italic,100,400' rel='stylesheet'>
@@ -115,6 +116,7 @@ $msg   = $msg   ?? null;
     @media (max-width: 768px) {
       .timeline-container { padding-left: 30px; }
     }
+    
   </style>
 </head>
 <body>
@@ -152,7 +154,19 @@ $msg   = $msg   ?? null;
           </ul>
         </li>
 
-        <li><a href="#"><i class="glyphicon glyphicon-file"></i><span> Blog</span></a></li>
+        <!-- ===== MENU BLOG ===== -->
+      <li id="menu-blog">
+        <a href="#">
+          <i class="glyphicon glyphicon-file"></i>
+          <span> Blog</span>
+          <span class="fa fa-angle-right" style="float:right"></span>
+        </a>
+        <ul id="menu-blog-sub">
+          <li><a href="<?= BASE_URL ?>?act=blog-list">Danh sách bài viết</a></li>
+          <li><a href="<?= BASE_URL ?>?act=blog-create">Tạo bài viết mới</a></li>
+        </ul>
+      </li>
+        <!-- ===== KẾT THÚC MENU BLOG ===== -->   
         <li><a href="#"><i class="glyphicon glyphicon-list"></i><span> Tỉnh</span></a></li>
         <li><a href="#"><i class="fa fa-file-invoice-dollar"></i><span> Hóa đơn</span></a></li>
         <li><a href="#"><i class="fa fa-users"></i><span> Người dùng</span></a></li>

@@ -1,7 +1,7 @@
 <?php
 /**
  * File: views/admin/tours/chinhsach/create.php
- * Form thêm chính sách tour
+ * Form thêm chính sách tour (ĐÃ THÊM CKEDITOR)
  */
 
 ob_start();
@@ -161,6 +161,12 @@ ob_start();
         </form>
     </div>
 </div>
+
+<!-- CKEditor (LOCAL) -->
+<script src="<?= BASE_URL ?>assets/ckeditor/ckeditor.js"></script>
+<script>
+    CKEDITOR.replace('noidung');
+</script>
 
 <!-- JavaScript -->
 <script>

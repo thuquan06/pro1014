@@ -175,42 +175,49 @@ function safe_html($value) {
     </div>
 </div>
 
-<script src="assets/js/nicEdit.js"></script>
-<script>
-    // Thay vì CKEditor, file gốc của bạn dùng nicEdit.js
-    bkLib.onDomLoaded(function() {
-        new nicEditor({fullPanel : true}).panelInstance('packagedetails');
-        new nicEditor({fullPanel : true}).panelInstance('packagedetails1');
-        new nicEditor({fullPanel : true}).panelInstance('packagedetails2');
-    });
 
-    // JS để ẩn/hiện trường Tỉnh/Quốc gia
+<script src="assets/ckeditor/ckeditor.js"></script>
+
+<script>
+    const ckConfig = {
+        filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
+        filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
+        filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
+        filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
+        height: 350
+    };
+
+    CKEDITOR.replace('packagedetails', ckConfig);
+    CKEDITOR.replace('packagedetails1', ckConfig);
+    CKEDITOR.replace('packagedetails2', ckConfig);
+</script>
+
+
+<script>
+    // JS ẩn/hiện trường Tỉnh – Quốc gia
     document.addEventListener('DOMContentLoaded', function() {
         var radioTrongNuoc = document.getElementById('tour_trongnuoc');
-        var radioQuocTe = document.getElementById('tour_quocte');
-        var fieldTinh = document.getElementById('field_tinh');
-        var fieldQuocGia = document.getElementById('field_quocgia');
-        var inputQuocGia = document.getElementById('quocgia');
-        var selectTinh = document.getElementById('ten_tinh');
+        var radioQuocTe    = document.getElementById('tour_quocte');
+        var fieldTinh      = document.getElementById('field_tinh');
+        var fieldQuocGia   = document.getElementById('field_quocgia');
+        var inputQuocGia   = document.getElementById('quocgia');
+        var selectTinh     = document.getElementById('ten_tinh');
 
         function toggleFields() {
             if (radioQuocTe.checked) {
                 fieldTinh.style.display = 'none';
                 fieldQuocGia.style.display = 'block';
-                selectTinh.value = ''; // Reset Tỉnh
-                inputQuocGia.value = ''; // Xóa Quốc gia
+                selectTinh.value = '';
+                inputQuocGia.value = '';
             } else {
                 fieldTinh.style.display = 'block';
                 fieldQuocGia.style.display = 'none';
-                selectTinh.value = ''; 
-                inputQuocGia.value = 'Việt Nam'; // Tự điền 'Việt Nam'
+                selectTinh.value = '';
+                inputQuocGia.value = 'Việt Nam';
             }
         }
 
-        // Đặt giá trị mặc định khi tải trang
         toggleFields();
-
-        // Thêm sự kiện
         radioTrongNuoc.addEventListener('change', toggleFields);
         radioQuocTe.addEventListener('change', toggleFields);
     });

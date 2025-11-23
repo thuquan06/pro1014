@@ -125,6 +125,11 @@ function safe_html($value) {
                                        title="Quản lý loại tour & tags">
                                         <i class="fa fa-tags"></i> Phân loại
                                     </a>
+                                    <a href="<?= BASE_URL ?>?act=tour-publish&id_goi=<?= $id_goi ?>" 
+                                       class="btn btn-dark btn-xs"
+                                       title="Kiểm tra & Publish">
+                                        <i class="fa fa-rocket"></i> Publish
+                                    </a>
                                 </div>
                             </td>
                             

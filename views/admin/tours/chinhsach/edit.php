@@ -165,6 +165,12 @@ ob_start();
     </div>
 </div>
 
+<!-- CKEDITOR (LOCAL) -->
+<script src="<?= BASE_URL ?>assets/ckeditor/ckeditor.js"></script>
+<script>
+    CKEDITOR.replace('noidung');
+</script>
+
 <!-- JavaScript -->
 <script>
 function toggleFields() {

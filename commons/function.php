@@ -197,3 +197,27 @@ function requireLogin() {
         redirect(BASE_URL . '?act=login');
     }
 }
+function render($view, $data = [])
+{
+    // Lấy toàn bộ biến trong $data thành biến view
+    extract($data);
+
+    // Bắt đầu gom nội dung view
+    ob_start();
+
+    // Xác định đường dẫn gốc dự án
+    $ROOT = dirname(__DIR__); // thư mục pro1014/
+
+    // File view
+    $file = $ROOT . "/views/" . $view . ".php";
+
+    if (!file_exists($file)) {
+        echo "<div class='errorWrap'>Không tìm thấy view: $view</div>";
+        return '';
+    }
+
+    require $file;
+
+    // Lấy HTML trả về
+    return ob_get_clean();
+}

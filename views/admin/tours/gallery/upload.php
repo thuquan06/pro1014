@@ -1,7 +1,9 @@
 <?php
 /**
  * File: views/admin/tour/gallery/upload.php
- * Form upload ảnh - Dùng với layout 1 file
+ * ĐÃ THÊM:
+ *  - CKEditor mô tả chung
+ *  - Caption riêng cho từng ảnh
  */
 
 ob_start();
@@ -32,149 +34,105 @@ ob_start();
 <div class="panel panel-default">
     <div class="panel-body">
         <form action="<?= BASE_URL ?>?act=tour-gallery-them&id_goi=<?= $idGoi ?>" 
-              method="POST" 
-              enctype="multipart/form-data"
-              id="uploadForm">
-            
+            method="POST" enctype="multipart/form-data" id="uploadForm">
+
             <!-- Chọn ảnh -->
             <div class="form-group">
                 <label>Chọn ảnh <span class="text-danger">*</span></label>
                 <input type="file" 
-                       name="images[]" 
-                       id="imageInput"
-                       class="form-control" 
-                       accept="image/*"
-                       multiple
-                       required>
-                <small class="help-block">
-                    Cho phép: JPG, PNG, GIF, WEBP. Có thể chọn nhiều ảnh cùng lúc.
-                </small>
+                    name="images[]" 
+                    id="imageInput"
+                    class="form-control" 
+                    accept="image/*" 
+                    multiple required>
+                <small class="help-block">Cho phép: JPG, PNG, GIF, WEBP.</small>
             </div>
 
             <!-- Preview -->
-            <div id="previewContainer" style="margin-top: 20px; display: none;">
-                <label>Xem trước:</label>
+            <div id="previewContainer" style="margin-top: 20px; display:none;">
+                <label>Ảnh xem trước + mô tả:</label>
                 <div id="previewImages" class="row"></div>
             </div>
 
-            <!-- Mô tả chung (tùy chọn) -->
+            <!-- Mô tả chung -->
             <div class="form-group">
                 <label>Mô tả chung (tùy chọn)</label>
-                <textarea name="mota_chung" 
-                          class="form-control" 
-                          rows="3"
-                          placeholder="Nhập mô tả chung cho tất cả ảnh..."></textarea>
+                <textarea name="mota_chung" id="mota_chung" class="form-control" rows="4"></textarea>
             </div>
 
             <!-- Buttons -->
-            <div class="form-group">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fa fa-upload"></i> Upload ngay
-                </button>
-                <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $idGoi ?>" class="btn btn-default">
-                    <i class="fa fa-times"></i> Hủy
-                </a>
-            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-upload"></i> Upload ngay
+            </button>
+            <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $idGoi ?>" class="btn btn-default">
+                <i class="fa fa-times"></i> Hủy
+            </a>
 
         </form>
     </div>
 </div>
 
-<!-- Hướng dẫn -->
-<div class="alert alert-info">
-    <strong><i class="fa fa-info-circle"></i> Lưu ý:</strong>
-    <ul style="margin: 10px 0 0 20px;">
-        <li>Chọn nhiều ảnh bằng cách giữ <kbd>Ctrl</kbd> (Windows) hoặc <kbd>Cmd</kbd> (Mac)</li>
-        <li>Kích thước ảnh đề xuất: 1200x800px</li>
-        <li>Dung lượng tối đa mỗi ảnh: 5MB</li>
-        <li>Sau khi upload, bạn có thể chọn ảnh đại diện trong trang Gallery</li>
-    </ul>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const imageInput = document.getElementById('imageInput');
-    const previewContainer = document.getElementById('previewContainer');
-    const previewImages = document.getElementById('previewImages');
+    let fileInput = document.getElementById("imageInput");
+    let previewContainer = document.getElementById("previewContainer");
+    let previewImages = document.getElementById("previewImages");
 
-    imageInput.addEventListener('change', function(e) {
-        const files = e.target.files;
-        
+    fileInput.addEventListener("change", function(e) {
+        let files = e.target.files;
+        previewImages.innerHTML = "";
         if (files.length === 0) {
-            previewContainer.style.display = 'none';
+            previewContainer.style.display = "none";
             return;
         }
 
-        previewImages.innerHTML = '';
-        previewContainer.style.display = 'block';
+        previewContainer.style.display = "block";
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            
-            if (!file.type.startsWith('image/')) {
-                continue;
-            }
+        Array.from(files).forEach((file, index) => {
+            if (!file.type.startsWith("image/")) return;
 
-            const reader = new FileReader();
-            
+            let reader = new FileReader();
+
             reader.onload = function(e) {
-                const col = document.createElement('div');
-                col.className = 'col-md-2 col-sm-3 col-xs-4';
-                col.style.marginBottom = '10px';
-                
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.width = '100%';
-                img.style.height = '150px';
-                img.style.objectFit = 'cover';
-                img.style.border = '2px solid #ddd';
-                img.style.borderRadius = '5px';
-                
-                const caption = document.createElement('p');
-                caption.style.fontSize = '11px';
-                caption.style.marginTop = '5px';
-                caption.style.textAlign = 'center';
-                caption.textContent = file.name;
-                
-                col.appendChild(img);
-                col.appendChild(caption);
+                let col = document.createElement("div");
+                col.className = "col-md-3";
+                col.style.marginBottom = "20px";
+
+                col.innerHTML = `
+                    <div style="border:1px solid #ddd; padding:8px; border-radius:5px;">
+                        <img src="${e.target.result}"
+                            style="width:100%; height:160px; object-fit:cover; border-radius:5px;">
+                        <input type="text" name="caption[]" class="form-control" 
+                            placeholder="Mô tả riêng cho ảnh (caption)" style="margin-top:8px;">
+                    </div>
+                `;
+
                 previewImages.appendChild(col);
             };
-            
+
             reader.readAsDataURL(file);
-        }
+        });
     });
 
-    // Validate trước khi submit
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
-        const files = imageInput.files;
+    // Validate size
+    document.getElementById("uploadForm").addEventListener("submit", function(e) {
+        let files = fileInput.files;
         let totalSize = 0;
-        let hasError = false;
-
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const fileSize = file.size / 1024 / 1024; // MB
-            
-            if (fileSize > 5) {
-                alert('File "' + file.name + '" vuot qua 5MB!');
-                hasError = true;
-                break;
-            }
-            
-            totalSize += fileSize;
+        for (let file of files) {
+            totalSize += file.size / 1024 / 1024;
         }
-
         if (totalSize > 50) {
-            alert('Tong dung luong vuot qua 50MB! Hay chon it anh hon.');
-            hasError = true;
-        }
-
-        if (hasError) {
+            alert("Tổng dung lượng vượt quá 50MB!");
             e.preventDefault();
-            return false;
         }
     });
 });
+</script>
+
+<!-- CKEditor -->
+<script src="<?= BASE_URL ?>assets/ckeditor/ckeditor.js"></script>
+<script>
+    CKEDITOR.replace("mota_chung");
 </script>
 
 <?php

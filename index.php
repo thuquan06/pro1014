@@ -251,6 +251,46 @@ try {
             require_once './controllers/TourPublishController.php';
             (new TourPublishController())->danhSachTheoTrangThai();
             break;
+        
+        // ========== BLOG ADMIN ROUTES ==========
+// ========== BLOG ADMIN ROUTES ==========
+
+case 'blog-list':
+    require_once "./models/BlogModel.php";
+    require_once "./controllers/BlogController.php";
+    (new BlogController())->list();
+break;
+
+case 'blog-edit':
+    require_once "./models/BlogModel.php";
+    require_once "./controllers/BlogController.php";
+    (new BlogController())->edit();
+break;
+
+case 'blog-update':
+    require_once "./models/BlogModel.php";
+    require_once "./controllers/BlogController.php";
+    (new BlogController())->update();
+break;
+
+case 'blog-delete':
+    require_once "./models/BlogModel.php";
+    require_once "./controllers/BlogController.php";
+    (new BlogController())->delete();
+break;
+case 'blog-create':
+    require_once "./models/BlogModel.php";
+    require_once "./controllers/BlogController.php";
+    (new BlogController())->create();
+break;
+
+case 'blog-store':
+    require_once "./models/BlogModel.php";
+    require_once "./controllers/BlogController.php";
+    (new BlogController())->store();
+break;
+
+
 
         
         // API
