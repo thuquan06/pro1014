@@ -43,7 +43,7 @@ if (!preg_match('/^[a-z0-9-]+$/i', $act)) {
 try {
 
     // Load models & controllers cho admin routes
-    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'province') === 0 ||  strpos($act, 'blog') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
+    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'province') === 0 ||  strpos($act, 'blog') === 0 || strpos($act, 'hoadon') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
         require_once './models/BaseModel.php';
         require_once './models/DashboardModel.php';
         require_once './models/TourModel.php';
@@ -59,6 +59,12 @@ try {
         // CHI TIẾT TOUR (MỚI)
         require_once './models/TourChiTietModel.php';
         require_once './controllers/TourChiTietController.php';
+
+        // HÓA ĐƠN (MỚI)
+        if (strpos($act, 'hoadon') === 0) {
+            require_once './models/HoadonModel.php';
+            require_once './controllers/HoadonController.php';
+        }
     }
 
     // 6. ROUTING
@@ -325,6 +331,42 @@ try {
             $controller->delete();
             break;
 
+                // ========== HÓA ĐƠN ROUTES (MỚI) ==========
+        case 'hoadon-list':
+            (new HoadonController())->list();
+            break;
+
+        case 'hoadon-detail':
+            (new HoadonController())->detail();
+            break;
+
+        case 'hoadon-create':
+            (new HoadonController())->create();
+            break;
+
+        case 'hoadon-edit':
+            (new HoadonController())->edit();
+            break;
+
+        case 'hoadon-update-status':
+            (new HoadonController())->updateStatus();
+            break;
+
+        case 'hoadon-cancel':
+            (new HoadonController())->cancel();
+            break;
+
+        case 'hoadon-delete':
+            (new HoadonController())->delete();
+            break;
+
+        case 'hoadon-filter':
+            (new HoadonController())->filterByStatus();
+            break;
+
+        case 'hoadon-search':
+            (new HoadonController())->searchByEmail();
+            break;
 
 
         // API
@@ -355,6 +397,8 @@ try {
                 echo "<li>tour-gallery&id_goi=71</li>";
                 echo "<li>tour-chinhsach&id_goi=71</li>";
                 echo "<li>tour-phanloai&id_goi=71</li>";
+                echo "<li>hoadon-list</li>";
+                echo "<li>hoadon-create</li>";
                 echo "</ul>";
             }
             break;
