@@ -1,5 +1,11 @@
 <?php
-
+/**
+ * BlogController - ĐÃ CẬP NHẬT
+ * - Thêm validation đầy đủ
+ * - Sanitize input
+ * - File upload an toàn
+ * - Error handling
+ */
 class BlogController 
 {
     private $model;
@@ -16,6 +22,7 @@ class BlogController
 
     public function list()
     {
+        requireLogin(); // Require authentication
         $blogs = $this->model->getAll();
 
         // Tạo content
@@ -27,76 +34,197 @@ class BlogController
 
     public function edit()
     {
-        $id = $_GET["id"] ?? 0;
+        requireLogin();
+        
+        // Validate ID
+        $id = filter_var($_GET["id"] ?? 0, FILTER_VALIDATE_INT);
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = "ID không hợp lệ";
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+        }
+
         $blog = $this->model->getById($id);
+        
+        if (!$blog) {
+            $_SESSION['error'] = "Không tìm thấy blog";
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+        }
 
         $content = render('admin/blog/edit', ['blog' => $blog]);
-
         require $this->VIEW . "admin/layout.php";
     }
 
     public function update()
     {
-        $id = $_POST["id_blog"];
+        requireLogin();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+        }
+
+        // Validate input
+        $validator = new Validator($_POST);
+        $validator->required('id_blog', 'ID blog là bắt buộc')
+                  ->integer('id_blog', 'ID blog phải là số nguyên')
+                  ->required('chude', 'Chủ đề là bắt buộc')
+                  ->minLength('chude', 5, 'Chủ đề phải có ít nhất 5 ký tự')
+                  ->maxLength('chude', 255, 'Chủ đề không được quá 255 ký tự')
+                  ->required('tomtat', 'Tóm tắt là bắt buộc')
+                  ->minLength('tomtat', 10, 'Tóm tắt phải có ít nhất 10 ký tự')
+                  ->required('noidung', 'Nội dung là bắt buộc')
+                  ->minLength('noidung', 50, 'Nội dung phải có ít nhất 50 ký tự')
+                  ->required('nguoiviet', 'Người viết là bắt buộc');
+
+        if ($validator->fails()) {
+            $_SESSION['error'] = $validator->firstError();
+            header("Location: " . BASE_URL . "?act=blog-edit&id=" . ($_POST['id_blog'] ?? 0));
+            exit;
+        }
+
+        $validated = $validator->validated();
+        $id = $validated['id_blog'];
 
         $data = [
             ':id'       => $id,
-            ':chude'    => $_POST['chude'],
-            ':tomtat'   => $_POST['tomtat'],
-            ':noidung'  => $_POST['noidung'],
-            ':nguoiviet'=> $_POST['nguoiviet'],
-            ':hinhanh'  => $_POST['old_hinhanh']
+            ':chude'    => sanitizeInput($validated['chude']),
+            ':tomtat'   => sanitizeInput($validated['tomtat']),
+            ':noidung'  => $validated['noidung'], // Keep HTML for CKEditor
+            ':nguoiviet'=> sanitizeInput($validated['nguoiviet']),
+            ':hinhanh'  => $_POST['old_hinhanh'] ?? ''
         ];
 
+        // Handle file upload
         if (!empty($_FILES['hinhanh']['name'])) {
-            $file = $_FILES['hinhanh'];
-            $target = "uploads/blog/" . time() . "_" . $file['name'];
-            move_uploaded_file($file['tmp_name'], $target);
-            $data[':hinhanh'] = $target;
+            $fileValidation = Validator::validateFile($_FILES['hinhanh'], [
+                'maxSize' => 5242880, // 5MB
+                'allowedTypes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+                'required' => false
+            ]);
+
+            if ($fileValidation['valid']) {
+                $uploadedPath = uploadFile($_FILES['hinhanh'], 'uploads/blog/');
+                if ($uploadedPath) {
+                    // Delete old image if exists
+                    if (!empty($data[':hinhanh']) && file_exists(PATH_ROOT . $data[':hinhanh'])) {
+                        deleteFile($data[':hinhanh']);
+                    }
+                    $data[':hinhanh'] = $uploadedPath;
+                } else {
+                    $_SESSION['error'] = 'Lỗi khi upload file';
+                    header("Location: " . BASE_URL . "?act=blog-edit&id=" . $id);
+                    exit;
+                }
+            } else {
+                $_SESSION['error'] = $fileValidation['error'];
+                header("Location: " . BASE_URL . "?act=blog-edit&id=" . $id);
+                exit;
+            }
         }
 
         $this->model->update($data);
+        $_SESSION['success'] = 'Cập nhật blog thành công';
         header("Location: " . BASE_URL . "?act=blog-list");
         exit;
     }
 
     public function create()
-{
-    $content = render('admin/blog/create');
-    require $this->VIEW . "admin/layout.php";
-}
-
-public function store()
-{
-    // lấy dữ liệu
-    $data = [
-        ':chude'     => $_POST['chude'],
-        ':tomtat'    => $_POST['tomtat'],
-        ':noidung'   => $_POST['noidung'],
-        ':nguoiviet' => $_POST['nguoiviet'],
-        ':hinhanh'   => null
-    ];
-
-    // upload ảnh
-    if (!empty($_FILES['hinhanh']['name'])) {
-        $file = $_FILES["hinhanh"];
-        $target = "uploads/blog/" . time() . "_" . $file["name"];
-        move_uploaded_file($file["tmp_name"], $target);
-        $data[':hinhanh'] = $target;
+    {
+        requireLogin();
+        $content = render('admin/blog/create');
+        require $this->VIEW . "admin/layout.php";
     }
 
-    $this->model->insert($data);
+    public function store()
+    {
+        requireLogin();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+        }
 
-    header("Location: " . BASE_URL . "?act=blog-list");
-    exit;
-}
+        // Validate input
+        $validator = new Validator($_POST);
+        $validator->required('chude', 'Chủ đề là bắt buộc')
+                  ->minLength('chude', 5, 'Chủ đề phải có ít nhất 5 ký tự')
+                  ->maxLength('chude', 255, 'Chủ đề không được quá 255 ký tự')
+                  ->required('tomtat', 'Tóm tắt là bắt buộc')
+                  ->minLength('tomtat', 10, 'Tóm tắt phải có ít nhất 10 ký tự')
+                  ->required('noidung', 'Nội dung là bắt buộc')
+                  ->minLength('noidung', 50, 'Nội dung phải có ít nhất 50 ký tự')
+                  ->required('nguoiviet', 'Người viết là bắt buộc');
 
+        if ($validator->fails()) {
+            $_SESSION['error'] = $validator->firstError();
+            header("Location: " . BASE_URL . "?act=blog-create");
+            exit;
+        }
+
+        $validated = $validator->validated();
+
+        $data = [
+            ':chude'     => sanitizeInput($validated['chude']),
+            ':tomtat'    => sanitizeInput($validated['tomtat']),
+            ':noidung'   => $validated['noidung'], // Keep HTML for CKEditor
+            ':nguoiviet' => sanitizeInput($validated['nguoiviet']),
+            ':hinhanh'   => null
+        ];
+
+        // Handle file upload
+        if (!empty($_FILES['hinhanh']['name'])) {
+            $fileValidation = Validator::validateFile($_FILES['hinhanh'], [
+                'maxSize' => 5242880, // 5MB
+                'allowedTypes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+                'required' => false
+            ]);
+
+            if ($fileValidation['valid']) {
+                $uploadedPath = uploadFile($_FILES['hinhanh'], 'uploads/blog/');
+                if ($uploadedPath) {
+                    $data[':hinhanh'] = $uploadedPath;
+                } else {
+                    $_SESSION['error'] = 'Lỗi khi upload file';
+                    header("Location: " . BASE_URL . "?act=blog-create");
+                    exit;
+                }
+            } else {
+                $_SESSION['error'] = $fileValidation['error'];
+                header("Location: " . BASE_URL . "?act=blog-create");
+                exit;
+            }
+        }
+
+        $this->model->insert($data);
+        $_SESSION['success'] = 'Tạo blog thành công';
+        header("Location: " . BASE_URL . "?act=blog-list");
+        exit;
+    }
 
     public function delete()
     {
-        $id = $_GET["id"] ?? 0;
-        $this->model->delete($id);
+        requireLogin();
+        
+        // Validate ID
+        $id = filter_var($_GET["id"] ?? 0, FILTER_VALIDATE_INT);
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = "ID không hợp lệ";
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+        }
 
+        // Get blog to delete image
+        $blog = $this->model->getById($id);
+        if ($blog && !empty($blog['hinhanh'])) {
+            deleteFile($blog['hinhanh']);
+        }
+
+        $this->model->delete($id);
+        $_SESSION['success'] = 'Xóa blog thành công';
         header("Location: " . BASE_URL . "?act=blog-list");
         exit;
     }
