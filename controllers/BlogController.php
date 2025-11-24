@@ -63,25 +63,38 @@ class BlogController
     {
         requireLogin();
         
-        // Validate ID
-        $id = filter_var($_GET["id"] ?? 0, FILTER_VALIDATE_INT);
-        if (!$id || $id <= 0) {
-            $_SESSION['error'] = "ID không hợp lệ";
+        try {
+            // Validate ID
+            $id = filter_var($_GET["id"] ?? 0, FILTER_VALIDATE_INT);
+            if (!$id || $id <= 0) {
+                $_SESSION['error'] = "ID không hợp lệ";
+                header("Location: " . BASE_URL . "?act=blog-list");
+                exit;
+            }
+
+            $blog = $this->model->getById($id);
+            
+            if (!$blog) {
+                $_SESSION['error'] = "Không tìm thấy blog với ID: " . $id;
+                header("Location: " . BASE_URL . "?act=blog-list");
+                exit;
+            }
+
+            $content = render('admin/blog/edit', ['blog' => $blog]);
+            require $this->VIEW . "admin/layout.php";
+            
+        } catch (Exception $e) {
+            error_log("Blog edit form error: " . $e->getMessage());
+            $_SESSION['error'] = "Lỗi khi tải form sửa blog";
             header("Location: " . BASE_URL . "?act=blog-list");
             exit;
         }
-
-        $blog = $this->model->getById($id);
-        
-        if (!$blog) {
-            $_SESSION['error'] = "Không tìm thấy blog";
-            header("Location: " . BASE_URL . "?act=blog-list");
-            exit;
-        }
-
-        $content = render('admin/blog/edit', ['blog' => $blog]);
-        require $this->VIEW . "admin/layout.php";
     }
+
+    /**
+     * Xử lý cập nhật blog
+     * Route: ?act=blog-update
+     */
 
     public function update()
     {
@@ -124,24 +137,32 @@ class BlogController
         ];
 
         // Handle file upload
-        if (!empty($_FILES['hinhanh']['name'])) {
+        if (!empty($_FILES['hinhanh']['name']) && $_FILES['hinhanh']['error'] === UPLOAD_ERR_OK) {
+            // Validate file
             $fileValidation = Validator::validateFile($_FILES['hinhanh'], [
-                'maxSize' => 5242880, // 5MB
-                'allowedTypes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                'maxSize' => 10485760, // 10MB
+                'allowedTypes' => ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
                 'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
                 'required' => false
             ]);
 
             if ($fileValidation['valid']) {
-                $uploadedPath = uploadFile($_FILES['hinhanh'], 'uploads/blog/');
+                // Upload new image
+                $uploadedPath = uploadFile($_FILES['hinhanh'], 'uploads/blog/', [
+                    'maxSize' => 10485760,
+                    'allowedTypes' => ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+                    'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp']
+                ]);
+                
                 if ($uploadedPath) {
-                    // Delete old image if exists
-                    if (!empty($data[':hinhanh']) && file_exists(PATH_ROOT . $data[':hinhanh'])) {
-                        deleteFile($data[':hinhanh']);
+                    // Delete old image if exists and is different
+                    $oldImage = $data[':hinhanh'];
+                    if (!empty($oldImage) && $oldImage !== $uploadedPath) {
+                        @deleteFile($oldImage); // @ to suppress warning if file not exists
                     }
                     $data[':hinhanh'] = $uploadedPath;
                 } else {
-                    $_SESSION['error'] = 'Lỗi khi upload file';
+                    $_SESSION['error'] = 'Lỗi khi upload file. Vui lòng thử lại.';
                     header("Location: " . BASE_URL . "?act=blog-edit&id=" . $id);
                     exit;
                 }
@@ -182,68 +203,98 @@ class BlogController
     {
         requireLogin();
         
+        // Chỉ chấp nhận POST request
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: " . BASE_URL . "?act=blog-list");
             exit;
         }
 
-        // Validate input
-        $validator = new Validator($_POST);
-        $validator->required('chude', 'Chủ đề là bắt buộc')
-                  ->minLength('chude', 5, 'Chủ đề phải có ít nhất 5 ký tự')
-                  ->maxLength('chude', 255, 'Chủ đề không được quá 255 ký tự')
-                  ->required('tomtat', 'Tóm tắt là bắt buộc')
-                  ->minLength('tomtat', 10, 'Tóm tắt phải có ít nhất 10 ký tự')
-                  ->required('noidung', 'Nội dung là bắt buộc')
-                  ->minLength('noidung', 50, 'Nội dung phải có ít nhất 50 ký tự')
-                  ->required('nguoiviet', 'Người viết là bắt buộc');
+        try {
+            // Validate input
+            $validator = new Validator($_POST);
+            $validator->required('chude', 'Chủ đề là bắt buộc')
+                      ->minLength('chude', 5, 'Chủ đề phải có ít nhất 5 ký tự')
+                      ->maxLength('chude', 255, 'Chủ đề không được quá 255 ký tự')
+                      ->required('tomtat', 'Tóm tắt là bắt buộc')
+                      ->minLength('tomtat', 10, 'Tóm tắt phải có ít nhất 10 ký tự')
+                      ->required('noidung', 'Nội dung là bắt buộc')
+                      ->minLength('noidung', 50, 'Nội dung phải có ít nhất 50 ký tự')
+                      ->required('nguoiviet', 'Người viết là bắt buộc');
 
-        if ($validator->fails()) {
-            $_SESSION['error'] = $validator->firstError();
-            header("Location: " . BASE_URL . "?act=blog-create");
-            exit;
-        }
-
-        $validated = $validator->validated();
-
-        $data = [
-            ':chude'     => sanitizeInput($validated['chude']),
-            ':tomtat'    => sanitizeInput($validated['tomtat']),
-            ':noidung'   => $validated['noidung'], // Keep HTML for CKEditor
-            ':nguoiviet' => sanitizeInput($validated['nguoiviet']),
-            ':hinhanh'   => null
-        ];
-
-        // Handle file upload
-        if (!empty($_FILES['hinhanh']['name'])) {
-            $fileValidation = Validator::validateFile($_FILES['hinhanh'], [
-                'maxSize' => 5242880, // 5MB
-                'allowedTypes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-                'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-                'required' => false
-            ]);
-
-            if ($fileValidation['valid']) {
-                $uploadedPath = uploadFile($_FILES['hinhanh'], 'uploads/blog/');
-                if ($uploadedPath) {
-                    $data[':hinhanh'] = $uploadedPath;
-                } else {
-                    $_SESSION['error'] = 'Lỗi khi upload file';
-                    header("Location: " . BASE_URL . "?act=blog-create");
-                    exit;
-                }
-            } else {
-                $_SESSION['error'] = $fileValidation['error'];
+            if ($validator->fails()) {
+                $_SESSION['error'] = $validator->firstError();
+                $_SESSION['old_input'] = $_POST; // Giữ lại input cũ
                 header("Location: " . BASE_URL . "?act=blog-create");
                 exit;
             }
-        }
 
-        $this->model->insert($data);
-        $_SESSION['success'] = 'Tạo blog thành công';
-        header("Location: " . BASE_URL . "?act=blog-list");
-        exit;
+            $validated = $validator->validated();
+
+            // Prepare data for database
+            $data = [
+                ':chude'     => htmlspecialchars($validated['chude'], ENT_QUOTES, 'UTF-8'),
+                ':tomtat'    => htmlspecialchars($validated['tomtat'], ENT_QUOTES, 'UTF-8'),
+                ':noidung'   => $validated['noidung'], // Giữ nguyên HTML cho CKEditor
+                ':nguoiviet' => htmlspecialchars($validated['nguoiviet'], ENT_QUOTES, 'UTF-8'),
+                ':hinhanh'   => null
+            ];
+
+            // Xử lý upload file (nếu có)
+            if (!empty($_FILES['hinhanh']['name']) && $_FILES['hinhanh']['error'] === UPLOAD_ERR_OK) {
+                $fileValidation = Validator::validateFile($_FILES['hinhanh'], [
+                    'maxSize' => 10485760, // 10MB
+                    'allowedTypes' => ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+                    'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+                    'required' => false
+                ]);
+
+                if ($fileValidation['valid']) {
+                    $uploadedPath = uploadFile($_FILES['hinhanh'], 'uploads/blog/', [
+                        'maxSize' => 10485760,
+                        'allowedTypes' => ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+                        'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp']
+                    ]);
+                    
+                    if ($uploadedPath) {
+                        $data[':hinhanh'] = $uploadedPath;
+                    } else {
+                        throw new Exception('Upload file thất bại. Vui lòng thử lại.');
+                    }
+                } else {
+                    $_SESSION['error'] = $fileValidation['error'];
+                    $_SESSION['old_input'] = $_POST;
+                    header("Location: " . BASE_URL . "?act=blog-create");
+                    exit;
+                }
+            }
+
+            // Lưu vào database
+            $result = $this->model->insert($data);
+            
+            if ($result) {
+                unset($_SESSION['old_input']); // Xóa old input
+                $_SESSION['success'] = 'Tạo blog thành công!';
+                error_log("Blog created successfully by: " . ($_SESSION['alogin'] ?? 'unknown'));
+            } else {
+                throw new Exception('Lưu blog thất bại');
+            }
+            
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+            
+        } catch (Exception $e) {
+            error_log("Blog store error: " . $e->getMessage());
+            $_SESSION['error'] = $e->getMessage();
+            $_SESSION['old_input'] = $_POST;
+            header("Location: " . BASE_URL . "?act=blog-create");
+            exit;
+        }
     }
+
+    /**
+     * Hiển thị form sửa blog
+     * Route: ?act=blog-edit&id=X
+     */
 
     public function delete()
     {
@@ -260,11 +311,17 @@ class BlogController
         // Get blog to delete image
         $blog = $this->model->getById($id);
         if ($blog && !empty($blog['hinhanh'])) {
-            deleteFile($blog['hinhanh']);
+            // Delete image file
+            @deleteFile($blog['hinhanh']); // @ to suppress warning if file not exists
         }
 
-        $this->model->delete($id);
-        $_SESSION['success'] = 'Xóa blog thành công';
+        // Delete blog from database
+        if ($this->model->delete($id)) {
+            $_SESSION['success'] = 'Xóa blog thành công';
+        } else {
+            $_SESSION['error'] = 'Lỗi khi xóa blog';
+        }
+        
         header("Location: " . BASE_URL . "?act=blog-list");
         exit;
     }
