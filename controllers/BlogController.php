@@ -1,10 +1,17 @@
 <?php
 /**
- * BlogController - ĐÃ CẬP NHẬT
- * - Thêm validation đầy đủ
- * - Sanitize input
- * - File upload an toàn
- * - Error handling
+ * BlogController - PHIÊN BẢN HOÀN CHỈNH
+ * 
+ * Tính năng:
+ * - ✅ Validation đầy đủ (Validator class)
+ * - ✅ Sanitize input (XSS prevention)
+ * - ✅ File upload an toàn (MIME type, size, extension check)
+ * - ✅ Authentication check (requireLogin)
+ * - ✅ Error handling với session messages
+ * - ✅ Tự động xóa ảnh cũ khi update/delete
+ * 
+ * @version 1.0
+ * @date 2025-11-24
  */
 class BlogController 
 {
@@ -20,17 +27,37 @@ class BlogController
         $this->VIEW = $ROOT . "/views/";
     }
 
+    /**
+     * Hiển thị danh sách tất cả blog
+     * Route: ?act=blog-list
+     */
+
     public function list()
     {
-        requireLogin(); // Require authentication
-        $blogs = $this->model->getAll();
-
-        // Tạo content
-        $content = render('admin/blog/list', ['blogs' => $blogs]);
-
-        // Nhúng vào layout
-        require $this->VIEW . "admin/layout.php";
+        // Yêu cầu đăng nhập
+        requireLogin();
+        
+        try {
+            $blogs = $this->model->getAll();
+            
+            // Tạo content
+            $content = render('admin/blog/list', ['blogs' => $blogs]);
+            
+            // Nhúng vào layout
+            require $this->VIEW . "admin/layout.php";
+            
+        } catch (Exception $e) {
+            error_log("Blog list error: " . $e->getMessage());
+            $_SESSION['error'] = "Lỗi khi tải danh sách blog";
+            header("Location: " . BASE_URL . "?act=admin");
+            exit;
+        }
     }
+
+    /**
+     * Hiển thị form tạo blog mới
+     * Route: ?act=blog-create
+     */
 
     public function edit()
     {
@@ -134,9 +161,22 @@ class BlogController
     public function create()
     {
         requireLogin();
-        $content = render('admin/blog/create');
-        require $this->VIEW . "admin/layout.php";
+        
+        try {
+            $content = render('admin/blog/create');
+            require $this->VIEW . "admin/layout.php";
+        } catch (Exception $e) {
+            error_log("Blog create form error: " . $e->getMessage());
+            $_SESSION['error'] = "Lỗi khi tải form tạo blog";
+            header("Location: " . BASE_URL . "?act=blog-list");
+            exit;
+        }
     }
+
+    /**
+     * Xử lý tạo blog mới
+     * Route: ?act=blog-store
+     */
 
     public function store()
     {
