@@ -29,7 +29,6 @@ if ($isProduction) {
 // 3. LOAD REQUIRED FILES
 require_once './commons/env.php';
 require_once './commons/function.php';
-
 // 4. LẤY ACTION
 $act = $_GET['act'] ?? 'home';
 
