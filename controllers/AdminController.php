@@ -41,26 +41,56 @@ class AdminController extends BaseController {
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
 
+        // Rate limiting check
+        $identifier = $username ?: ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        $rateLimit = checkRateLimit($identifier, 5, 900); // 5 attempts in 15 minutes
+
+        if (!$rateLimit['allowed']) {
+            $waitMinutes = ceil($rateLimit['wait_time'] / 60);
+            $error = "Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau {$waitMinutes} phút.";
+            return $this->loadView('admin/login', compact('error'));
+        }
+
+        // Validation
         if (empty($username) || empty($password)) {
             $error = "Vui lòng nhập đầy đủ tài khoản và mật khẩu!";
             return $this->loadView('admin/login', compact('error'));
         }
 
         if (!preg_match('/^[a-zA-Z0-9_-]{3,20}$/', $username)) {
+            recordFailedAttempt($identifier);
             $error = "Tên đăng nhập không hợp lệ!";
             return $this->loadView('admin/login', compact('error'));
         }
 
+        // Check login credentials
         $admin = $this->adminModel->checkLogin($username, $password);
 
         if ($admin) {
+            // Reset rate limit on successful login
+            resetRateLimit($identifier);
+            
+            // Regenerate session ID for security
             session_regenerate_id(true);
+            
             $_SESSION['alogin'] = $admin['UserName'];
             $_SESSION['admin_id'] = $admin['id'] ?? null;
             $_SESSION['login_time'] = time();
+            
+            error_log("Successful login: " . $username);
             $this->redirect(BASE_URL . '?act=admin');
         } else {
-            $error = "Tài khoản hoặc mật khẩu không đúng!";
+            // Record failed attempt
+            recordFailedAttempt($identifier);
+            
+            $remaining = $rateLimit['remaining'] - 1;
+            if ($remaining > 0) {
+                $error = "Tài khoản hoặc mật khẩu không đúng! (Còn {$remaining} lần thử)";
+            } else {
+                $error = "Tài khoản hoặc mật khẩu không đúng! Bạn đã hết lượt thử.";
+            }
+            
+            error_log("Failed login attempt: " . $username);
             $this->loadView('admin/login', compact('error'));
         }
     }
@@ -130,23 +160,64 @@ class AdminController extends BaseController {
         $this->checkLogin();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $hinhanh = null;
+            // Validate input
+            $validator = new Validator($_POST);
+            $validator->required('tengoi', 'Tên gói tour là bắt buộc')
+                      ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
+                      ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự')
+                      ->required('noixuatphat', 'Nơi xuất phát là bắt buộc')
+                      ->required('vitri', 'Vị trí là bắt buộc')
+                      ->required('giagoi', 'Giá gói là bắt buộc')
+                      ->numeric('giagoi', 'Giá gói phải là số')
+                      ->min('giagoi', 0, 'Giá gói phải lớn hơn 0')
+                      ->numeric('giatreem', 'Giá trẻ em phải là số')
+                      ->numeric('giatrenho', 'Giá trẻ nhỏ phải là số')
+                      ->required('songay', 'Số ngày là bắt buộc')
+                      ->integer('songay', 'Số ngày phải là số nguyên')
+                      ->min('songay', 1, 'Số ngày phải lớn hơn 0');
 
+            if ($validator->fails()) {
+                $error = $validator->firstError();
+                $provinces = $this->provinceModel->getAll();
+                return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
+            }
+
+            // Validate and upload image
+            $hinhanh = null;
             if (!empty($_FILES["packageimage"]) && $_FILES["packageimage"]["error"] == 0) {
+                $fileValidation = Validator::validateFile($_FILES['packageimage'], [
+                    'maxSize' => 5242880, // 5MB
+                    'allowedTypes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                    'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp']
+                ]);
+
+                if (!$fileValidation['valid']) {
+                    $error = $fileValidation['error'];
+                    $provinces = $this->provinceModel->getAll();
+                    return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
+                }
+
                 $hinhanh = uploadFile($_FILES["packageimage"], 'uploads/tours/');
                 if ($hinhanh === null) {
                     $error = "Upload ảnh thất bại.";
                     $provinces = $this->provinceModel->getAll();
                     return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
                 }
+            } else {
+                $error = "Ảnh tour là bắt buộc.";
+                $provinces = $this->provinceModel->getAll();
+                return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
             }
 
-            $data = $_POST;
-            $data['hinhanh'] = $hinhanh;
-            $data['quocgia'] = $data['quocgia'] ?? 'Việt Nam';
-            $data['ten_tinh'] = $data['ten_tinh'] ?? null;
+            $validated = $validator->validated();
+            $validated['hinhanh'] = $hinhanh;
+            $validated['quocgia'] = sanitizeInput($validated['quocgia'] ?? 'Việt Nam');
+            $validated['ten_tinh'] = sanitizeInput($validated['ten_tinh'] ?? null);
+            $validated['khuyenmai'] = isset($validated['khuyenmai']) ? 1 : 0;
+            $validated['nuocngoai'] = isset($validated['nuocngoai']) ? 1 : 0;
 
-            $this->tourModel->createTour($data, $_FILES['packageimage'] ?? null);
+            $this->tourModel->createTour($validated, null);
+            $_SESSION['success'] = 'Tạo tour thành công!';
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
 
@@ -169,14 +240,41 @@ class AdminController extends BaseController {
         $this->checkLogin();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id_goi'] ?? null;
-            if (!$id) $this->redirect(BASE_URL . '?act=admin-tours');
+            $id = filter_var($_POST['id_goi'] ?? 0, FILTER_VALIDATE_INT);
+            if (!$id || $id <= 0) {
+                $_SESSION['error'] = 'ID tour không hợp lệ';
+                $this->redirect(BASE_URL . '?act=admin-tours');
+            }
 
-            $data = $_POST;
-            $data['quocgia'] = $data['quocgia'] ?? 'Việt Nam';
-            $data['ten_tinh'] = $data['ten_tinh'] ?? null;
+            // Validate input
+            $validator = new Validator($_POST);
+            $validator->required('tengoi', 'Tên gói tour là bắt buộc')
+                      ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
+                      ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự')
+                      ->required('noixuatphat', 'Nơi xuất phát là bắt buộc')
+                      ->required('vitri', 'Vị trí là bắt buộc')
+                      ->required('giagoi', 'Giá gói là bắt buộc')
+                      ->numeric('giagoi', 'Giá gói phải là số')
+                      ->min('giagoi', 0, 'Giá gói phải lớn hơn 0')
+                      ->numeric('giatreem', 'Giá trẻ em phải là số')
+                      ->numeric('giatrenho', 'Giá trẻ nhỏ phải là số')
+                      ->required('songay', 'Số ngày là bắt buộc')
+                      ->integer('songay', 'Số ngày phải là số nguyên')
+                      ->min('songay', 1, 'Số ngày phải lớn hơn 0');
 
-            $this->tourModel->updateTour($id, $data);
+            if ($validator->fails()) {
+                $_SESSION['error'] = $validator->firstError();
+                $this->redirect(BASE_URL . '?act=admin-tour-edit&id=' . $id);
+            }
+
+            $validated = $validator->validated();
+            $validated['quocgia'] = sanitizeInput($validated['quocgia'] ?? 'Việt Nam');
+            $validated['ten_tinh'] = sanitizeInput($validated['ten_tinh'] ?? null);
+            $validated['khuyenmai'] = isset($_POST['khuyenmai']) ? 1 : 0;
+            $validated['nuocngoai'] = isset($_POST['nuocngoai']) ? 1 : 0;
+
+            $this->tourModel->updateTour($id, $validated);
+            $_SESSION['success'] = 'Cập nhật tour thành công!';
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
         $this->redirect(BASE_URL . '?act=admin-tours');
@@ -208,16 +306,26 @@ class AdminController extends BaseController {
     // Xóa tour
     public function deleteTour() {
         $this->checkLogin();
-        $id = $_GET['id'] ?? null;
-
-        if ($id) {
-            $tour = $this->tourModel->getTourByID($id);
-            if ($tour && !empty($tour['hinhanh'])) {
-                deleteFile($tour['hinhanh']);
-            }
-            $this->tourModel->deleteTour($id);
+        
+        $id = filter_var($_GET['id'] ?? 0, FILTER_VALIDATE_INT);
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = 'ID tour không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-tours');
         }
 
+        $tour = $this->tourModel->getTourByID($id);
+        if (!$tour) {
+            $_SESSION['error'] = 'Không tìm thấy tour';
+            $this->redirect(BASE_URL . '?act=admin-tours');
+        }
+
+        // Delete image file if exists
+        if (!empty($tour['hinhanh'])) {
+            deleteFile($tour['hinhanh']);
+        }
+        
+        $this->tourModel->deleteTour($id);
+        $_SESSION['success'] = 'Xóa tour thành công!';
         $this->redirect(BASE_URL . '?act=admin-tours');
     }
 
