@@ -179,7 +179,25 @@ $msg   = $msg   ?? null;
     </ul>
 </li>
         
-        <li><a href="#"><i class="fa fa-file-invoice-dollar"></i><span> Hóa đơn</span></a></li>
+        <!-- ===== MENU HÓA ĐƠN (MỚI) ===== -->
+        <li id="menu-hoadon">
+          <a href="#">
+            <i class="fa fa-file-invoice-dollar"></i>
+            <span> Hóa đơn</span>
+            <span class="fa fa-angle-right" style="float:right"></span>
+          </a>
+          <ul id="menu-hoadon-sub">
+            <li><a href="<?= BASE_URL ?>?act=hoadon-list">📋 Danh sách hóa đơn</a></li>
+            <li><a href="<?= BASE_URL ?>?act=hoadon-create">➕ Tạo hóa đơn mới</a></li>
+            <li class="divider"></li>
+            <li class="dropdown-header">Lọc theo trạng thái</li>
+            <li><a href="<?= BASE_URL ?>?act=hoadon-filter&trangthai=0">⏳ Chờ xác nhận</a></li>
+            <li><a href="<?= BASE_URL ?>?act=hoadon-filter&trangthai=1">✅ Đã xác nhận</a></li>
+            <li><a href="<?= BASE_URL ?>?act=hoadon-filter&trangthai=2">🎉 Hoàn thành</a></li>
+          </ul>
+        </li>
+        <!-- ===== KẾT THÚC MENU HÓA ĐƠN ===== -->
+        
         <li><a href="#"><i class="fa fa-users"></i><span> Người dùng</span></a></li>
         <li><a href="#"><i class="glyphicon glyphicon-envelope"></i><span> Góp ý</span></a></li>
         <li><a href="#"><i class="glyphicon glyphicon-user"></i><span> Tài khoản</span></a></li>
