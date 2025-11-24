@@ -350,6 +350,15 @@
         <span><?= htmlspecialchars($error) ?></span>
       </div>
     <?php endif; ?>
+    
+    <!-- Debug Link (chỉ hiện khi đang dev) -->
+    <?php if (!empty($error)): ?>
+      <div style="text-align:center; margin-top:10px; font-size:12px;">
+        <a href="check_rate_limit.php" style="color:#666; text-decoration:none;" target="_blank">
+          🔍 Check Rate Limit Status
+        </a>
+      </div>
+    <?php endif; ?>
 
     <?php if (isset($_SESSION['error'])): ?>
       <div class="alert-error">

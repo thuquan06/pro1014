@@ -41,8 +41,9 @@ class AdminController extends BaseController {
         $username = trim($_POST['username'] ?? '');
         $password = trim($_POST['password'] ?? '');
 
-        // Rate limiting check
-        $identifier = $username ?: ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        // Rate limiting check - DÙNG IP THAY VÌ USERNAME
+        // Lý do: Nếu dùng username, mỗi username khác nhau = rate limit khác nhau
+        $identifier = $_SERVER['REMOTE_ADDR'] ?? session_id();
         $rateLimit = checkRateLimit($identifier, 5, 900); // 5 attempts in 15 minutes
 
         if (!$rateLimit['allowed']) {
