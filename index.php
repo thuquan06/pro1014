@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Index.php - Main Router
  * ĐÃ CẬP NHẬT: Session security, error handling, validation, CHI TIẾT TOUR
@@ -40,19 +41,21 @@ if (!preg_match('/^[a-z0-9-]+$/i', $act)) {
 
 // 5. ERROR HANDLING WRAPPER
 try {
-    
+
     // Load models & controllers cho admin routes
-    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
+    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'province') === 0 ||  strpos($act, 'blog') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
         require_once './models/BaseModel.php';
         require_once './models/DashboardModel.php';
         require_once './models/TourModel.php';
         require_once './models/AdminModel.php';
         require_once './models/ProvinceModel.php';
-        
+
         // Controller
         require_once './controllers/BaseController.php';
+        require_once './controllers/ProvinceController.php';
+
         require_once './controllers/AdminController.php';
-        
+
         // CHI TIẾT TOUR (MỚI)
         require_once './models/TourChiTietModel.php';
         require_once './controllers/TourChiTietController.php';
@@ -72,11 +75,11 @@ try {
         case 'login':
             (new AdminController())->login();
             break;
-            
+
         case 'login-handle':
             (new AdminController())->handleLogin();
             break;
-            
+
         case 'logout':
             (new AdminController())->logout();
             break;
@@ -90,71 +93,71 @@ try {
         case 'admin-tours':
             (new AdminController())->listTours();
             break;
-            
+
         case 'admin-tour-create':
             (new AdminController())->createTour();
             break;
-            
+
         case 'admin-tour-store':
             (new AdminController())->storeTour();
             break;
-            
+
         case 'admin-tour-edit':
             (new AdminController())->editTour();
             break;
-            
+
         case 'admin-tour-update':
             (new AdminController())->updateTour();
             break;
-            
+
         case 'admin-tour-delete':
             (new AdminController())->deleteTour();
             break;
-            
+
         case 'admin-tour-update-image':
             (new AdminController())->updateTourImage();
             break;
-            
+
         case 'admin-tour-toggle':
             (new AdminController())->toggleTourStatus();
             break;
 
         // ==================== CHI TIẾT TOUR (MỚI) ====================
-        
+
         // LỊCH TRÌNH
         case 'tour-lichtrinh':
             (new TourChiTietController())->danhSachLichTrinh();
             break;
-        
+
         case 'tour-lichtrinh-them':
             (new TourChiTietController())->themLichTrinh();
             break;
-        
+
         case 'tour-lichtrinh-sua':
             (new TourChiTietController())->suaLichTrinh();
             break;
-        
+
         case 'tour-lichtrinh-xoa':
             (new TourChiTietController())->xoaLichTrinh();
             break;
-        
+
         // GALLERY
         case 'tour-gallery':
             (new TourChiTietController())->danhSachHinhAnh();
             break;
-        
+
         case 'tour-gallery-them':
             (new TourChiTietController())->themHinhAnh();
             break;
-        
+
         case 'tour-gallery-dai-dien':
             (new TourChiTietController())->datAnhDaiDien();
             break;
-        
+
         case 'tour-gallery-xoa':
             (new TourChiTietController())->xoaHinhAnh();
             break;
-        
+
         // CHÍNH SÁCH
         case 'tour-chinhsach':
             (new TourChiTietController())->danhSachChinhSach();
@@ -171,16 +174,16 @@ try {
         case 'tour-chinhsach-xoa':
             (new TourChiTietController())->xoaChinhSach();
             break;
-        
+
         // PHÂN LOẠI
         case 'tour-phanloai':
             (new TourChiTietController())->quanLyPhanLoai();
             break;
-        
+
         case 'tour-phanloai-loai':
             (new TourChiTietController())->capNhatLoaiTour();
             break;
-        
+
         case 'tour-phanloai-tags':
             (new TourChiTietController())->capNhatTags();
             break;
@@ -230,11 +233,11 @@ try {
             require_once './controllers/TourVersionController.php';
             (new TourVersionController())->soSanhVersions();
             break;
-        
-            case 'tour-publish':
-                
-        // TOUR PUBLISH
-        require_once './controllers/TourPublishController.php';
+
+        case 'tour-publish':
+
+            // TOUR PUBLISH
+            require_once './controllers/TourPublishController.php';
             (new TourPublishController())->trangPublish();
             break;
 
@@ -251,48 +254,79 @@ try {
             require_once './controllers/TourPublishController.php';
             (new TourPublishController())->danhSachTheoTrangThai();
             break;
-        
+
         // ========== BLOG ADMIN ROUTES ==========
-// ========== BLOG ADMIN ROUTES ==========
+        // ========== BLOG ADMIN ROUTES ==========
 
-case 'blog-list':
-    require_once "./models/BlogModel.php";
-    require_once "./controllers/BlogController.php";
-    (new BlogController())->list();
-break;
+        case 'blog-list':
+            require_once "./models/BlogModel.php";
+            require_once "./controllers/BlogController.php";
+            (new BlogController())->list();
+            break;
 
-case 'blog-edit':
-    require_once "./models/BlogModel.php";
-    require_once "./controllers/BlogController.php";
-    (new BlogController())->edit();
-break;
+        case 'blog-edit':
+            require_once "./models/BlogModel.php";
+            require_once "./controllers/BlogController.php";
+            (new BlogController())->edit();
+            break;
 
-case 'blog-update':
-    require_once "./models/BlogModel.php";
-    require_once "./controllers/BlogController.php";
-    (new BlogController())->update();
-break;
+        case 'blog-update':
+            require_once "./models/BlogModel.php";
+            require_once "./controllers/BlogController.php";
+            (new BlogController())->update();
+            break;
 
-case 'blog-delete':
-    require_once "./models/BlogModel.php";
-    require_once "./controllers/BlogController.php";
-    (new BlogController())->delete();
-break;
-case 'blog-create':
-    require_once "./models/BlogModel.php";
-    require_once "./controllers/BlogController.php";
-    (new BlogController())->create();
-break;
+        case 'blog-delete':
+            require_once "./models/BlogModel.php";
+            require_once "./controllers/BlogController.php";
+            (new BlogController())->delete();
+            break;
+        case 'blog-create':
+            require_once "./models/BlogModel.php";
+            require_once "./controllers/BlogController.php";
+            (new BlogController())->create();
+            break;
 
-case 'blog-store':
-    require_once "./models/BlogModel.php";
-    require_once "./controllers/BlogController.php";
-    (new BlogController())->store();
-break;
+        case 'blog-store':
+            require_once "./models/BlogModel.php";
+            require_once "./controllers/BlogController.php";
+            (new BlogController())->store();
+            break;
+
+
+        case 'province-list':
+            require_once './controllers/ProvinceController.php';
+            $controller = new ProvinceController();
+            $controller->index();
+            break;
+        case 'province-create':
+            require_once './controllers/ProvinceController.php';
+            $controller = new ProvinceController();
+            $controller->create();
+            break;
+        case 'province-store':
+            require_once './controllers/ProvinceController.php';
+            $controller = new ProvinceController();
+            $controller->store();
+            break;
+        case 'province-edit':
+            require_once './controllers/ProvinceController.php';
+            $controller = new ProvinceController();
+            $controller->edit();
+            break;
+        case 'province-update':
+            require_once './controllers/ProvinceController.php';
+            $controller = new ProvinceController();
+            $controller->update();
+            break;
+        case 'province-delete':
+            require_once './controllers/ProvinceController.php';
+            $controller = new ProvinceController();
+            $controller->delete();
+            break;
 
 
 
-        
         // API
         case 'api-tour-chitiet':
             (new TourChiTietController())->apiChiTiet();
@@ -301,7 +335,7 @@ break;
         // ===== 404 NOT FOUND =====
         default:
             http_response_code(404);
-            
+
             if ($isProduction) {
                 if (file_exists('./views/errors/404.php')) {
                     require './views/errors/404.php';
@@ -325,12 +359,11 @@ break;
             }
             break;
     }
-
 } catch (Exception $e) {
     error_log("Exception: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
-    
+
     http_response_code(500);
-    
+
     if ($isProduction) {
         echo "Đã có lỗi xảy ra. Vui lòng thử lại sau.";
     } else {

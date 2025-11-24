@@ -167,7 +167,18 @@ $msg   = $msg   ?? null;
         </ul>
       </li>
         <!-- ===== KẾT THÚC MENU BLOG ===== -->   
-        <li><a href="#"><i class="glyphicon glyphicon-list"></i><span> Tỉnh</span></a></li>
+<li id="menu-province">
+    <a href="#">
+        <i class="glyphicon glyphicon-list"></i>
+        <span> Tỉnh</span>
+        <span class="fa fa-angle-right" style="float:right"></span>
+    </a>
+    <ul>
+        <li><a href="<?= BASE_URL ?>?act=province-list">Danh sách</a></li>
+        <li><a href="<?= BASE_URL ?>?act=province-create">Thêm mới</a></li>
+    </ul>
+</li>
+        
         <li><a href="#"><i class="fa fa-file-invoice-dollar"></i><span> Hóa đơn</span></a></li>
         <li><a href="#"><i class="fa fa-users"></i><span> Người dùng</span></a></li>
         <li><a href="#"><i class="glyphicon glyphicon-envelope"></i><span> Góp ý</span></a></li>
