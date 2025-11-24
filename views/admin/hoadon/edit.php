@@ -72,23 +72,35 @@ $huy = $hoadon['huy'] ?? 0;
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label class="col-sm-2 control-label">Chọn tour <span style="color: red;">*</span></label>
+                            <label class="col-sm-2 control-label">Tour</label>
                             <div class="col-sm-10">
-                                <select class="form-control" name="id_goi" id="tourSelect" required>
-                                    <option value="">-- Chọn tour --</option>
-                                    <?php if (!empty($tours)): ?>
-                                        <?php foreach ($tours as $tour): ?>
-                                            <option value="<?php echo $tour['id_goi']; ?>" 
-                                                    <?php echo ($tour['id_goi'] == $id_goi) ? 'selected' : ''; ?>
-                                                    data-giagoi="<?php echo $tour['giagoi'] ?? 0; ?>"
-                                                    data-giatreem="<?php echo $tour['giatreem'] ?? 0; ?>"
-                                                    data-giatrenho="<?php echo $tour['giatrenho'] ?? 0; ?>">
-                                                <?php echo safe_html($tour['tengoi']); ?> - 
-                                                <?php echo number_format($tour['giagoi'] ?? 0); ?> VNĐ
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
+                                <!-- Hidden input để gửi id_goi -->
+                                <input type="hidden" name="id_goi" value="<?php echo $id_goi; ?>">
+                                
+                                <!-- Hiển thị tour đang chọn (readonly) -->
+                                <?php 
+                                $tour_hien_tai = null;
+                                if (!empty($tours)) {
+                                    foreach ($tours as $tour) {
+                                        if ($tour['id_goi'] == $id_goi) {
+                                            $tour_hien_tai = $tour;
+                                            break;
+                                        }
+                                    }
+                                }
+                                ?>
+                                <input type="text" class="form-control" 
+                                       value="<?php echo $tour_hien_tai ? safe_html($tour_hien_tai['tengoi']) . ' - ' . number_format($tour_hien_tai['giagoi'] ?? 0) . ' VNĐ' : 'N/A'; ?>" 
+                                       readonly 
+                                       style="background-color: #f5f5f5; cursor: not-allowed;">
+                                <small class="text-muted">Tour không thể thay đổi sau khi tạo hóa đơn</small>
+                                
+                                <!-- Hidden attributes để tính tổng tiền -->
+                                <?php if ($tour_hien_tai): ?>
+                                <input type="hidden" id="tourGiagoi" value="<?php echo $tour_hien_tai['giagoi'] ?? 0; ?>">
+                                <input type="hidden" id="tourGiatreem" value="<?php echo $tour_hien_tai['giatreem'] ?? 0; ?>">
+                                <input type="hidden" id="tourGiatrenho" value="<?php echo $tour_hien_tai['giatrenho'] ?? 0; ?>">
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -220,10 +232,10 @@ $huy = $hoadon['huy'] ?? 0;
 $(document).ready(function() {
     // Tính tổng tiền khi thay đổi
     function calculateTotal() {
-        var tourSelect = $('#tourSelect option:selected');
-        var giagoi = parseFloat(tourSelect.attr('data-giagoi')) || 0;
-        var giatreem = parseFloat(tourSelect.attr('data-giatreem')) || 0;
-        var giatrenho = parseFloat(tourSelect.attr('data-giatrenho')) || 0;
+        // Lấy giá từ hidden inputs
+        var giagoi = parseFloat($('#tourGiagoi').val()) || 0;
+        var giatreem = parseFloat($('#tourGiatreem').val()) || 0;
+        var giatrenho = parseFloat($('#tourGiatrenho').val()) || 0;
         
         var nguoilon = parseInt($('#nguoilon').val()) || 0;
         var treem = parseInt($('#treem').val()) || 0;
@@ -234,8 +246,8 @@ $(document).ready(function() {
         $('#totalPrice').text(total.toLocaleString('vi-VN') + ' VNĐ');
     }
     
-    // Khi chọn tour hoặc thay đổi số lượng
-    $('#tourSelect, .calculate-price').on('change keyup', function() {
+    // Khi thay đổi số lượng
+    $('.calculate-price').on('change keyup', function() {
         calculateTotal();
     });
     
