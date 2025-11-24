@@ -159,7 +159,7 @@ if (isset($_GET['confirm'])) {
 
         <div style="margin-top: 30px;">
             <a href="?confirm=1" class="btn btn-primary">✓ Reset Ngay</a>
-            <a href="?act=login" class="btn btn-secondary">← Quay lại</a>
+            <a href="http://localhost/pro1014/?act=login-handle" class="btn btn-secondary">← Quay lại</a>
         </div>
     </div>
 </body>
