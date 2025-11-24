@@ -78,7 +78,6 @@ function getTrangThaiText($status) {
                         <th style="text-align: center;">Số người</th>
                         <th style="text-align: center;">Ngày vào</th>
                         <th style="text-align: center;">Ngày ra</th>
-                        <th style="text-align: center;">Số phòng</th>
                         <th style="text-align: center;">Ngày đặt</th>
                         <th style="text-align: center;">Trạng thái</th>
                         <th style="text-align: center;">Hành động</th>
@@ -119,7 +118,6 @@ function getTrangThaiText($status) {
                             </td>
                             <td style="text-align: center;"><?php echo $ngayvao ? date("d/m/Y", strtotime($ngayvao)) : 'N/A'; ?></td>
                             <td style="text-align: center;"><?php echo $ngayra ? date("d/m/Y", strtotime($ngayra)) : 'N/A'; ?></td>
-                            <td style="text-align: center;"><?php echo safe_html($sophong); ?></td>
                             <td style="text-align: center;"><?php echo $ngaydat ? date("d/m/Y H:i", strtotime($ngaydat)) : 'N/A'; ?></td>
                             <td style="text-align: center;"><?php echo getTrangThaiText($trangthai); ?></td>
                             <td style="width: 200px; text-align: center;">
@@ -145,7 +143,7 @@ function getTrangThaiText($status) {
                     <?php 
                         } // end foreach
                     } else {
-                        echo '<tr><td colspan="10" style="text-align: center;">Chưa có hóa đơn nào</td></tr>';
+                        echo '<tr><td colspan="9" style="text-align: center;">Chưa có hóa đơn nào</td></tr>';
                     }
                     ?>
                 </tbody>

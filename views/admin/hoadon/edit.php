@@ -55,10 +55,11 @@ $huy = $hoadon['huy'] ?? 0;
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label class="col-sm-2 control-label">Email khách hàng <span style="color: red;">*</span></label>
+                            <label class="col-sm-2 control-label">Email khách hàng</label>
                             <div class="col-sm-10">
                                 <input type="email" class="form-control" name="email_nguoidung" 
-                                       value="<?php echo safe_html($email); ?>" required>
+                                       value="<?php echo safe_html($email); ?>" readonly 
+                                       style="background-color: #f5f5f5; cursor: not-allowed;">
                             </div>
                         </div>
                     </div>
@@ -88,14 +89,6 @@ $huy = $hoadon['huy'] ?? 0;
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">ID Khách sạn</label>
-                            <div class="col-sm-10">
-                                <input type="number" class="form-control" name="id_ks" 
-                                       value="<?php echo safe_html($id_ks); ?>">
                             </div>
                         </div>
 
@@ -172,30 +165,6 @@ $huy = $hoadon['huy'] ?? 0;
                                     <strong>Tổng tiền dự kiến: </strong>
                                     <span id="totalPrice" style="font-size: 18px; color: #e74c3c;">0 VNĐ</span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Thông tin phòng -->
-                <div class="panel panel-warning">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-bed"></i> Thông tin phòng</h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Số phòng</label>
-                            <div class="col-sm-10">
-                                <input type="number" class="form-control" name="sophong" 
-                                       value="<?php echo $sophong; ?>" min="1">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Số phòng đơn</label>
-                            <div class="col-sm-10">
-                                <input type="number" class="form-control" name="phongdon" 
-                                       value="<?php echo $phongdon; ?>" min="0">
                             </div>
                         </div>
                     </div>

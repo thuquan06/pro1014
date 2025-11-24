@@ -136,10 +136,6 @@ if ($huy == 1) {
                                     <th>Ngày ra:</th>
                                     <td><?php echo $ngayra ? date("d/m/Y", strtotime($ngayra)) : 'N/A'; ?></td>
                                 </tr>
-                                <tr>
-                                    <th>Số phòng:</th>
-                                    <td><?php echo safe_html($sophong); ?> phòng (<?php echo $phongdon; ?> phòng đơn)</td>
-                                </tr>
                             </table>
                         </div>
                     </div>

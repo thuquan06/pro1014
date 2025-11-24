@@ -64,14 +64,6 @@ function safe_html($value) {
                         </div>
 
                         <div class="form-group">
-                            <label class="col-sm-2 control-label">ID Khách sạn</label>
-                            <div class="col-sm-10">
-                                <input type="number" class="form-control" name="id_ks" 
-                                       placeholder="ID khách sạn (nếu có)">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
                             <label class="col-sm-2 control-label">Ngày vào</label>
                             <div class="col-sm-10">
                                 <input type="date" class="form-control" name="ngayvao">
@@ -141,28 +133,6 @@ function safe_html($value) {
                                     <strong>Tổng tiền dự kiến: </strong>
                                     <span id="totalPrice" style="font-size: 18px; color: #e74c3c;">0 VNĐ</span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Thông tin phòng -->
-                <div class="panel panel-warning">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-bed"></i> Thông tin phòng</h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Số phòng</label>
-                            <div class="col-sm-10">
-                                <input type="number" class="form-control" name="sophong" value="1" min="1">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Số phòng đơn</label>
-                            <div class="col-sm-10">
-                                <input type="number" class="form-control" name="phongdon" value="0" min="0">
                             </div>
                         </div>
                     </div>
