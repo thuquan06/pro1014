@@ -3,6 +3,18 @@ class ProvinceModel extends BaseModel {
 
     protected $table = "tinh";  
     protected $primaryKey = "id_tinh";
+    public function getAll($orderBy = 'ten_tinh', $order = 'ASC') {
+        try {
+            $sql = "SELECT * FROM {$this->table} ORDER BY {$orderBy} {$order}";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("ProvinceModel::getAll() - " . $e->getMessage());
+            return [];
+        }
+    }
+
 
     // ============================
     // LẤY 1 TỈNH THEO ID
