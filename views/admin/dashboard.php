@@ -1,90 +1,203 @@
 <?php
-// views/admin/dashboard.php (BẢN SỬA GỌN – KHÔNG absolute, KHÔNG margin âm)
-
-// Lấy số liệu an toàn (nếu controller truyền $stats dạng mảng)
-$cnt1 = $stats['cnt1'] ?? 0;     // Hóa đơn
-$ks   = $stats['ks']   ?? 0;     // Khách sạn
-$cnt2 = $stats['cnt2'] ?? 0;     // Góp ý
-$goi  = $stats['goi']  ?? 0;     // Tour
-$cnt5 = $stats['cnt5'] ?? 0;     // Trợ giúp
-$blog = $stats['blog'] ?? 0;     // Blog
+/**
+ * Dashboard - Trang chủ quản trị
+ * Version: 2.0
+ */
+$stats = $stats ?? [];
 ?>
 
-<style>
-  /* KHỐI CHUNG */
-  .dash-wrap{display:block}
-  .dash-row{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
-  @media (max-width:1200px){.dash-row{grid-template-columns:repeat(8,1fr)}}
-  @media (max-width:768px){.dash-row{grid-template-columns:repeat(4,1fr)}}
-  .card{background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.06);padding:16px}
-
-  /* HÀNH ĐỘNG NHANH */
-  .quick .item{grid-column:span 4;display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;border:1px solid #eef0f4}
-  .quick .icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#0d6efd;color:#fff;font-size:20px}
-  .quick .txt{font-weight:600;color:#222}
-  .quick .item:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(13,110,253,.12)}
-
-  /* SỐ LIỆU */
-  .kpi .box{grid-column:span 2;text-align:center;padding:18px}
-  .kpi .num{font-size:26px;font-weight:700;color:#0d6efd;margin-bottom:6px}
-  .kpi .lbl{color:#555}
-  .kpi a{text-decoration:none;color:inherit}
-  .kpi .box:hover{box-shadow:0 8px 20px rgba(0,0,0,.08)}
-
-  /* TIÊU ĐỀ */
-  .section-title{font-size:18px;font-weight:700;margin:0 0 12px}
-</style>
-
-<div class="dash-wrap">
-
-  <!-- Hành động nhanh -->
-  <div class="card" style="margin-bottom:16px">
-    <h3 class="section-title">Hành động nhanh</h3>
-    <div class="dash-row quick">
-      <a class="item card" href="<?= BASE_URL ?>?act=admin-tour-create" aria-label="Thêm tour">
-        <div class="icon"><i class="glyphicon glyphicon-road"></i></div>
-        <div class="txt">Thêm tour</div>
-      </a>
-      <a class="item card" href="<?= BASE_URL ?>?act=blog-create" aria-label="Thêm blog">
-        <div class="icon"><i class="glyphicon glyphicon-leaf"></i></div>
-        <div class="txt">Thêm blog</div>
-      </a>
-      <a class="item card" href="#" aria-label="Thêm khách sạn">
-        <div class="icon"><i class="glyphicon glyphicon-bed"></i></div>
-        <div class="txt">Thêm khách sạn</div>
-      </a>
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <i class="fas fa-map-marked-alt"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= $stats['total_tours'] ?? 0 ?></h4>
+      <p>Tổng số Tour</p>
     </div>
   </div>
-
-  <!-- Số liệu -->
-  <div class="card">
-    <h3 class="section-title">Tổng quan</h3>
-    <div class="dash-row kpi">
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$cnt1) ?></div>
-        <div class="lbl">Hóa đơn</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$ks) ?></div>
-        <div class="lbl">Khách sạn</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$cnt2) ?></div>
-        <div class="lbl">Góp ý</div>
-      </a>
-      <a class="box card" href="<?= BASE_URL ?>?act=admin-tours">
-        <div class="num"><?= htmlspecialchars((string)$goi) ?></div>
-        <div class="lbl">Tour</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$cnt5) ?></div>
-        <div class="lbl">Trợ giúp</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$blog) ?></div>
-        <div class="lbl">Blog</div>
-      </a>
+  
+  <div class="stat-card">
+    <div class="stat-icon green">
+      <i class="fas fa-rocket"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= $stats['active_tours'] ?? 0 ?></h4>
+      <p>Tour đang hoạt động</p>
     </div>
   </div>
-
+  
+  <div class="stat-card">
+    <div class="stat-icon orange">
+      <i class="fas fa-file-invoice"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= $stats['total_bookings'] ?? 0 ?></h4>
+      <p>Đơn đặt tour</p>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon red">
+      <i class="fas fa-newspaper"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= $stats['total_blogs'] ?? 0 ?></h4>
+      <p>Bài viết</p>
+    </div>
+  </div>
 </div>
+
+<!-- Quick Actions -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-bolt"></i>
+      Thao tác nhanh
+    </h3>
+  </div>
+  <div class="card-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+      <a href="?act=admin-tour-create" class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        Thêm Tour mới
+      </a>
+      <a href="?act=blog-create" class="btn btn-success">
+        <i class="fas fa-pen"></i>
+        Viết bài mới
+      </a>
+      <a href="?act=hoadon-list" class="btn btn-warning">
+        <i class="fas fa-file-invoice"></i>
+        Xem đơn hàng
+      </a>
+      <a href="?act=admin-tours" class="btn" style="background:#6c757d; color:white;">
+        <i class="fas fa-list"></i>
+        Quản lý Tour
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-history"></i>
+      Hoạt động gần đây
+    </h3>
+    <a href="#" class="btn btn-sm" style="background:#f8f9fa; color:#333;">
+      Xem tất cả
+    </a>
+  </div>
+  <div class="card-body">
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white;">
+          <i class="fas fa-plus"></i>
+        </div>
+        <div style="flex: 1;">
+          <strong>Tour mới được thêm</strong>
+          <p style="margin: 0; font-size: 13px; color: #7f8c8d;">Vừa xong</p>
+        </div>
+        <span style="font-size: 12px; color: #7f8c8d;">
+          <?= date('H:i') ?>
+        </span>
+      </div>
+      
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); display: flex; align-items: center; justify-content: center; color: white;">
+          <i class="fas fa-edit"></i>
+        </div>
+        <div style="flex: 1;">
+          <strong>Cập nhật bài viết</strong>
+          <p style="margin: 0; font-size: 13px; color: #7f8c8d;">30 phút trước</p>
+        </div>
+        <span style="font-size: 12px; color: #7f8c8d;">
+          <?= date('H:i', strtotime('-30 minutes')) ?>
+        </span>
+      </div>
+      
+      <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); display: flex; align-items: center; justify-content: center; color: white;">
+          <i class="fas fa-check"></i>
+        </div>
+        <div style="flex: 1;">
+          <strong>Đơn hàng mới</strong>
+          <p style="margin: 0; font-size: 13px; color: #7f8c8d;">1 giờ trước</p>
+        </div>
+        <span style="font-size: 12px; color: #7f8c8d;">
+          <?= date('H:i', strtotime('-1 hour')) ?>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- System Info -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fas fa-info-circle"></i>
+        Thông tin hệ thống
+      </h3>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+          <span style="color: #7f8c8d;">PHP Version:</span>
+          <strong><?= phpversion() ?></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+          <span style="color: #7f8c8d;">Server:</span>
+          <strong><?= $_SERVER['SERVER_SOFTWARE'] ?? 'N/A' ?></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+          <span style="color: #7f8c8d;">Database:</span>
+          <strong>MySQL</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+          <span style="color: #7f8c8d;">Version:</span>
+          <strong>2.0</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i class="fas fa-chart-line"></i>
+        Thống kê nhanh
+      </h3>
+    </div>
+    <div class="card-body">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+          <span style="color: #7f8c8d;">Tour hôm nay:</span>
+          <strong style="color: #28a745;">+<?= $stats['today_tours'] ?? 0 ?></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+          <span style="color: #7f8c8d;">Đơn hàng hôm nay:</span>
+          <strong style="color: #17a2b8;">+<?= $stats['today_bookings'] ?? 0 ?></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+          <span style="color: #7f8c8d;">Bài viết tháng này:</span>
+          <strong style="color: #ffc107;">+<?= $stats['month_blogs'] ?? 0 ?></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+          <span style="color: #7f8c8d;">Doanh thu tháng:</span>
+          <strong style="color: #dc3545;"><?= number_format($stats['month_revenue'] ?? 0) ?>đ</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+</style>
