@@ -48,19 +48,26 @@ class AdminController extends BaseController {
         if (!$rateLimit['allowed']) {
             $waitMinutes = ceil($rateLimit['wait_time'] / 60);
             $error = "Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau {$waitMinutes} phút.";
-            return $this->loadView('admin/login', compact('error'));
+            // FIX: Dùng require trực tiếp, không load layout
+            require_once './views/admin/login.php';
+            exit;
         }
 
         // Validation
         if (empty($username) || empty($password)) {
             $error = "Vui lòng nhập đầy đủ tài khoản và mật khẩu!";
-            return $this->loadView('admin/login', compact('error'));
+            require_once './views/admin/login.php';
+            exit;
         }
 
         if (!preg_match('/^[a-zA-Z0-9_-]{3,20}$/', $username)) {
             recordFailedAttempt($identifier);
-            $error = "Tên đăng nhập không hợp lệ!";
-            return $this->loadView('admin/login', compact('error'));
+            // Lấy lại rate limit sau khi record
+            $rateLimit = checkRateLimit($identifier, 5, 900);
+            $remaining = $rateLimit['remaining'];
+            $error = "Tên đăng nhập không hợp lệ! (Còn {$remaining} lần thử)";
+            require_once './views/admin/login.php';
+            exit;
         }
 
         // Check login credentials
@@ -83,15 +90,19 @@ class AdminController extends BaseController {
             // Record failed attempt
             recordFailedAttempt($identifier);
             
-            $remaining = $rateLimit['remaining'] - 1;
+            // Lấy lại rate limit SAU KHI ghi nhận thất bại
+            $rateLimit = checkRateLimit($identifier, 5, 900);
+            $remaining = $rateLimit['remaining'];
+            
             if ($remaining > 0) {
                 $error = "Tài khoản hoặc mật khẩu không đúng! (Còn {$remaining} lần thử)";
             } else {
-                $error = "Tài khoản hoặc mật khẩu không đúng! Bạn đã hết lượt thử.";
+                $error = "Tài khoản hoặc mật khẩu không đúng! Tài khoản tạm khóa 15 phút.";
             }
             
-            error_log("Failed login attempt: " . $username);
-            $this->loadView('admin/login', compact('error'));
+            error_log("Failed login attempt: " . $username . " - Remaining: " . $remaining);
+            require_once './views/admin/login.php';
+            exit;
         }
     }
 
