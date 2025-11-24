@@ -11,7 +11,8 @@ class AdminModel {
     }
 
     /**
-     * Kiểm tra đăng nhập với password_hash (SECURE)
+     * Kiểm tra đăng nhập - HỖ TRỢ CẢ MD5 VÀ BCRYPT
+     * Tự động chuyển đổi từ MD5 sang bcrypt khi đăng nhập thành công
      * 
      * @param string $username Tên đăng nhập
      * @param string $password Mật khẩu CHƯA hash
@@ -24,15 +25,52 @@ class AdminModel {
             $stmt->execute([':username' => $username]);
             $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            // Nếu tìm thấy user và password đúng
-            if ($admin && password_verify($password, $admin['Password'])) {
-                return $admin;
+            if (!$admin) {
+                return false;
+            }
+            
+            // Check nếu password là bcrypt (bắt đầu với $2y$)
+            if (strpos($admin['Password'], '$2y$') === 0) {
+                // Password đã là bcrypt, dùng password_verify
+                if (password_verify($password, $admin['Password'])) {
+                    return $admin;
+                }
+            } else {
+                // Password còn là MD5, check trực tiếp
+                if (md5($password) === $admin['Password']) {
+                    // Tự động migrate sang bcrypt
+                    $this->updatePasswordToBcrypt($username, $password);
+                    error_log("Auto-migrated password to bcrypt for user: " . $username);
+                    return $admin;
+                }
             }
             
             return false;
             
         } catch (PDOException $e) {
             error_log("Login error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Tự động update password từ MD5 sang bcrypt khi login thành công
+     * 
+     * @param string $username
+     * @param string $plainPassword
+     * @return bool
+     */
+    private function updatePasswordToBcrypt($username, $plainPassword) {
+        try {
+            $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT);
+            $sql = "UPDATE admin SET Password = :password WHERE UserName = :username";
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute([
+                ':password' => $hashedPassword,
+                ':username' => $username
+            ]);
+        } catch (PDOException $e) {
+            error_log("Failed to migrate password: " . $e->getMessage());
             return false;
         }
     }
