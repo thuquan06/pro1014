@@ -384,15 +384,58 @@ function safe_html($value) {
         </div>
       </div>
 
-      <!-- Schedule Information -->
+      <!-- Pricing Information -->
       <div class="card info-section">
         <div class="card-header">
-          <h3><i class="fas fa-calendar-alt"></i> Lịch trình</h3>
+          <h3><i class="fas fa-dollar-sign"></i> Bảng giá</h3>
+        </div>
+        <div class="card-body">
+          <?php if (!empty($tour['khuyenmai']) && $tour['khuyenmai'] > 0): ?>
+            <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+              <i class="fas fa-gift" style="color: #f59e0b; font-size: 20px;"></i>
+              <span style="color: #78350f; font-weight: 600;">
+                Đang có khuyến mãi: <?= safe_html($tour['khuyenmai']) ?>%
+              </span>
+            </div>
+          <?php endif; ?>
+
+          <div class="price-grid">
+            <div class="price-card">
+              <p class="price-label">
+                <i class="fas fa-user"></i> Người lớn
+              </p>
+              <h3 class="price-value"><?= number_format($tour['giagoi'] ?? 0, 0, ',', '.') ?></h3>
+              <p class="price-unit">VNĐ</p>
+            </div>
+
+            <div class="price-card">
+              <p class="price-label">
+                <i class="fas fa-child"></i> Trẻ em
+              </p>
+              <h3 class="price-value"><?= number_format($tour['giatreem'] ?? 0, 0, ',', '.') ?></h3>
+              <p class="price-unit">VNĐ</p>
+            </div>
+
+            <div class="price-card">
+              <p class="price-label">
+                <i class="fas fa-baby"></i> Trẻ nhỏ
+              </p>
+              <h3 class="price-value"><?= number_format($tour['giatrenho'] ?? 0, 0, ',', '.') ?></h3>
+              <p class="price-unit">VNĐ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule & Time Information -->
+      <div class="card info-section">
+        <div class="card-header">
+          <h3><i class="fas fa-calendar-alt"></i> Thông tin thời gian</h3>
         </div>
         <div class="card-body">
           <div class="info-row">
             <div class="info-label">
-              <i class="fas fa-clock"></i>
+              <i class="fas fa-calendar-days"></i>
               Số ngày
             </div>
             <div class="info-value">
@@ -440,49 +483,6 @@ function safe_html($value) {
         </div>
       </div>
 
-      <!-- Pricing Information -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-dollar-sign"></i> Bảng giá</h3>
-        </div>
-        <div class="card-body">
-          <?php if (!empty($tour['khuyenmai']) && $tour['khuyenmai'] > 0): ?>
-            <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-              <i class="fas fa-gift" style="color: #f59e0b; font-size: 20px;"></i>
-              <span style="color: #78350f; font-weight: 600;">
-                Đang có khuyến mãi: <?= safe_html($tour['khuyenmai']) ?>%
-              </span>
-            </div>
-          <?php endif; ?>
-
-          <div class="price-grid">
-            <div class="price-card">
-              <p class="price-label">
-                <i class="fas fa-user"></i> Người lớn
-              </p>
-              <h3 class="price-value"><?= number_format($tour['giagoi'] ?? 0, 0, ',', '.') ?></h3>
-              <p class="price-unit">VNĐ</p>
-            </div>
-
-            <div class="price-card">
-              <p class="price-label">
-                <i class="fas fa-child"></i> Trẻ em
-              </p>
-              <h3 class="price-value"><?= number_format($tour['giatreem'] ?? 0, 0, ',', '.') ?></h3>
-              <p class="price-unit">VNĐ</p>
-            </div>
-
-            <div class="price-card">
-              <p class="price-label">
-                <i class="fas fa-baby"></i> Trẻ nhỏ
-              </p>
-              <h3 class="price-value"><?= number_format($tour['giatrenho'] ?? 0, 0, ',', '.') ?></h3>
-              <p class="price-unit">VNĐ</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Tour Details -->
       <div class="card info-section">
         <div class="card-header">
@@ -502,10 +502,10 @@ function safe_html($value) {
         </div>
       </div>
 
-      <!-- Program Details -->
+      <!-- Schedule & Program Details (Merged) -->
       <div class="card info-section">
         <div class="card-header">
-          <h3><i class="fas fa-list-check"></i> Chương trình tour</h3>
+          <h3><i class="fas fa-route"></i> Lịch trình & Chương trình tour</h3>
         </div>
         <div class="card-body">
           <?php if (!empty($tour['chuongtrinh'])): ?>
@@ -515,7 +515,7 @@ function safe_html($value) {
           <?php else: ?>
             <div class="empty-content">
               <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-              <p>Chưa có chương trình</p>
+              <p>Chưa có lịch trình & chương trình</p>
             </div>
           <?php endif; ?>
         </div>
