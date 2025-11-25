@@ -713,6 +713,11 @@ $msg   = $msg   ?? null;
             <i class="fas fa-calendar-plus"></i>
             <span>Phân công HDV</span>
           </a>
+          
+          <a href="?act=admin-users" class="nav-link">
+            <i class="fas fa-users"></i>
+            <span>Người Dùng</span>
+          </a>
         </div>
       </div>
       

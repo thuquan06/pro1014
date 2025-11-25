@@ -55,6 +55,7 @@ try {
         require_once './models/AssignmentModel.php';
         require_once './models/ServiceModel.php';
         require_once './models/ServiceAssignmentModel.php';
+        require_once './models/UserModel.php';
 
         // Controller
         require_once './controllers/BaseController.php';
@@ -498,6 +499,48 @@ try {
             (new HoadonController())->searchByEmail();
             break;
 
+        // ==================== USER MANAGEMENT ====================
+        case 'admin-users':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->listUsers();
+            break;
+
+        case 'admin-user-create':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->createUser();
+            break;
+
+        case 'admin-user-store':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->storeUser();
+            break;
+
+        case 'admin-user-edit':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->editUser();
+            break;
+
+        case 'admin-user-update':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->updateUser();
+            break;
+
+        case 'admin-user-delete':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->deleteUser();
+            break;
+
+        case 'admin-user-toggle':
+            require_once './models/BaseModel.php';
+            require_once './models/UserModel.php';
+            (new AdminController())->toggleUserStatus();
+            break;
 
         // API
         case 'api-tour-chitiet':
