@@ -63,7 +63,7 @@ $error = $error ?? null;
                 
                 <?php if($error){?><div class="errorWrap"><strong>LỖI</strong>: <?php echo htmlentities($error); ?> </div><?php } ?>
 
-                <form method="post" action="<?php echo BASE_URL; ?>?act=login-handle">
+                <form method="post" action="<?php echo BASE_URL; ?>?act=login">
                     <div class="username">
                         <span class="username">Tài khoản:</span>
                         <input type="text" name="username" class="name" placeholder="" required="">

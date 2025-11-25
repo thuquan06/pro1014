@@ -161,4 +161,171 @@ class AdminModel {
         
         return password_verify($oldPassword, $admin['Password']);
     }
+
+    /**
+     * Tạo token reset password
+     * 
+     * @param string $username
+     * @return string|false Token nếu thành công, false nếu thất bại
+     */
+    public function createPasswordResetToken($username) {
+        try {
+            // Kiểm tra username có tồn tại không
+            $admin = $this->findByUsername($username);
+            if (!$admin) {
+                return false;
+            }
+
+            // Tạo token ngẫu nhiên
+            $token = bin2hex(random_bytes(32));
+            
+            // Token hết hạn sau 1 giờ (sử dụng MySQL NOW() + INTERVAL để đảm bảo timezone đúng)
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+            // Xóa các token cũ của user này
+            try {
+                $sqlDelete = "DELETE FROM password_reset_tokens WHERE username = :username";
+                $stmtDelete = $this->conn->prepare($sqlDelete);
+                $stmtDelete->execute([':username' => $username]);
+            } catch (PDOException $e) {
+                // Nếu bảng chưa tồn tại, bỏ qua lỗi này
+                if (strpos($e->getMessage(), "doesn't exist") === false) {
+                    error_log("Delete old tokens error: " . $e->getMessage());
+                }
+            }
+
+            // Tạo token mới
+            $sql = "INSERT INTO password_reset_tokens (username, token, expires_at) 
+                    VALUES (:username, :token, :expires_at)";
+            $stmt = $this->conn->prepare($sql);
+            $result = $stmt->execute([
+                ':username' => $username,
+                ':token' => $token,
+                ':expires_at' => $expiresAt
+            ]);
+
+            if ($result) {
+                return $token;
+            }
+
+            return false;
+        } catch (PDOException $e) {
+            error_log("Create reset token error: " . $e->getMessage());
+            // Nếu lỗi do bảng chưa tồn tại, log rõ ràng hơn
+            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+                error_log("ERROR: Bảng password_reset_tokens chưa được tạo! Vui lòng chạy file database/password_reset_simple.sql");
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Kiểm tra token reset password có hợp lệ không
+     * 
+     * @param string $token
+     * @return array|false Thông tin token nếu hợp lệ, false nếu không
+     */
+    public function verifyResetToken($token) {
+        try {
+            // Kiểm tra token có tồn tại không
+            $sql = "SELECT * FROM password_reset_tokens 
+                    WHERE token = :token 
+                    LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':token' => $token]);
+            $tokenData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$tokenData) {
+                return false;
+            }
+
+            // Kiểm tra đã sử dụng chưa
+            if ($tokenData['used'] == 1) {
+                error_log("Token đã được sử dụng: " . $token);
+                return false;
+            }
+
+            // Kiểm tra hết hạn chưa (so sánh với thời gian hiện tại)
+            $expiresAt = strtotime($tokenData['expires_at']);
+            $now = time();
+            
+            if ($expiresAt <= $now) {
+                error_log("Token đã hết hạn. Expires: " . $tokenData['expires_at'] . ", Now: " . date('Y-m-d H:i:s'));
+                return false;
+            }
+
+            return $tokenData;
+        } catch (PDOException $e) {
+            error_log("Verify reset token error: " . $e->getMessage());
+            // Nếu lỗi do bảng chưa tồn tại
+            if (strpos($e->getMessage(), "doesn't exist") !== false) {
+                error_log("ERROR: Bảng password_reset_tokens chưa được tạo! Vui lòng chạy file database/password_reset_simple.sql");
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Đánh dấu token đã sử dụng
+     * 
+     * @param string $token
+     * @return bool
+     */
+    public function markTokenAsUsed($token) {
+        try {
+            $sql = "UPDATE password_reset_tokens SET used = 1 WHERE token = :token";
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute([':token' => $token]);
+        } catch (PDOException $e) {
+            error_log("Mark token as used error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Reset password bằng token
+     * 
+     * @param string $token
+     * @param string $newPassword
+     * @return bool
+     */
+    public function resetPasswordByToken($token, $newPassword) {
+        try {
+            // Verify token
+            $tokenData = $this->verifyResetToken($token);
+            if (!$tokenData) {
+                return false;
+            }
+
+            // Reset password
+            $result = $this->changePassword($tokenData['username'], $newPassword);
+
+            if ($result) {
+                // Đánh dấu token đã sử dụng
+                $this->markTokenAsUsed($token);
+                return true;
+            }
+
+            return false;
+        } catch (PDOException $e) {
+            error_log("Reset password by token error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy email của admin (nếu có)
+     * 
+     * @param string $username
+     * @return string|false
+     */
+    public function getAdminEmail($username) {
+        try {
+            $admin = $this->findByUsername($username);
+            return $admin && !empty($admin['Email']) ? $admin['Email'] : false;
+        } catch (PDOException $e) {
+            error_log("Get admin email error: " . $e->getMessage());
+            return false;
+        }
+    }
 }

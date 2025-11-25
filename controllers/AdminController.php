@@ -41,7 +41,7 @@ class AdminController extends BaseController {
     /* ==================== AUTH ==================== */
 
     /**
-     * Hiển thị form đăng nhập
+     * Hiển thị form đăng nhập và xử lý đăng nhập
      * Route: ?act=login
      */
     public function login() {
@@ -50,8 +50,401 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin');
         }
         
+        // Nếu là POST request → xử lý đăng nhập
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $this->handleLogin();
+            return;
+        }
+        
         // Load form login (KHÔNG có layout admin)
         require_once './views/admin/login.php';
+    }
+
+    /**
+     * Hiển thị form quên mật khẩu
+     * Route: ?act=forgot-password
+     */
+    public function forgotPassword() {
+        // Nếu đã login → chuyển về dashboard
+        if (!empty($_SESSION['alogin'])) {
+            $this->redirect(BASE_URL . '?act=admin');
+        }
+        
+        $error = null;
+        $success = null;
+        
+        // Load form forgot password
+        require_once './views/admin/forgot-password.php';
+    }
+
+    /**
+     * Xử lý quên mật khẩu - Yêu cầu xác thực email trước
+     * Route: ?act=forgot-password-handle
+     */
+    public function handleForgotPassword() {
+        // Nếu đã login → chuyển về dashboard
+        if (!empty($_SESSION['alogin'])) {
+            $this->redirect(BASE_URL . '?act=admin');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(BASE_URL . '?act=forgot-password');
+        }
+
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        
+        if (empty($username)) {
+            $error = 'Vui lòng nhập tên đăng nhập';
+            extract(['error' => $error, 'resetLinkDisplay' => null]);
+            require_once './views/admin/forgot-password.php';
+            return;
+        }
+
+        if (empty($email)) {
+            $error = 'Vui lòng nhập email để xác thực';
+            extract(['error' => $error, 'resetLinkDisplay' => null]);
+            require_once './views/admin/forgot-password.php';
+            return;
+        }
+
+        // Kiểm tra username và email có khớp không
+        $admin = $this->adminModel->findByUsername($username);
+        
+        if (!$admin) {
+            // Không tiết lộ username có tồn tại hay không (security best practice)
+            $error = 'Nếu tài khoản và email khớp, bạn sẽ nhận được link reset qua email';
+            extract(['error' => $error, 'resetLinkDisplay' => null]);
+            require_once './views/admin/forgot-password.php';
+            return;
+        }
+
+        // Kiểm tra email có khớp không
+        $adminEmail = $this->adminModel->getAdminEmail($username);
+        
+        if (!$adminEmail || strtolower(trim($adminEmail)) !== strtolower(trim($email))) {
+            // Không tiết lộ thông tin chi tiết (security best practice)
+            $error = 'Nếu tài khoản và email khớp, bạn sẽ nhận được link reset qua email';
+            extract(['error' => $error, 'resetLinkDisplay' => null]);
+            require_once './views/admin/forgot-password.php';
+            return;
+        }
+
+        // Email khớp → Tạo token và gửi email
+        $token = $this->adminModel->createPasswordResetToken($username);
+        
+        if ($token) {
+            // Tạo link reset
+            $resetLink = BASE_URL . '?act=reset-password&token=' . $token;
+            
+            // Gửi email với link reset
+            $emailSent = $this->sendPasswordResetEmail($email, $username, $resetLink);
+            
+            if ($emailSent) {
+                $success = 'Link reset mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư (cả thư mục Spam).';
+            } else {
+                // Fallback: Hiển thị link nếu không gửi được email (chỉ trong môi trường dev)
+                // Kiểm tra xem có phải localhost không
+                $isLocalhost = (strpos(BASE_URL, 'localhost') !== false || strpos(BASE_URL, '127.0.0.1') !== false);
+                
+                if ($isLocalhost) {
+                    // Trên localhost, hiển thị link để test
+                    $resetLinkDisplay = $resetLink;
+                    $success = 'Link reset mật khẩu đã được tạo. Vui lòng kiểm tra email hoặc sử dụng link bên dưới (chế độ phát triển).';
+                } else {
+                    // Trên production, không hiển thị link
+                    $success = 'Link reset mật khẩu đã được tạo. Vui lòng kiểm tra email của bạn. Nếu không nhận được email, vui lòng kiểm tra lại cấu hình SMTP hoặc liên hệ quản trị viên.';
+                }
+            }
+        } else {
+            $error = 'Không thể tạo link reset. Vui lòng thử lại sau.';
+        }
+
+        extract(['error' => $error ?? null, 'success' => $success ?? null, 'resetLinkDisplay' => $resetLinkDisplay ?? null]);
+        require_once './views/admin/forgot-password.php';
+    }
+
+    /**
+     * Gửi email reset password
+     * 
+     * @param string $email
+     * @param string $username
+     * @param string $resetLink
+     * @return bool
+     */
+    private function sendPasswordResetEmail($email, $username, $resetLink) {
+        try {
+            // Load EmailHelper
+            require_once './commons/EmailHelper.php';
+            
+            $subject = 'Reset Mật khẩu - StarVel Admin';
+            $message = $this->buildPasswordResetEmailTemplate($username, $resetLink);
+            
+            // Gửi email qua EmailHelper
+            $emailHelper = new EmailHelper();
+            $result = $emailHelper->send($email, $subject, $message);
+            
+            return $result;
+        } catch (Exception $e) {
+            error_log("Send email error: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Tạo template email reset password
+     * 
+     * @param string $username
+     * @param string $resetLink
+     * @return string HTML template
+     */
+    private function buildPasswordResetEmailTemplate($username, $resetLink) {
+        return "
+        <!DOCTYPE html>
+        <html lang='vi'>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    line-height: 1.6; 
+                    color: #333; 
+                    margin: 0; 
+                    padding: 0; 
+                    background-color: #f4f4f4;
+                }
+                .email-container { 
+                    max-width: 600px; 
+                    margin: 0 auto; 
+                    background: white;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                }
+                .email-header { 
+                    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%); 
+                    color: white; 
+                    padding: 30px 20px; 
+                    text-align: center;
+                }
+                .email-header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }
+                .email-content { 
+                    padding: 40px 30px; 
+                    background: #ffffff;
+                }
+                .email-content p {
+                    margin: 15px 0;
+                    color: #555;
+                    font-size: 16px;
+                }
+                .email-content .greeting {
+                    font-size: 18px;
+                    color: #333;
+                    font-weight: 600;
+                }
+                .reset-button { 
+                    display: inline-block; 
+                    padding: 14px 35px; 
+                    background: linear-gradient(135deg, #2563eb, #1e40af); 
+                    color: white !important; 
+                    text-decoration: none; 
+                    border-radius: 8px; 
+                    margin: 25px 0; 
+                    font-weight: 600;
+                    font-size: 16px;
+                    text-align: center;
+                    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+                }
+                .reset-button:hover {
+                    background: linear-gradient(135deg, #1e40af, #1e3a8a);
+                }
+                .reset-link-box {
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 20px 0;
+                    word-break: break-all;
+                    font-size: 14px;
+                    color: #475569;
+                }
+                .reset-link-box a {
+                    color: #2563eb;
+                    text-decoration: none;
+                }
+                .warning-box {
+                    background: #fef3c7;
+                    border-left: 4px solid #f59e0b;
+                    padding: 15px;
+                    margin: 20px 0;
+                    border-radius: 4px;
+                }
+                .warning-box p {
+                    margin: 5px 0;
+                    color: #92400e;
+                    font-size: 14px;
+                }
+                .email-footer { 
+                    background: #f8fafc;
+                    padding: 25px 30px; 
+                    text-align: center;
+                    border-top: 1px solid #e2e8f0;
+                }
+                .email-footer p {
+                    margin: 5px 0;
+                    font-size: 12px; 
+                    color: #64748b;
+                }
+                .email-footer a {
+                    color: #2563eb;
+                    text-decoration: none;
+                }
+            </style>
+        </head>
+        <body>
+            <div class='email-container'>
+                <div class='email-header'>
+                    <h1>🔐 Reset Mật khẩu</h1>
+                </div>
+                <div class='email-content'>
+                    <p class='greeting'>Xin chào <strong>{$username}</strong>,</p>
+                    <p>Bạn đã yêu cầu reset mật khẩu cho tài khoản admin của StarVel.</p>
+                    <p>Click vào nút bên dưới để đặt lại mật khẩu:</p>
+                    <div style='text-align: center;'>
+                        <a href='{$resetLink}' class='reset-button'>Đặt lại mật khẩu</a>
+                    </div>
+                    <p style='text-align: center; color: #64748b; font-size: 14px;'>Hoặc copy link sau vào trình duyệt:</p>
+                    <div class='reset-link-box'>
+                        <a href='{$resetLink}'>{$resetLink}</a>
+                    </div>
+                    <div class='warning-box'>
+                        <p><strong>⚠️ Lưu ý quan trọng:</strong></p>
+                        <p>• Link này có hiệu lực trong <strong>1 giờ</strong></p>
+                        <p>• Link chỉ sử dụng được <strong>1 lần</strong></p>
+                        <p>• Nếu bạn không yêu cầu reset mật khẩu, vui lòng bỏ qua email này</p>
+                    </div>
+                </div>
+                <div class='email-footer'>
+                    <p><strong>StarVel Admin System</strong></p>
+                    <p>© 2025 StarVel. All rights reserved.</p>
+                    <p>Email này được gửi tự động, vui lòng không reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+
+    /**
+     * Hiển thị form reset password
+     * Route: ?act=reset-password&token=XXX
+     */
+    public function resetPassword() {
+        // Nếu đã login → chuyển về dashboard
+        if (!empty($_SESSION['alogin'])) {
+            $this->redirect(BASE_URL . '?act=admin');
+        }
+
+        $token = $_GET['token'] ?? '';
+        
+        if (empty($token)) {
+            $_SESSION['error'] = 'Token không hợp lệ';
+            $this->redirect(BASE_URL . '?act=forgot-password');
+        }
+
+        // Verify token
+        $tokenData = $this->adminModel->verifyResetToken($token);
+        
+        if (!$tokenData) {
+            // Debug: Kiểm tra xem có phải do database chưa tạo không
+            $errorMsg = 'Token không hợp lệ hoặc đã hết hạn';
+            
+            // Thử kiểm tra xem token có tồn tại trong DB không (kể cả đã hết hạn)
+            try {
+                $conn = connectDB();
+                $sqlCheck = "SELECT * FROM password_reset_tokens WHERE token = :token LIMIT 1";
+                $stmtCheck = $conn->prepare($sqlCheck);
+                $stmtCheck->execute([':token' => $token]);
+                $tokenExists = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+                
+                if ($tokenExists) {
+                    if ($tokenExists['used'] == 1) {
+                        $errorMsg = 'Token này đã được sử dụng. Vui lòng tạo link reset mới.';
+                    } elseif (strtotime($tokenExists['expires_at']) < time()) {
+                        $errorMsg = 'Token đã hết hạn. Vui lòng tạo link reset mới.';
+                    }
+                } else {
+                    $errorMsg = 'Token không tồn tại. Vui lòng kiểm tra lại link.';
+                }
+            } catch (PDOException $e) {
+                // Nếu lỗi do bảng chưa tồn tại
+                if (strpos($e->getMessage(), "doesn't exist") !== false) {
+                    $errorMsg = 'Hệ thống chưa được cấu hình đúng. Vui lòng liên hệ quản trị viên.';
+                }
+            }
+            
+            $_SESSION['error'] = $errorMsg;
+            $this->redirect(BASE_URL . '?act=forgot-password');
+        }
+
+        $error = null;
+        
+        // Truyền token vào view (sử dụng compact hoặc extract)
+        extract(['token' => $token, 'error' => $error]);
+        require_once './views/admin/reset-password.php';
+    }
+
+    /**
+     * Xử lý reset password
+     * Route: ?act=reset-password-handle
+     */
+    public function handleResetPassword() {
+        // Nếu đã login → chuyển về dashboard
+        if (!empty($_SESSION['alogin'])) {
+            $this->redirect(BASE_URL . '?act=admin');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(BASE_URL . '?act=forgot-password');
+        }
+
+        $token = $_POST['token'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $passwordConfirm = $_POST['password_confirm'] ?? '';
+
+        if (empty($token)) {
+            $_SESSION['error'] = 'Token không hợp lệ';
+            $this->redirect(BASE_URL . '?act=forgot-password');
+        }
+
+        // Validate password
+        if (empty($password) || strlen($password) < 6) {
+            $error = 'Mật khẩu phải có ít nhất 6 ký tự';
+            require_once './views/admin/reset-password.php';
+            return;
+        }
+
+        if ($password !== $passwordConfirm) {
+            $error = 'Mật khẩu xác nhận không khớp';
+            require_once './views/admin/reset-password.php';
+            return;
+        }
+
+        // Reset password
+        $result = $this->adminModel->resetPasswordByToken($token, $password);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bây giờ.';
+            $this->redirect(BASE_URL . '?act=login');
+        } else {
+            $_SESSION['error'] = 'Không thể đặt lại mật khẩu. Token có thể đã hết hạn hoặc không hợp lệ.';
+            $this->redirect(BASE_URL . '?act=forgot-password');
+        }
     }
 
     /**

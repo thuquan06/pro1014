@@ -43,7 +43,7 @@ if (!preg_match('/^[a-z0-9-]+$/i', $act)) {
 try {
 
     // Load models & controllers cho admin routes
-    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'province') === 0 ||  strpos($act, 'blog') === 0 || strpos($act, 'hoadon') === 0 || in_array($act, ['login', 'login-handle', 'logout'])) {
+    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'province') === 0 ||  strpos($act, 'blog') === 0 || strpos($act, 'hoadon') === 0 || in_array($act, ['login', 'logout', 'forgot-password', 'forgot-password-handle', 'reset-password', 'reset-password-handle'])) {
         require_once './models/BaseModel.php';
         require_once './models/DashboardModel.php';
         require_once './models/TourModel.php';
@@ -88,12 +88,24 @@ try {
             (new AdminController())->login();
             break;
 
-        case 'login-handle':
-            (new AdminController())->handleLogin();
-            break;
-
         case 'logout':
             (new AdminController())->logout();
+            break;
+
+        case 'forgot-password':
+            (new AdminController())->forgotPassword();
+            break;
+
+        case 'forgot-password-handle':
+            (new AdminController())->handleForgotPassword();
+            break;
+
+        case 'reset-password':
+            (new AdminController())->resetPassword();
+            break;
+
+        case 'reset-password-handle':
+            (new AdminController())->handleResetPassword();
             break;
 
         // ===== ADMIN ROUTES =====
