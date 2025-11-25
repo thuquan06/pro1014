@@ -419,6 +419,34 @@ function safe_html($value) {
               <?php endif; ?>
             </div>
           </div>
+
+          <!-- Management Links in Info Card -->
+          <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
+            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-dark);">
+              <i class="fas fa-cog" style="color: var(--primary);"></i> Quản lý chi tiết
+            </h4>
+            <div class="management-links">
+              <a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
+                <i class="fas fa-route"></i>
+                Lịch trình
+              </a>
+              
+              <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
+                <i class="fas fa-images"></i>
+                Thư viện ảnh
+              </a>
+              
+              <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
+                <i class="fas fa-file-contract"></i>
+                Chính sách
+              </a>
+              
+              <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
+                <i class="fas fa-tags"></i>
+                Phân loại
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -519,36 +547,6 @@ function safe_html($value) {
               <p>Chưa có lưu ý</p>
             </div>
           <?php endif; ?>
-        </div>
-      </div>
-
-      <!-- Management Links -->
-      <div class="card">
-        <div class="card-header">
-          <h3><i class="fas fa-cog"></i> Quản lý chi tiết</h3>
-        </div>
-        <div class="card-body">
-          <div class="management-links">
-            <a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-              <i class="fas fa-route"></i>
-              Lịch trình
-            </a>
-            
-            <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-              <i class="fas fa-images"></i>
-              Thư viện ảnh
-            </a>
-            
-            <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-              <i class="fas fa-file-contract"></i>
-              Chính sách
-            </a>
-            
-            <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-              <i class="fas fa-tags"></i>
-              Phân loại
-            </a>
-          </div>
         </div>
       </div>
     </div>
