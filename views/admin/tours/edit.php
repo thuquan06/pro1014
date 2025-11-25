@@ -469,10 +469,7 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
       </div>
     </div>
 
-    <div class="form-group-modern">
-      <label for="ngaydang">Ngày đăng <span class="required">*</span></label>
-      <input type="date" name="ngaydang" id="ngaydang" value="<?=$ngaydang?>" required>
-    </div>
+    <input type="hidden" name="ngaydang" value="<?=date('Y-m-d')?>">
   </div>
 
   <!-- Card 6: Hình ảnh -->
