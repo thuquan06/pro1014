@@ -618,6 +618,111 @@ class AdminController extends BaseController {
     }
 
     /**
+     * Validate tour data (dùng chung cho create và update)
+     * @param array $data
+     * @return Validator
+     */
+    private function validateTourData($data) {
+        $validator = new Validator($data);
+        
+        // Tên gói tour
+        $validator->required('tengoi', 'Tên gói tour là bắt buộc')
+                  ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
+                  ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự');
+        
+        // Nơi xuất phát
+        $validator->required('noixuatphat', 'Nơi xuất phát là bắt buộc')
+                  ->minLength('noixuatphat', 3, 'Nơi xuất phát phải có ít nhất 3 ký tự')
+                  ->maxLength('noixuatphat', 255, 'Nơi xuất phát không được quá 255 ký tự');
+        
+        // Vị trí
+        $validator->required('vitri', 'Vị trí là bắt buộc')
+                  ->minLength('vitri', 3, 'Vị trí phải có ít nhất 3 ký tự')
+                  ->maxLength('vitri', 255, 'Vị trí không được quá 255 ký tự');
+        
+        // Giá gói
+        $validator->required('giagoi', 'Giá gói là bắt buộc')
+                  ->numeric('giagoi', 'Giá gói phải là số')
+                  ->min('giagoi', 1000, 'Giá gói phải lớn hơn hoặc bằng 1,000 VNĐ');
+        
+        // Giá trẻ em (nếu có)
+        if (!empty($data['giatreem'])) {
+            $validator->numeric('giatreem', 'Giá trẻ em phải là số')
+                      ->min('giatreem', 0, 'Giá trẻ em phải lớn hơn hoặc bằng 0')
+                      ->custom('giatreem', function($value) use ($data) {
+                          return empty($data['giagoi']) || $value <= $data['giagoi'];
+                      }, 'Giá trẻ em không được lớn hơn giá gói');
+        }
+        
+        // Giá trẻ nhỏ (nếu có)
+        if (!empty($data['giatrenho'])) {
+            $validator->numeric('giatrenho', 'Giá trẻ nhỏ phải là số')
+                      ->min('giatrenho', 0, 'Giá trẻ nhỏ phải lớn hơn hoặc bằng 0')
+                      ->custom('giatrenho', function($value) use ($data) {
+                          return empty($data['giagoi']) || $value <= $data['giagoi'];
+                      }, 'Giá trẻ nhỏ không được lớn hơn giá gói');
+        }
+        
+        // Số ngày
+        $validator->required('songay', 'Số ngày là bắt buộc')
+                  ->integer('songay', 'Số ngày phải là số nguyên')
+                  ->min('songay', 1, 'Số ngày phải lớn hơn 0')
+                  ->max('songay', 365, 'Số ngày không được quá 365 ngày');
+        
+        // Giờ đi
+        if (!empty($data['giodi'])) {
+            $validator->pattern('giodi', '/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', 'Giờ đi không hợp lệ (định dạng: HH:mm)');
+        }
+        
+        // Ngày xuất phát
+        if (!empty($data['ngayxuatphat'])) {
+            $validator->date('ngayxuatphat', 'Y-m-d', 'Ngày xuất phát không hợp lệ (định dạng: YYYY-MM-DD)')
+                      ->custom('ngayxuatphat', function($value) {
+                          $date = DateTime::createFromFormat('Y-m-d', $value);
+                          return $date && $date >= new DateTime('today');
+                      }, 'Ngày xuất phát phải là ngày hôm nay hoặc trong tương lai');
+        }
+        
+        // Ngày về
+        if (!empty($data['ngayve'])) {
+            $validator->date('ngayve', 'Y-m-d', 'Ngày về không hợp lệ (định dạng: YYYY-MM-DD)')
+                      ->custom('ngayve', function($value) use ($data) {
+                          if (empty($data['ngayxuatphat'])) return true;
+                          $ngayVe = DateTime::createFromFormat('Y-m-d', $value);
+                          $ngayXuatPhat = DateTime::createFromFormat('Y-m-d', $data['ngayxuatphat']);
+                          return $ngayVe && $ngayXuatPhat && $ngayVe >= $ngayXuatPhat;
+                      }, 'Ngày về phải sau hoặc bằng ngày xuất phát');
+        }
+        
+        // Phương tiện
+        if (!empty($data['phuongtien'])) {
+            $validator->maxLength('phuongtien', 100, 'Phương tiện không được quá 100 ký tự');
+        }
+        
+        // Chi tiết gói
+        if (!empty($data['chitietgoi'])) {
+            $validator->maxLength('chitietgoi', 5000, 'Chi tiết gói không được quá 5000 ký tự');
+        }
+        
+        // Chương trình
+        if (!empty($data['chuongtrinh'])) {
+            $validator->maxLength('chuongtrinh', 5000, 'Chương trình không được quá 5000 ký tự');
+        }
+        
+        // Lưu ý
+        if (!empty($data['luuy'])) {
+            $validator->maxLength('luuy', 2000, 'Lưu ý không được quá 2000 ký tự');
+        }
+        
+        // Quốc gia
+        if (!empty($data['quocgia'])) {
+            $validator->maxLength('quocgia', 100, 'Quốc gia không được quá 100 ký tự');
+        }
+        
+        return $validator;
+    }
+
+    /**
      * Lưu tour vào DB (với validation đầy đủ)
      * Route: ?act=admin-tour-store
      */
@@ -626,20 +731,7 @@ class AdminController extends BaseController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ===== VALIDATE INPUT =====
-            $validator = new Validator($_POST);
-            $validator->required('tengoi', 'Tên gói tour là bắt buộc')
-                      ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
-                      ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự')
-                      ->required('noixuatphat', 'Nơi xuất phát là bắt buộc')
-                      ->required('vitri', 'Vị trí là bắt buộc')
-                      ->required('giagoi', 'Giá gói là bắt buộc')
-                      ->numeric('giagoi', 'Giá gói phải là số')
-                      ->min('giagoi', 0, 'Giá gói phải lớn hơn 0')
-                      ->numeric('giatreem', 'Giá trẻ em phải là số')
-                      ->numeric('giatrenho', 'Giá trẻ nhỏ phải là số')
-                      ->required('songay', 'Số ngày là bắt buộc')
-                      ->integer('songay', 'Số ngày phải là số nguyên')
-                      ->min('songay', 1, 'Số ngày phải lớn hơn 0');
+            $validator = $this->validateTourData($_POST);
 
             if ($validator->fails()) {
                 $error = $validator->firstError();
@@ -725,20 +817,7 @@ class AdminController extends BaseController {
             }
 
             // Validate input
-            $validator = new Validator($_POST);
-            $validator->required('tengoi', 'Tên gói tour là bắt buộc')
-                      ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
-                      ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự')
-                      ->required('noixuatphat', 'Nơi xuất phát là bắt buộc')
-                      ->required('vitri', 'Vị trí là bắt buộc')
-                      ->required('giagoi', 'Giá gói là bắt buộc')
-                      ->numeric('giagoi', 'Giá gói phải là số')
-                      ->min('giagoi', 0, 'Giá gói phải lớn hơn 0')
-                      ->numeric('giatreem', 'Giá trẻ em phải là số')
-                      ->numeric('giatrenho', 'Giá trẻ nhỏ phải là số')
-                      ->required('songay', 'Số ngày là bắt buộc')
-                      ->integer('songay', 'Số ngày phải là số nguyên')
-                      ->min('songay', 1, 'Số ngày phải lớn hơn 0');
+            $validator = $this->validateTourData($_POST);
 
             if ($validator->fails()) {
                 $_SESSION['error'] = $validator->firstError();
