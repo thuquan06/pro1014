@@ -44,7 +44,7 @@ function safe_html($value) {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: 350px 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 24px;
   margin-bottom: 24px;
 }
@@ -58,6 +58,7 @@ function safe_html($value) {
 .tour-image-card {
   position: sticky;
   top: 90px;
+  height: fit-content;
 }
 
 .tour-image {
@@ -286,36 +287,19 @@ function safe_html($value) {
 
   <!-- Main Content Grid -->
   <div class="detail-grid">
-    <!-- Left Column: Image & Quick Stats -->
+    <!-- Left Column: Image Only -->
     <div>
       <div class="card tour-image-card">
-        <div class="card-body">
+        <div class="card-body" style="padding: 0;">
           <?php if (!empty($tour['hinhanh'])): ?>
             <img src="<?= BASE_URL ?>/<?= safe_html($tour['hinhanh']) ?>" 
                  alt="<?= safe_html($tour['tengoi']) ?>" 
-                 class="tour-image">
+                 class="tour-image" style="margin-bottom: 0; border-radius: 12px;">
           <?php else: ?>
-            <div class="image-placeholder">
+            <div class="image-placeholder" style="margin-bottom: 0;">
               <i class="fas fa-image"></i>
             </div>
           <?php endif; ?>
-          
-          <div class="quick-stats">
-            <div class="quick-stat">
-              <div class="quick-stat-value"><?= safe_html($tour['songay']) ?></div>
-              <div class="quick-stat-label">Số ngày</div>
-            </div>
-            <div class="quick-stat">
-              <div class="quick-stat-value">
-                <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
-                  <i class="fas fa-check-circle" style="color: var(--success);"></i>
-                <?php else: ?>
-                  <i class="fas fa-times-circle" style="color: var(--danger);"></i>
-                <?php endif; ?>
-              </div>
-              <div class="quick-stat-label">Trạng thái</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -383,6 +367,36 @@ function safe_html($value) {
               Phương tiện
             </div>
             <div class="info-value"><?= safe_html($tour['phuongtien']) ?></div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar-days"></i>
+              Số ngày
+            </div>
+            <div class="info-value">
+              <strong style="font-size: 18px; color: var(--primary);">
+                <?= safe_html($tour['songay']) ?> ngày
+              </strong>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-toggle-on"></i>
+              Trạng thái
+            </div>
+            <div class="info-value">
+              <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
+                <span class="badge-status active">
+                  <i class="fas fa-check-circle"></i> Đang hiển thị
+                </span>
+              <?php else: ?>
+                <span class="badge-status inactive">
+                  <i class="fas fa-times-circle"></i> Đang ẩn
+                </span>
+              <?php endif; ?>
+            </div>
           </div>
         </div>
       </div>
@@ -494,7 +508,7 @@ function safe_html($value) {
         <div class="card-body">
           <?php if (!empty($tour['chitietgoi'])): ?>
             <div class="content-box">
-              <?= nl2br(safe_html($tour['chitietgoi'])) ?>
+              <?= $tour['chitietgoi'] ?>
             </div>
           <?php else: ?>
             <div class="empty-content">
@@ -513,7 +527,7 @@ function safe_html($value) {
         <div class="card-body">
           <?php if (!empty($tour['chuongtrinh'])): ?>
             <div class="content-box">
-              <?= nl2br(safe_html($tour['chuongtrinh'])) ?>
+              <?= $tour['chuongtrinh'] ?>
             </div>
           <?php else: ?>
             <div class="empty-content">
@@ -532,7 +546,7 @@ function safe_html($value) {
         <div class="card-body">
           <?php if (!empty($tour['luuy'])): ?>
             <div class="content-box">
-              <?= nl2br(safe_html($tour['luuy'])) ?>
+              <?= $tour['luuy'] ?>
             </div>
           <?php else: ?>
             <div class="empty-content">
