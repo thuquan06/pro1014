@@ -42,31 +42,18 @@ function safe_html($value) {
   gap: 12px;
 }
 
-.detail-grid {
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 24px;
+.tour-image-section {
   margin-bottom: 24px;
-}
-
-@media (max-width: 992px) {
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.tour-image-card {
-  position: sticky;
-  top: 90px;
-  height: fit-content;
 }
 
 .tour-image {
   width: 100%;
+  max-width: 800px;
   height: 400px;
   object-fit: cover;
   border-radius: 12px;
-  margin-bottom: 16px;
+  display: block;
+  margin: 0 auto;
 }
 
 .image-placeholder {
@@ -285,27 +272,23 @@ function safe_html($value) {
     </div>
   </div>
 
-  <!-- Main Content Grid -->
-  <div class="detail-grid">
-    <!-- Left Column: Image Only -->
-    <div>
-      <div class="card tour-image-card">
-        <div class="card-body" style="padding: 0;">
-          <?php if (!empty($tour['hinhanh'])): ?>
-            <img src="<?= BASE_URL ?>/<?= safe_html($tour['hinhanh']) ?>" 
-                 alt="<?= safe_html($tour['tengoi']) ?>" 
-                 class="tour-image" style="margin-bottom: 0; border-radius: 12px;">
-          <?php else: ?>
-            <div class="image-placeholder" style="margin-bottom: 0;">
-              <i class="fas fa-image"></i>
-            </div>
-          <?php endif; ?>
+  <!-- Tour Image -->
+  <div class="card tour-image-section">
+    <div class="card-body" style="padding: 0;">
+      <?php if (!empty($tour['hinhanh'])): ?>
+        <img src="<?= BASE_URL ?>/<?= safe_html($tour['hinhanh']) ?>" 
+             alt="<?= safe_html($tour['tengoi']) ?>" 
+             class="tour-image">
+      <?php else: ?>
+        <div class="image-placeholder">
+          <i class="fas fa-image"></i>
         </div>
-      </div>
+      <?php endif; ?>
     </div>
+  </div>
 
-    <!-- Right Column: Tour Information -->
-    <div>
+  <!-- Tour Information -->
+  <div>
       <!-- Basic Information -->
       <div class="card info-section">
         <div class="card-header">
@@ -588,4 +571,5 @@ function safe_html($value) {
       </div>
     </div>
   </div>
+
 </div>
