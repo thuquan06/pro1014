@@ -1,255 +1,342 @@
 <?php
 /**
- * View: Tạo hóa đơn mới
+ * Tạo Hóa đơn - Modern Interface
+ * Updated: 2025-11-25
  */
 
-// Helper function
 function safe_html($value) {
     return htmlentities($value ?? '', ENT_QUOTES, 'UTF-8');
 }
 ?>
 
-<div class="agile-grids">
-    <div class="agile-tables" style="padding: 20px;">
-        <div class="w3l-table-info">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>Tạo hóa đơn mới</h2>
-                <a href="<?php echo BASE_URL; ?>?act=hoadon-list" class="btn btn-default">
-                    <i class="fa fa-arrow-left"></i> Quay lại
-                </a>
-            </div>
+<style>
+.invoice-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
 
-            <form method="POST" action="<?php echo BASE_URL; ?>?act=hoadon-create" class="form-horizontal">
-                
-                <!-- Thông tin khách hàng -->
-                <div class="panel panel-primary">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-user"></i> Thông tin khách hàng</h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Email khách hàng <span style="color: red;">*</span></label>
-                            <div class="col-sm-10">
-                                <input type="email" class="form-control" name="email_nguoidung" 
-                                       placeholder="email@example.com" required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+.invoice-form-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
 
-                <!-- Thông tin tour -->
-                <div class="panel panel-success">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-map-marker"></i> Thông tin tour</h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Chọn tour <span style="color: red;">*</span></label>
-                            <div class="col-sm-10">
-                                <select class="form-control" name="id_goi" id="tourSelect" required>
-                                    <option value="">-- Chọn tour --</option>
-                                    <?php if (!empty($tours)): ?>
-                                        <?php foreach ($tours as $tour): ?>
-                                            <option value="<?php echo $tour['id_goi']; ?>" 
-                                                    data-giagoi="<?php echo $tour['giagoi'] ?? 0; ?>"
-                                                    data-giatreem="<?php echo $tour['giatreem'] ?? 0; ?>"
-                                                    data-giatrenho="<?php echo $tour['giatrenho'] ?? 0; ?>">
-                                                <?php echo safe_html($tour['tengoi']); ?> - 
-                                                <?php echo number_format($tour['giagoi'] ?? 0); ?> VNĐ
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                            </div>
-                        </div>
+.form-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
 
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Ngày vào</label>
-                            <div class="col-sm-10">
-                                <input type="date" class="form-control" name="ngayvao">
-                            </div>
-                        </div>
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--bg-light);
+}
 
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Ngày ra</label>
-                            <div class="col-sm-10">
-                                <input type="date" class="form-control" name="ngayra">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+.card-header i {
+  font-size: 20px;
+  color: var(--primary);
+}
 
-                <!-- Số lượng khách -->
-                <div class="panel panel-info">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-users"></i> Số lượng khách</h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-sm-4 control-label">Người lớn <span style="color: red;">*</span></label>
-                                    <div class="col-sm-8">
-                                        <input type="number" class="form-control calculate-price" name="nguoilon" 
-                                               id="nguoilon" value="1" min="0" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-sm-4 control-label">Trẻ em (6-11 tuổi)</label>
-                                    <div class="col-sm-8">
-                                        <input type="number" class="form-control calculate-price" name="treem" 
-                                               id="treem" value="0" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+.card-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-sm-4 control-label">Trẻ nhỏ (2-5 tuổi)</label>
-                                    <div class="col-sm-8">
-                                        <input type="number" class="form-control calculate-price" name="trenho" 
-                                               id="trenho" value="0" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-sm-4 control-label">Em bé (dưới 2 tuổi)</label>
-                                    <div class="col-sm-8">
-                                        <input type="number" class="form-control" name="embe" value="0" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
 
-                        <!-- Tổng tiền dự kiến -->
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="alert alert-info" style="margin-top: 15px;">
-                                    <strong>Tổng tiền dự kiến: </strong>
-                                    <span id="totalPrice" style="font-size: 18px; color: #e74c3c;">0 VNĐ</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+.form-group-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-                <!-- Ghi chú và trạng thái -->
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-sticky-note"></i> Thông tin bổ sung</h3>
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Ghi chú</label>
-                            <div class="col-sm-10">
-                                <textarea class="form-control" name="ghichu" rows="4" 
-                                          placeholder="Ghi chú đặc biệt (nếu có)"></textarea>
-                            </div>
-                        </div>
+.form-group-modern label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dark);
+}
 
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">Trạng thái</label>
-                            <div class="col-sm-10">
-                                <select class="form-control" name="trangthai">
-                                    <option value="0">Chờ xác nhận</option>
-                                    <option value="1">Đã xác nhận</option>
-                                    <option value="2">Hoàn thành</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+.form-group-modern label .required {
+  color: #ef4444;
+  margin-left: 4px;
+}
 
-                <div class="form-group">
-                    <div class="col-sm-offset-2 col-sm-10">
-                        <button type="submit" class="btn btn-success btn-lg">
-                            <i class="fa fa-save"></i> Tạo hóa đơn
-                        </button>
-                        <a href="<?php echo BASE_URL; ?>?act=hoadon-list" class="btn btn-default btn-lg">
-                            <i class="fa fa-times"></i> Hủy
-                        </a>
-                    </div>
-                </div>
+.form-group-modern input,
+.form-group-modern select,
+.form-group-modern textarea {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
 
-            </form>
+.form-group-modern input:focus,
+.form-group-modern select:focus,
+.form-group-modern textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
 
-        </div>
-    </div>
+.price-preview {
+  background: linear-gradient(135deg, var(--primary), #1e40af);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.price-preview-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.price-preview-value {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 20px;
+}
+
+.btn-submit {
+  padding: 12px 32px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-submit:hover {
+  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-cancel {
+  padding: 12px 32px;
+  background: white;
+  color: var(--text-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-cancel:hover {
+  background: var(--bg-light);
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<!-- Page Header -->
+<div class="invoice-form-header">
+  <h1 class="invoice-form-title">
+    <i class="fas fa-plus-circle" style="color: var(--primary);"></i>
+    Tạo hóa đơn mới
+  </h1>
+  <a href="<?php echo BASE_URL; ?>?act=hoadon-list" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i>
+    Quay lại
+  </a>
 </div>
+
+<!-- Form -->
+<form method="POST" action="<?php echo BASE_URL; ?>?act=hoadon-create">
+  
+  <!-- Card 1: Thông tin khách hàng -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-user"></i>
+      <h3>Thông tin khách hàng</h3>
+    </div>
+    
+    <div class="form-group-modern">
+      <label for="email_nguoidung">
+        Email khách hàng <span class="required">*</span>
+      </label>
+      <input type="email" name="email_nguoidung" id="email_nguoidung" required placeholder="email@example.com">
+    </div>
+  </div>
+
+  <!-- Card 2: Thông tin tour -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-map-marked-alt"></i>
+      <h3>Thông tin tour</h3>
+    </div>
+    
+    <div class="form-group-modern">
+      <label for="tourSelect">
+        Chọn tour <span class="required">*</span>
+      </label>
+      <select name="id_goi" id="tourSelect" required>
+        <option value="">-- Chọn tour --</option>
+        <?php if (!empty($tours)): ?>
+          <?php foreach ($tours as $tour): ?>
+            <option value="<?php echo $tour['id_goi']; ?>" 
+                    data-giagoi="<?php echo $tour['giagoi'] ?? 0; ?>"
+                    data-giatreem="<?php echo $tour['giatreem'] ?? 0; ?>"
+                    data-giatrenho="<?php echo $tour['giatrenho'] ?? 0; ?>">
+              <?php echo safe_html($tour['tengoi']); ?> - 
+              <?php echo number_format($tour['giagoi'] ?? 0); ?> VNĐ
+            </option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label for="ngayvao">Ngày vào</label>
+        <input type="date" name="ngayvao" id="ngayvao">
+      </div>
+
+      <div class="form-group-modern">
+        <label for="ngayra">Ngày ra</label>
+        <input type="date" name="ngayra" id="ngayra">
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Số lượng khách -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-users"></i>
+      <h3>Số lượng khách</h3>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label for="nguoilon">
+          Người lớn <span class="required">*</span>
+        </label>
+        <input type="number" name="nguoilon" id="nguoilon" class="calculate-price" value="1" min="0" required>
+      </div>
+
+      <div class="form-group-modern">
+        <label for="treem">Trẻ em (6-11 tuổi)</label>
+        <input type="number" name="treem" id="treem" class="calculate-price" value="0" min="0">
+      </div>
+
+      <div class="form-group-modern">
+        <label for="trenho">Trẻ nhỏ (2-5 tuổi)</label>
+        <input type="number" name="trenho" id="trenho" class="calculate-price" value="0" min="0">
+      </div>
+
+      <div class="form-group-modern">
+        <label for="embe">Em bé (dưới 2 tuổi)</label>
+        <input type="number" name="embe" id="embe" value="0" min="0">
+      </div>
+    </div>
+
+    <!-- Tổng tiền -->
+    <div class="price-preview">
+      <p class="price-preview-label">Tổng tiền dự kiến</p>
+      <h2 class="price-preview-value" id="totalPrice">0 VNĐ</h2>
+    </div>
+  </div>
+
+  <!-- Card 4: Thông tin bổ sung -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-sticky-note"></i>
+      <h3>Thông tin bổ sung</h3>
+    </div>
+    
+    <div class="form-group-modern">
+      <label for="ghichu">Ghi chú</label>
+      <textarea name="ghichu" id="ghichu" rows="4" placeholder="Ghi chú đặc biệt (nếu có)"></textarea>
+    </div>
+
+    <div class="form-group-modern">
+      <label for="trangthai">Trạng thái</label>
+      <select name="trangthai" id="trangthai">
+        <option value="0">Chờ xác nhận</option>
+        <option value="1">Đã xác nhận</option>
+        <option value="2">Hoàn thành</option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <a href="<?php echo BASE_URL; ?>?act=hoadon-list" class="btn-cancel">
+        <i class="fas fa-times"></i>
+        Hủy bỏ
+      </a>
+      <button type="submit" class="btn-submit">
+        <i class="fas fa-save"></i>
+        Tạo hóa đơn
+      </button>
+    </div>
+  </div>
+
+</form>
 
 <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-    // Tính tổng tiền khi thay đổi
-    function calculateTotal() {
-        var tourSelect = $('#tourSelect option:selected');
-        var giagoi = parseFloat(tourSelect.attr('data-giagoi')) || 0;
-        var giatreem = parseFloat(tourSelect.attr('data-giatreem')) || 0;
-        var giatrenho = parseFloat(tourSelect.attr('data-giatrenho')) || 0;
-        
-        var nguoilon = parseInt($('#nguoilon').val()) || 0;
-        var treem = parseInt($('#treem').val()) || 0;
-        var trenho = parseInt($('#trenho').val()) || 0;
-        
-        var total = (nguoilon * giagoi) + (treem * giatreem) + (trenho * giatrenho);
-        
-        $('#totalPrice').text(total.toLocaleString('vi-VN') + ' VNĐ');
-    }
+  // Tính tổng tiền khi thay đổi
+  function calculateTotal() {
+    var tourSelect = $('#tourSelect option:selected');
+    var giagoi = parseFloat(tourSelect.attr('data-giagoi')) || 0;
+    var giatreem = parseFloat(tourSelect.attr('data-giatreem')) || 0;
+    var giatrenho = parseFloat(tourSelect.attr('data-giatrenho')) || 0;
     
-    // Khi chọn tour hoặc thay đổi số lượng
-    $('#tourSelect, .calculate-price').on('change keyup', function() {
-        calculateTotal();
-    });
+    var nguoilon = parseInt($('#nguoilon').val()) || 0;
+    var treem = parseInt($('#treem').val()) || 0;
+    var trenho = parseInt($('#trenho').val()) || 0;
     
-    // Tính toán lần đầu
+    var total = (nguoilon * giagoi) + (treem * giatreem) + (trenho * giatrenho);
+    
+    $('#totalPrice').text(total.toLocaleString('vi-VN') + ' VNĐ');
+  }
+  
+  // Khi chọn tour hoặc thay đổi số lượng
+  $('#tourSelect, .calculate-price').on('change keyup', function() {
     calculateTotal();
+  });
+  
+  // Tính toán lần đầu
+  calculateTotal();
 });
 </script>
-
-<style type="text/css">
-    .panel {
-        border-radius: 5px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
-    }
-    
-    .panel-heading {
-        border-radius: 5px 5px 0 0;
-        padding: 12px 15px;
-    }
-    
-    .panel-title {
-        font-size: 16px;
-        font-weight: bold;
-    }
-    
-    .panel-body {
-        padding: 20px;
-    }
-    
-    .form-horizontal .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .control-label {
-        padding-top: 7px;
-        text-align: left;
-        font-weight: 600;
-    }
-    
-    .form-control {
-        border-radius: 3px;
-        border: 1px solid #ddd;
-        padding: 8px 12px;
-    }
-    
-    .form-control:focus {
-        border-color: #3498db;
-        box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
-    }
-</style>
