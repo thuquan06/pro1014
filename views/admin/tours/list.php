@@ -32,8 +32,6 @@ function safe_html($value) {
                         <th style="text-align: center;">Ngày tạo</th>
                         <th style="text-align: center;">Trạng thái</th>
                         <th style="text-align: center;">Hoạt động</th>
-                        <!-- ✨ CỘT MỚI -->
-                        <th style="text-align: center;">Chi tiết</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,47 +99,6 @@ function safe_html($value) {
                                     </button>
                                 </a>
                             </td>
-
-                            <!-- ✨ CỘT CHI TIẾT MỚI -->
-                            <td style="text-align: center; width: 120px;">
-                                <div class="btn-group-vertical" style="width: 100%;">
-                                    <a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-info btn-xs" 
-                                       style="margin-bottom: 3px;"
-                                       title="Quản lý lịch trình tour">
-                                        <i class="fa fa-calendar"></i> Lịch trình
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-success btn-xs"
-                                       style="margin-bottom: 3px;"
-                                       title="Quản lý hình ảnh tour">
-                                        <i class="fa fa-picture-o"></i> Gallery
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-warning btn-xs"
-                                       style="margin-bottom: 3px;"
-                                       title="Quản lý chính sách hủy/đổi">
-                                        <i class="fa fa-file-text"></i> Chính sách
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-versions&id_goi=<?= $id_goi ?>" 
-                                        class="btn btn-danger btn-xs"
-                                        style="margin-bottom: 3px;"
-                                        title="Quản lý phiên bản">
-                                        <i class="fa fa-code-fork"></i> Versions
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-primary btn-xs"
-                                       title="Quản lý loại tour & tags">
-                                        <i class="fa fa-tags"></i> Phân loại
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-publish&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-dark btn-xs"
-                                       title="Kiểm tra & Publish">
-                                        <i class="fa fa-rocket"></i> Publish
-                                    </a>
-                                </div>
-                            </td>
-                            
                         </tr>
                     <?php 
                         $cnt++;
@@ -188,24 +145,4 @@ function safe_html($value) {
 </script>
 <style type="text/css">
 	.dataTables_wrapper{ margin-top: 20px; }
-    
-    /* ✨ CSS CHO CỘT CHI TIẾT MỚI */
-    .btn-group-vertical .btn {
-        display: block;
-        width: 100%;
-        text-align: left;
-        border-radius: 3px;
-    }
-    
-    .btn-group-vertical .btn i {
-        margin-right: 5px;
-        width: 15px;
-        text-align: center;
-    }
-    
-    .btn-xs {
-        padding: 5px 10px;
-        font-size: 12px;
-        line-height: 1.5;
-    }
 </style>
