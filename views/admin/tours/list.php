@@ -1,202 +1,477 @@
 <?php
-// File: views/admin/tours/list.php (ĐÃ THÊM CỘT CHI TIẾT)
-
-/*
- * Biến $tours (chứa mảng tour) đã được AdminController::listTours()
- * chuẩn bị và truyền vào file layout.php
+/**
+ * Tour List - Danh sách tour hiện đại
+ * Updated: 2025-11-25
  */
 
-// Helper function để tránh lỗi htmlentities với null
+// Helper function
 function safe_html($value) {
     return htmlentities($value ?? '', ENT_QUOTES, 'UTF-8');
 }
 ?>
-<div class="agile-grids">	
-    <div class="agile-tables" style="padding: 0px;">
-        <div class="w3l-table-info">
-            <h2>Quản lý tour</h2>
-            <table id="table">
-                <thead>
-                    <tr>
-                        <th style="text-align: center;">STT</th>
-                        <th style="text-align: center;">Quốc gia</th>
-                        <th style="text-align: center;">Tỉnh</th>
-                        <th style="text-align: center;">Tên</th>
-                        <th style="text-align: center;">Điểm đi</th>
-                        <th style="text-align: center;">Điểm đến</th>
-                        <th style="text-align: center;">Giá</th>
-                        <th style="text-align: center;">Số ngày</th>
-                        <th style="text-align: center;">Giờ đi/ Ngày đi</th>
-                        <th style="text-align: center;">Ngày về</th>
-                        <th style="text-align: center;">Phương tiện</th>
-                        <th style="text-align: center;">Ngày tạo</th>
-                        <th style="text-align: center;">Trạng thái</th>
-                        <th style="text-align: center;">Hoạt động</th>
-                        <!-- ✨ CỘT MỚI -->
-                        <th style="text-align: center;">Chi tiết</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $cnt = 1;
-                    if (!empty($tours)) {
-                        foreach ($tours as $tour) { 
-                            // Lấy giá trị an toàn
-                            $quocgia = $tour['quocgia'] ?? '';
-                            $ten_tinh = $tour['ten_tinh'] ?? '';
-                            $tengoi = $tour['tengoi'] ?? '';
-                            $noixuatphat = $tour['noixuatphat'] ?? '';
-                            $vitri = $tour['vitri'] ?? '';
-                            $giagoi = $tour['giagoi'] ?? '';
-                            $giatreem = $tour['giatreem'] ?? '';
-                            $giatrenho = $tour['giatrenho'] ?? '';
-                            $songay = $tour['songay'] ?? '';
-                            $giodi = $tour['giodi'] ?? '';
-                            $ngayxuatphat = $tour['ngayxuatphat'] ?? '';
-                            $ngayve = $tour['ngayve'] ?? '';
-                            $phuongtien = $tour['phuongtien'] ?? '';
-                            $ngaydang = $tour['ngaydang'] ?? '';
-                            $id_goi = $tour['id_goi'] ?? '';
-                    ?>		
-                        <tr>
-                            <td><?php echo safe_html($cnt);?></td>
-                            <td><?php echo safe_html($quocgia);?></td>
-                            <td><?php echo safe_html($ten_tinh);?></td>
-                            <td><?php echo safe_html($tengoi);?></td>
-                            <td><?php echo safe_html($noixuatphat);?></td>
-                            <td><?php echo safe_html($vitri);?></td>
-                            <td style="width: 150px;">Người lớn: <?php echo safe_html($giagoi);?>
-                                <br>Trẻ em: <?php echo safe_html($giatreem);?>
-                                <br>Trẻ nhỏ: <?php echo safe_html($giatrenho);?>
-                            </td>
-                            <td><?php echo safe_html($songay);?></td>
-                            <td><?php echo safe_html($giodi);?>
-                                <br><?php echo $ngayxuatphat ? date("d-m-Y", strtotime($ngayxuatphat)) : ''; ?>
-                            </td>
-                            <td><?php echo $ngayve ? date("d-m-Y", strtotime($ngayve)) : ''; ?></td>
-                            <td><?php echo safe_html($phuongtien);?></td>
-                            <td><?php echo $ngaydang ? date("d-m-Y", strtotime($ngaydang)) : ''; ?></td>
-                            <td style="text-align:center;">
-                                <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
-                                    <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-success btn-xs">Hiển thị</a>
-                                <?php else: ?>
-                                    <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" class="btn btn-warning btn-xs">Ẩn</a>
-                                <?php endif; ?>
-                            </td>
 
-                            <td style="width: 194px;">
-                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo safe_html($id_goi);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
-                                    <button type="button" class="btn btn-primary btn-block" style="border-bottom: 2px solid;">Xóa</button>
-                                </a>
-                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-edit&id=<?php echo safe_html($id_goi);?>">
-                                    <button type="button" class="btn btn-primary btn-block" >Chỉnh sửa</button>
-                                </a>
-                            </td>
+<style>
+.tours-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
 
-                            <!-- ✨ CỘT CHI TIẾT MỚI -->
-                            <td style="text-align: center; width: 120px;">
-                                <div class="btn-group-vertical" style="width: 100%;">
-                                    <a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-info btn-xs" 
-                                       style="margin-bottom: 3px;"
-                                       title="Quản lý lịch trình tour">
-                                        <i class="fa fa-calendar"></i> Lịch trình
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-success btn-xs"
-                                       style="margin-bottom: 3px;"
-                                       title="Quản lý hình ảnh tour">
-                                        <i class="fa fa-picture-o"></i> Gallery
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-warning btn-xs"
-                                       style="margin-bottom: 3px;"
-                                       title="Quản lý chính sách hủy/đổi">
-                                        <i class="fa fa-file-text"></i> Chính sách
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-versions&id_goi=<?= $id_goi ?>" 
-                                        class="btn btn-danger btn-xs"
-                                        style="margin-bottom: 3px;"
-                                        title="Quản lý phiên bản">
-                                        <i class="fa fa-code-fork"></i> Versions
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-primary btn-xs"
-                                       title="Quản lý loại tour & tags">
-                                        <i class="fa fa-tags"></i> Phân loại
-                                    </a>
-                                    <a href="<?= BASE_URL ?>?act=tour-publish&id_goi=<?= $id_goi ?>" 
-                                       class="btn btn-dark btn-xs"
-                                       title="Kiểm tra & Publish">
-                                        <i class="fa fa-rocket"></i> Publish
-                                    </a>
-                                </div>
-                            </td>
-                            
-                        </tr>
-                    <?php 
-                        $cnt++;
-                        } // end foreach
-                    } // end if
-                    ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
+.tours-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.tours-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.tours-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+}
+
+.stat-icon.blue { background: #2563eb; }
+.stat-icon.green { background: #10b981; }
+.stat-icon.orange { background: #f59e0b; }
+
+.stat-info h4 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.stat-info p {
+  font-size: 14px;
+  color: var(--text-light);
+  margin: 0;
+}
+
+.tours-table-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.table-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+.search-box {
+  position: relative;
+  width: 300px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+}
+
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.modern-table thead {
+  background: var(--bg-light);
+}
+
+.modern-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.modern-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-dark);
+  vertical-align: middle;
+}
+
+.modern-table tbody tr:hover {
+  background: var(--bg-light);
+}
+
+.tour-name {
+  font-weight: 600;
+  color: var(--primary);
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tour-image-cell {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.price-cell {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+}
+
+.btn-action.view {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-action.view:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-action.edit {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.btn-action.edit:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-action.delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-action.delete:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.toggle-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.toggle-btn.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.toggle-btn.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  list-style: none;
+  margin: 0;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+}
+
+.empty-state i {
+  font-size: 64px;
+  opacity: 0.3;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 18px;
+  margin: 16px 0 8px;
+  color: var(--text-dark);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+</style>
+
+<!-- Page Header -->
+<div class="tours-header">
+  <h1 class="tours-title">
+    <i class="fas fa-map-marked-alt" style="color: var(--primary);"></i>
+    Quản lý Tour
+  </h1>
+  <div class="tours-actions">
+    <a href="<?= BASE_URL ?>?act=admin-tour-create" class="btn btn-primary">
+      <i class="fas fa-plus-circle"></i>
+      Thêm Tour mới
+    </a>
+  </div>
 </div>
 
-<link rel="stylesheet" type="text/css" href="assets/css/table-style.css" />
-<link rel="stylesheet" type="text/css" href="assets/css/basictable.css" />
-<script type="text/javascript" src="assets/js/jquery.basictable.min.js"></script>
+<!-- Statistics -->
+<div class="tours-stats">
+  <div class="stat-box">
+    <div class="stat-icon blue">
+      <i class="fas fa-map-marked-alt"></i>
+    </div>
+    <div class="stat-info">
+      <h4><?= count($tours ?? []) ?></h4>
+      <p>Tổng số tour</p>
+    </div>
+  </div>
+  
+  <div class="stat-box">
+    <div class="stat-icon green">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div class="stat-info">
+      <h4><?= count(array_filter($tours ?? [], fn($t) => !empty($t['trangthai']))) ?></h4>
+      <p>Tour đang hiển thị</p>
+    </div>
+  </div>
+  
+  <div class="stat-box">
+    <div class="stat-icon orange">
+      <i class="fas fa-eye-slash"></i>
+    </div>
+    <div class="stat-info">
+      <h4><?= count(array_filter($tours ?? [], fn($t) => empty($t['trangthai']))) ?></h4>
+      <p>Tour đang ẩn</p>
+    </div>
+  </div>
+</div>
 
-<script src="https://code.jquery.com/jquery-3.3.1.js"></script>
-<script src="http://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.20/js/dataTables.semanticui.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.6.1/js/dataTables.buttons.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.3.1/semantic.min.css">
-<script src="https://cdn.datatables.net/1.10.20/js/dataTables.semanticui.min.js"></script>
+<!-- Tours Table -->
+<div class="tours-table-card">
+  <div class="table-header">
+    <h3>Danh sách tour</h3>
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="Tìm kiếm tour...">
+    </div>
+  </div>
+  
+  <div class="table-responsive">
+    <?php if (!empty($tours)): ?>
+      <table class="modern-table" id="toursTable">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Tên Tour</th>
+            <th>Địa điểm</th>
+            <th>Số ngày</th>
+            <th>Giá (VNĐ)</th>
+            <th>Ngày đi</th>
+            <th>Trạng thái</th>
+            <th>Hoạt động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php 
+          $cnt = 1;
+          foreach ($tours as $tour): 
+            $id_goi = $tour['id_goi'] ?? '';
+            $tengoi = $tour['tengoi'] ?? '';
+            $ten_tinh = $tour['ten_tinh'] ?? '';
+            $vitri = $tour['vitri'] ?? '';
+            $songay = $tour['songay'] ?? '';
+            $giagoi = $tour['giagoi'] ?? 0;
+            $ngayxuatphat = $tour['ngayxuatphat'] ?? '';
+            $trangthai = $tour['trangthai'] ?? 0;
+          ?>
+            <tr>
+              <td><?= $cnt ?></td>
+              <td>
+                <div class="tour-name" title="<?= safe_html($tengoi) ?>">
+                  <?= safe_html($tengoi) ?>
+                </div>
+              </td>
+              <td>
+                <div style="font-weight: 500;"><?= safe_html($ten_tinh) ?></div>
+                <div style="font-size: 12px; color: var(--text-light);"><?= safe_html($vitri) ?></div>
+              </td>
+              <td>
+                <strong><?= safe_html($songay) ?></strong> ngày
+              </td>
+              <td class="price-cell">
+                <?= number_format($giagoi, 0, ',', '.') ?>
+              </td>
+              <td>
+                <?= $ngayxuatphat ? date('d/m/Y', strtotime($ngayxuatphat)) : '-' ?>
+              </td>
+              <td>
+                <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" 
+                   class="toggle-btn <?= $trangthai == 1 ? 'active' : 'inactive' ?>">
+                  <?php if ($trangthai == 1): ?>
+                    <i class="fas fa-check-circle"></i> Hiển thị
+                  <?php else: ?>
+                    <i class="fas fa-eye-slash"></i> Ẩn
+                  <?php endif; ?>
+                </a>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <a href="<?= BASE_URL ?>?act=admin-tour-detail&id=<?= $id_goi ?>" 
+                     class="btn-action view" title="Xem chi tiết">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="<?= BASE_URL ?>?act=admin-tour-edit&id=<?= $id_goi ?>" 
+                     class="btn-action edit" title="Chỉnh sửa">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="<?= BASE_URL ?>?act=admin-tour-delete&id=<?= $id_goi ?>" 
+                     class="btn-action delete" 
+                     onclick="return confirm('Bạn có chắc chắn muốn xóa tour này?')"
+                     title="Xóa">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          <?php 
+            $cnt++;
+          endforeach; 
+          ?>
+        </tbody>
+      </table>
+    <?php else: ?>
+      <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h3>Chưa có tour nào</h3>
+        <p>Hãy thêm tour đầu tiên của bạn</p>
+        <br>
+        <a href="<?= BASE_URL ?>?act=admin-tour-create" class="btn btn-primary">
+          <i class="fas fa-plus-circle"></i>
+          Thêm Tour mới
+        </a>
+      </div>
+    <?php endif; ?>
+  </div>
+</div>
 
-<script type="text/javascript">
-	$(document).ready(function() {
-     var dt= $('#table').DataTable({
-     	"dom": '<"pull-right"f>t<"row mt-1" <"col-sm-3" l><"col-sm-6" <"pull-right" p>>>',
-     	"language": {
-     		"lengthMenu": "Hiển thị _MENU_ trên 1 trang",
-     		"zeroRecords": "Không tìm thấy nội dung cần tìm",
-     		"infoEmpty": "Chưa có nội dung",
-     		"infoFiltered": "(filtered from _MAX_ total records)",
-     		"sSearch":"Tìm kiếm",
-     		"oPaginate": {
-                "sFirst": "Đầu",
-                "sPrevious": "Trước",
-                "sNext": "Tiếp",
-                "sLast": "Cuối"
-            }
-        }
-     });
- });
+<script>
+// Simple search functionality
+document.getElementById('searchInput')?.addEventListener('keyup', function() {
+  const searchValue = this.value.toLowerCase();
+  const table = document.getElementById('toursTable');
+  const rows = table?.getElementsByTagName('tr');
+  
+  if (!rows) return;
+  
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const text = row.textContent.toLowerCase();
+    
+    if (text.indexOf(searchValue) > -1) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  }
+});
 </script>
-<style type="text/css">
-	.dataTables_wrapper{ margin-top: 20px; }
-    
-    /* ✨ CSS CHO CỘT CHI TIẾT MỚI */
-    .btn-group-vertical .btn {
-        display: block;
-        width: 100%;
-        text-align: left;
-        border-radius: 3px;
-    }
-    
-    .btn-group-vertical .btn i {
-        margin-right: 5px;
-        width: 15px;
-        text-align: center;
-    }
-    
-    .btn-xs {
-        padding: 5px 10px;
-        font-size: 12px;
-        line-height: 1.5;
-    }
-</style>

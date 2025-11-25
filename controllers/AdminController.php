@@ -25,6 +25,7 @@ class AdminController extends BaseController {
         $this->provinceModel  = new ProvinceModel();
     }
 
+    
     /* ==================== AUTH ==================== */
 
     /**
@@ -433,6 +434,36 @@ class AdminController extends BaseController {
         
         header("Location: " . BASE_URL . "?act=admin-tours");
         exit();
+    }
+
+    
+    /**
+     * Xem chi tiết tour đầy đủ
+     * Route: ?act=admin-tour-detail&id=X
+     */
+    public function viewTourDetail() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'Không tìm thấy tour';
+            $this->redirect(BASE_URL . '?act=admin-tours');
+        }
+        
+        // Lấy thông tin tour
+        $tour = $this->tourModel->getTourByID($id);
+        if (!$tour) {
+            $_SESSION['error'] = 'Không tìm thấy tour';
+            $this->redirect(BASE_URL . '?act=admin-tours');
+        }
+        
+        // Render view
+        // Load view
+        ob_start();
+        require_once './views/admin/tours/detail.php';
+        $content = ob_get_clean();
+        
+        require_once './views/admin/layout.php';
     }
 
     /* ==================== HELPER METHODS ==================== */

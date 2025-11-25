@@ -127,6 +127,9 @@ try {
         case 'admin-tour-toggle':
             (new AdminController())->toggleTourStatus();
             break;
+        case 'admin-tour-detail':
+            (new AdminController())->viewTourDetail();
+            break;
 
         // ==================== CHI TIẾT TOUR (MỚI) ====================
 
@@ -194,54 +197,8 @@ try {
             (new TourChiTietController())->capNhatTags();
             break;
 
-        // TOURS VERSION
-        case 'tour-versions':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->danhSachVersions();
-            break;
-
-        case 'tour-version-them':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->themVersion();
-            break;
-
-        case 'tour-version-sua':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->suaVersion();
-            break;
-
-        case 'tour-version-xoa':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->xoaVersion();
-            break;
-
-        case 'tour-version-clone':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->cloneVersion();
-            break;
-
-        case 'tour-version-macdinh':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->datMacDinh();
-            break;
-
-        case 'tour-version-toggle':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->toggleActive();
-            break;
-
-        case 'tour-version-lichsu':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->lichSuVersion();
-            break;
-
-        case 'tour-version-sosanh':
-            require_once './controllers/TourVersionController.php';
-            (new TourVersionController())->soSanhVersions();
-            break;
-
+        // ==================== TOUR PUBLISH ROUTES ====================
         case 'tour-publish':
-
             // TOUR PUBLISH
             require_once './controllers/TourPublishController.php';
             (new TourPublishController())->trangPublish();

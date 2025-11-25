@@ -1,5 +1,9 @@
 <?php
-// ✅ views/admin/layout.php - PHIÊN BẢN CẬP NHẬT 2025 (CHI TIẾT TOUR)
+/**
+ * Admin Layout - MINIMALIST CLEAN DESIGN
+ * Version: 5.0 - Simple & Clean
+ * Updated: 2025-11-25
+ */
 $error = $error ?? null;
 $msg   = $msg   ?? null;
 ?>
@@ -7,343 +11,831 @@ $msg   = $msg   ?? null;
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <title>Trang quản trị - StarVel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- ===== CSS ===== -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/morris.js@0.5.1/morris.css">
-  <link href="assets/css/style.css" rel="stylesheet">
-  <link href="assets/css/basictable.css" rel="stylesheet">
-  <link href="assets/css/jquery-ui.css" rel="stylesheet">
-  <link href="assets/css/icon-font.min.css" rel="stylesheet">
-  <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+  <title>StarVel Travel - Quản trị</title>
   
-
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
   <!-- Google Fonts -->
-  <link href='//fonts.googleapis.com/css?family=Roboto:700,500,300,100italic,100,400' rel='stylesheet'>
-  <link href='//fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet'>
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
   <style>
-    .left-content .outter-wp { padding-top: 16px; }
-    .errorWrap {
-      padding: 10px; margin: 10px 0; background:#fff;
-      border-left:4px solid #dd3d36; box-shadow:0 1px 1px rgba(0,0,0,.1);
-      cursor: pointer;
-    }
-    .succWrap {
-      padding: 10px; margin: 10px 0; background:#fff;
-      border-left:4px solid #5cb85c; box-shadow:0 1px 1px rgba(0,0,0,.1);
-      cursor: pointer;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
     
-    /* ===== CSS CHI TIẾT TOUR (MỚI) ===== */
-    .dropdown-header {
-      padding: 10px 20px;
-      font-weight: bold;
-      color: #999;
-      text-transform: uppercase;
-      font-size: 11px;
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text-dark: #1f2937;
+      --text-light: #6b7280;
+      --border: #e5e7eb;
+      --bg-light: #f9fafb;
+      --sidebar-width: 260px;
     }
     
-    .divider {
-      height: 1px;
-      margin: 9px 0;
-      overflow: hidden;
-      background-color: rgba(255,255,255,0.1);
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #ffffff;
+      color: var(--text-dark);
+      line-height: 1.6;
     }
     
-    /* Breadcrumb đẹp hơn */
-    .breadcrumb {
-      background: #f5f5f5;
-      border-radius: 4px;
-      padding: 10px 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .breadcrumb > li + li:before {
-      content: "›";
-      padding: 0 8px;
-      color: #999;
-    }
-    
-    .breadcrumb > .active {
-      color: #5cb85c;
-      font-weight: bold;
-    }
-    
-    /* Timeline styles */
-    .timeline-container {
-      position: relative;
-    }
-    
-    /* Gallery grid */
-    .gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 15px;
-    }
-    
-    /* Badge colors */
-    .badge-primary { background: #5cb85c; }
-    .badge-info { background: #5bc0de; }
-    .badge-warning { background: #f0ad4e; }
-    
-    /* Loading overlay */
-    #loadingOverlay {
-      display: none;
+    /* ===== SIDEBAR ===== */
+    .sidebar {
       position: fixed;
-      top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 9999;
+      top: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: #ffffff;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      z-index: 1000;
     }
     
-    #loadingOverlay .spinner {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
+    .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
+    
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 10px;
+    }
+    
+    .sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    }
+    
+    .logo-text h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0;
+    }
+    
+    .logo-text p {
+      font-size: 12px;
+      color: var(--text-light);
+      margin: 0;
+    }
+    
+    .sidebar-user {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .user-avatar {
+      width: 44px;
+      height: 44px;
+      background: var(--bg-light);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 16px;
+    }
+    
+    .user-details h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin: 0;
+    }
+    
+    .user-details p {
+      font-size: 12px;
+      color: var(--text-light);
+      margin: 0;
+    }
+    
+    .sidebar-nav {
+      padding: 20px 0;
+    }
+    
+    .nav-section {
+      margin-bottom: 24px;
+    }
+    
+    .nav-section-title {
+      padding: 0 20px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .nav-item {
+      margin: 2px 12px;
+    }
+    
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      color: var(--text-dark);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .nav-link:hover {
+      background: var(--bg-light);
+      color: var(--primary);
+    }
+    
+    .nav-link.active {
+      background: var(--primary);
       color: white;
     }
     
-    /* Responsive */
-    @media (max-width: 768px) {
-      .timeline-container { padding-left: 30px; }
+    .nav-link i {
+      width: 20px;
+      text-align: center;
+      font-size: 16px;
     }
     
+    .nav-link .badge {
+      margin-left: auto;
+      background: var(--danger);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      background: var(--bg-light);
+    }
+    
+    .topbar {
+      background: #ffffff;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 999;
+    }
+    
+    .topbar-left h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0 0 4px 0;
+    }
+    
+    .topbar-left p {
+      font-size: 14px;
+      color: var(--text-light);
+      margin: 0;
+    }
+    
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .topbar-btn {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-light);
+      border: none;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-dark);
+      position: relative;
+    }
+    
+    .topbar-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .topbar-btn .badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--danger);
+      color: white;
+      border-radius: 10px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      border: 2px solid white;
+    }
+    
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--bg-light);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .user-menu:hover {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .user-menu:hover .user-menu-avatar {
+      background: white;
+      color: var(--primary);
+    }
+    
+    .user-menu-avatar {
+      width: 32px;
+      height: 32px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--primary);
+    }
+    
+    .user-menu-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+    
+    .content-wrapper {
+      padding: 32px;
+    }
+    
+    /* ===== ALERTS ===== */
+    .alert {
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-left: 4px solid;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .alert i {
+      font-size: 20px;
+    }
+    
+    .alert-success {
+      background: #d1fae5;
+      border-left-color: var(--success);
+      color: #065f46;
+    }
+    
+    .alert-success i { color: var(--success); }
+    
+    .alert-error {
+      background: #fee2e2;
+      border-left-color: var(--danger);
+      color: #991b1b;
+    }
+    
+    .alert-error i { color: var(--danger); }
+    
+    /* ===== CARDS ===== */
+    .card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .card-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .card-header h3 i {
+      color: var(--primary);
+      font-size: 20px;
+    }
+    
+    .card-body {
+      padding: 24px;
+    }
+    
+    /* ===== BUTTONS ===== */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+    
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    
+    /* ===== TABLE ===== */
+    .table-responsive {
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    table thead {
+      background: var(--bg-light);
+    }
+    
+    table th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dark);
+      font-size: 14px;
+    }
+    
+    table tr:hover {
+      background: var(--bg-light);
+    }
+    
+    /* ===== STATS CARDS ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    
+    .stat-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: all 0.2s;
+    }
+    
+    .stat-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    }
+    
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .stat-icon.blue {
+      background: #dbeafe;
+      color: var(--primary);
+    }
+    
+    .stat-icon.green {
+      background: #d1fae5;
+      color: var(--success);
+    }
+    
+    .stat-icon.orange {
+      background: #fed7aa;
+      color: var(--warning);
+    }
+    
+    .stat-icon.red {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+    
+    .stat-icon.purple {
+      background: #e9d5ff;
+      color: #9333ea;
+    }
+    
+    .stat-icon.cyan {
+      background: #cffafe;
+      color: #06b6d4;
+    }
+    
+    .stat-details {
+      flex: 1;
+    }
+    
+    .stat-details h4 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0 0 4px 0;
+      line-height: 1;
+    }
+    
+    .stat-details p {
+      font-size: 14px;
+      color: var(--text-light);
+      margin: 0;
+      font-weight: 500;
+    }
+    
+    .stat-details small {
+      font-size: 12px;
+      color: var(--success);
+      font-weight: 600;
+      margin-top: 8px;
+      display: block;
+    }
+    
+    /* ===== FORM ===== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 14px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s;
+      background: white;
+      color: var(--text-dark);
+    }
+    
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .topbar {
+        padding: 16px 20px;
+      }
+      
+      .content-wrapper {
+        padding: 20px;
+      }
+      
+      .mobile-toggle {
+        display: block !important;
+      }
+    }
+    
+    .mobile-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      background: var(--bg-light);
+      border: none;
+      border-radius: 10px;
+      color: var(--text-dark);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
   </style>
 </head>
 <body>
-
-<div class="page-container">
-  <!-- ===== SIDEBAR ===== -->
-  <div class="sidebar-menu">
-    <header class="logo1">
-      <a href="#" class="sidebar-icon"><span class="fa fa-bars"></span></a>
-    </header>
-    <div style="border-top:1px ridge rgba(255,255,255,0.15)"></div>
-
-    <div class="menu">
-      <ul id="menu">
-        <li><a href="<?= BASE_URL ?>?act=admin"><i class="fa fa-tachometer"></i><span> Quản lý</span></a></li>
-
-        <!-- ===== MENU TOUR (CẬP NHẬT) ===== -->
-        <li id="menu-academico">
-          <a href="#"><i class="glyphicon glyphicon-road"></i><span> Tour</span>
-            <span class="fa fa-angle-right" style="float:right"></span></a>
-          <ul id="menu-academico-sub">
-            <li><a href="<?= BASE_URL ?>?act=admin-tour-create">Tạo mới</a></li>
-            <li><a href="<?= BASE_URL ?>?act=admin-tours">Quản lý</a></li>
-            
-            <!-- ✨ MENU CHI TIẾT TOUR (MỚI) -->
-            <li class="divider"></li>
-            <li class="dropdown-header">Chi tiết Tour</li>
-            <li><a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=71">📅 Lịch trình</a></li>
-            <li><a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=71">📸 Gallery</a></li>
-            <li><a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=71">📋 Chính sách</a></li>
-            <!-- Versions (cần chọn tour trước) -->
-            <li><a href="<?= BASE_URL ?>?act=tour-versions"><i class="fa fa-code-fork"></i><span>Versions</span></a></li>
-            <li><a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=71">🏷️ Phân loại</a></li>
-            <li><a href="<?= BASE_URL ?>?act=tour-publish-dashboard"><i class="fa fa-rocket"></i><span>Publish Dashboard</span></a></li>
-          </ul>
-        </li>
-
-        <!-- ===== MENU BLOG ===== -->
-      <li id="menu-blog">
-        <a href="#">
-          <i class="glyphicon glyphicon-file"></i>
-          <span> Blog</span>
-          <span class="fa fa-angle-right" style="float:right"></span>
-        </a>
-        <ul id="menu-blog-sub">
-          <li><a href="<?= BASE_URL ?>?act=blog-list">Danh sách bài viết</a></li>
-          <li><a href="<?= BASE_URL ?>?act=blog-create">Tạo bài viết mới</a></li>
-        </ul>
-      </li>
-        <!-- ===== KẾT THÚC MENU BLOG ===== -->   
-<li id="menu-province">
-    <a href="#">
-        <i class="glyphicon glyphicon-list"></i>
-        <span> Tỉnh</span>
-        <span class="fa fa-angle-right" style="float:right"></span>
-    </a>
-    <ul>
-        <li><a href="<?= BASE_URL ?>?act=province-list">Danh sách</a></li>
-        <li><a href="<?= BASE_URL ?>?act=province-create">Thêm mới</a></li>
-    </ul>
-</li>
-        
-        <li><a href="#"><i class="fa fa-file-invoice-dollar"></i><span> Hóa đơn</span></a></li>
-        <li><a href="#"><i class="fa fa-users"></i><span> Người dùng</span></a></li>
-        <li><a href="#"><i class="glyphicon glyphicon-envelope"></i><span> Góp ý</span></a></li>
-        <li><a href="#"><i class="glyphicon glyphicon-user"></i><span> Tài khoản</span></a></li>
-      </ul>
-    </div>
-  </div>
-  <!-- /SIDEBAR -->
-
-  <!-- ===== LEFT CONTENT ===== -->
-  <div class="left-content">
-    <div class="mother-grid-inner">
-      <div class="header-main">
-        <div class="logo-w3-agile">
-          <h1><a href="<?= BASE_URL ?>?act=admin">Hệ thống quản lý đặt tour</a></h1>
-        </div>
-        <div class="profile_details w3l">
-          <ul>
-            <li class="dropdown profile_details_drop">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                <div class="profile_img">
-                  <span class="prfil-img"><img src="assets/images/User-icon.png" alt=""></span>
-                  <div class="user-name">
-                    <p>Tài khoản</p><span>Quản trị viên</span>
-                  </div>
-                  <i class="fa fa-angle-down"></i>
-                </div>
-              </a>
-              <ul class="dropdown-menu drp-mnu" style="left:12%;">
-                <li><a href="#"><i class="glyphicon glyphicon-cog"></i> Đổi mật khẩu</a></li>
-                <li><a href="<?= BASE_URL ?>?act=logout"><i class="glyphicon glyphicon-off"></i> Đăng xuất</a></li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-        <div class="clearfix"></div>
-      </div>
-
-      <div class="outter-wp">
-        <?php
-        echo isset($content) && $content !== ''
-          ? $content
-          : "<div class='errorWrap'>Không có nội dung view.</div>";
-        ?>
-      </div>
-
-      <div class="copyrights">
-        <p>© 2025 StarVel. All Rights Reserved | Powered by StarVel Team</p>
-      </div>
-
-    </div><!-- /mother-grid-inner -->
-  </div><!-- /left-content -->
-</div><!-- /page-container -->
-
-<!-- ===== LOADING OVERLAY ===== -->
-<div id="loadingOverlay">
-  <div class="spinner">
-    <i class="fa fa-spinner fa-spin fa-4x"></i>
-    <p style="margin-top: 20px; font-size: 18px;">Đang xử lý...</p>
-  </div>
-</div>
-
-<!-- ===== JS (THỨ TỰ CHUẨN) ===== -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/raphael@2.3.0/raphael.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/morris.js@0.5.1/morris.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery.nicescroll@3.7.6/jquery.nicescroll.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery.basictable@1.0.0/dist/jquery.basictable.min.js"></script>
-
-<!-- Script nội bộ -->
-<script src="assets/js/scripts.js"></script>
-
-<script>
-  // ===== SIDEBAR TOGGLE =====
-  (function($){
-    let toggle = false;
-    $(".sidebar-icon").on("click", function(){
-      if (!toggle) {
-        $(".page-container").addClass("sidebar-collapsed").removeClass("sidebar-collapsed-back");
-        $("#menu span").css({position:"absolute"});
-      } else {
-        $(".page-container").removeClass("sidebar-collapsed").addClass("sidebar-collapsed-back");
-        setTimeout(function(){ $("#menu span").css({position:"relative"}); }, 400);
-      }
-      toggle = !toggle;
-    });
-  })(jQuery);
-
-  // ===== HEADER FIXED =====
-  $(function(){
-    var navOff = $(".header-main").offset().top;
-    $(window).on("scroll", function(){
-      var s = $(window).scrollTop();
-      if (s >= navOff) $(".header-main").addClass("fixed");
-      else $(".header-main").removeClass("fixed");
-    });
-  });
   
-  // ===== AUTO HIDE NOTIFICATIONS =====
-  $(function() {
-    setTimeout(function() {
-      $('.succWrap, .errorWrap').fadeOut('slow');
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <a href="?act=admin" class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-plane"></i>
+        </div>
+        <div class="logo-text">
+          <h2>StarVel Travel</h2>
+          <p>Admin Panel</p>
+        </div>
+      </a>
+    </div>
+    
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar">
+          <?php 
+          $username = $_SESSION['alogin'] ?? 'A';
+          echo strtoupper(substr($username, 0, 1)); 
+          ?>
+        </div>
+        <div class="user-details">
+          <h4><?= htmlspecialchars($_SESSION['alogin'] ?? 'Admin') ?></h4>
+          <p>Quản trị viên</p>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Tổng quan</div>
+        <div class="nav-item">
+          <a href="?act=admin" class="nav-link">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Quản lý Tour</div>
+        <div class="nav-item">
+          <a href="?act=admin-tours" class="nav-link">
+            <i class="fas fa-map-marked-alt"></i>
+            <span>Danh sách Tour</span>
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="?act=admin-tour-create" class="nav-link">
+            <i class="fas fa-plus-circle"></i>
+            <span>Thêm Tour mới</span>
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="?act=tour-publish-dashboard" class="nav-link">
+            <i class="fas fa-rocket"></i>
+            <span>Xuất bản Tour</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Nội dung</div>
+        <div class="nav-item">
+          <a href="?act=blog-list" class="nav-link">
+            <i class="fas fa-newspaper"></i>
+            <span>Bài viết</span>
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="?act=province-list" class="nav-link">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Tỉnh thành</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Đơn hàng</div>
+        <div class="nav-item">
+          <a href="?act=hoadon-list" class="nav-link">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Hóa đơn</span>
+            <span class="badge">3</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-section-title">Hệ thống</div>
+        <div class="nav-item">
+          <a href="?act=logout" class="nav-link" onclick="return confirm('Bạn có chắc muốn đăng xuất?')">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Đăng xuất</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+  
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+    <div class="topbar">
+      <button class="mobile-toggle" onclick="toggleMobileSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      
+      <div class="topbar-left">
+        <h1>Chào mừng, <?= htmlspecialchars($_SESSION['alogin'] ?? 'Admin') ?>!</h1>
+        <p>
+          <?php
+          $days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+          echo $days[date('w')] . ', ' . date('d/m/Y');
+          ?>
+        </p>
+      </div>
+      
+      <div class="topbar-right">
+        <button class="topbar-btn" title="Thông báo">
+          <i class="fas fa-bell"></i>
+          <span class="badge">3</span>
+        </button>
+        
+        <button class="topbar-btn" title="Tin nhắn">
+          <i class="fas fa-envelope"></i>
+          <span class="badge">5</span>
+        </button>
+        
+        <div class="user-menu" onclick="window.location='?act=logout'" title="Đăng xuất">
+          <div class="user-menu-avatar">
+            <?= strtoupper(substr($_SESSION['alogin'] ?? 'A', 0, 1)) ?>
+          </div>
+          <span class="user-menu-name"><?= htmlspecialchars($_SESSION['alogin'] ?? 'Admin') ?></span>
+          <i class="fas fa-chevron-down" style="font-size:12px; color: var(--text-light);"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-wrapper">
+      <!-- Success Message -->
+      <?php if (!empty($_SESSION['success'])): ?>
+        <div class="alert alert-success">
+          <i class="fas fa-check-circle"></i>
+          <span><?= htmlspecialchars($_SESSION['success']) ?></span>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+      <?php endif; ?>
+      
+      <!-- Error Message -->
+      <?php if (!empty($_SESSION['error'])): ?>
+        <div class="alert alert-error">
+          <i class="fas fa-exclamation-circle"></i>
+          <span><?= htmlspecialchars($_SESSION['error']) ?></span>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+      <?php endif; ?>
+      
+      <!-- Page Content -->
+      <?= $content ?? '' ?>
+    </div>
+  </main>
+  
+  <script>
+    // Mobile Sidebar Toggle
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('active');
+    }
+    
+    // Auto hide alerts
+    setTimeout(() => {
+      document.querySelectorAll('.alert').forEach(alert => {
+        alert.style.animation = 'fadeOut 0.5s';
+        setTimeout(() => alert.remove(), 500);
+      });
     }, 5000);
     
-    $('.succWrap, .errorWrap').on('click', function() {
-      $(this).fadeOut('fast');
-    });
-  });
-  
-  // ===== ACTIVE MENU =====
-  $(function() {
-    var currentUrl = window.location.href;
-    $('#menu a').each(function() {
-      var href = $(this).attr('href');
-      if (href && currentUrl.indexOf(href) > -1 && href.length > 10) {
-        $(this).parent().addClass('active');
-        $(this).closest('ul').show();
-        $(this).closest('li[id^="menu-"]').addClass('active');
+    // Highlight active nav link
+    const currentUrl = window.location.href;
+    document.querySelectorAll('.nav-link').forEach(link => {
+      if (link.href === currentUrl) {
+        link.classList.add('active');
       }
     });
-  });
-  
-  // ===== LOADING ON FORM SUBMIT =====
-  $(function() {
-    $('form').on('submit', function(e) {
-      // Không hiện loading nếu có lỗi validation
-      if (this.checkValidity && !this.checkValidity()) {
-        return true;
+    
+    // Close mobile sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+      const sidebar = document.getElementById('sidebar');
+      const mobileToggle = document.querySelector('.mobile-toggle');
+      
+      if (window.innerWidth <= 768 && 
+          !sidebar.contains(e.target) && 
+          e.target !== mobileToggle &&
+          !mobileToggle.contains(e.target)) {
+        sidebar.classList.remove('active');
       }
-      $('#loadingOverlay').fadeIn();
     });
-  });
-  
-  // ===== CONFIRM DELETE =====
-  window.confirmDelete = function(message) {
-    return confirm(message || 'Bạn có chắc muốn xóa?');
-  };
-  
-  // ===== PREVIEW IMAGES =====
-  window.previewImages = function(input, container) {
-    if (input.files) {
-      $(container).html('');
-      Array.from(input.files).forEach(function(file) {
-        if (file.type.startsWith('image/')) {
-          var reader = new FileReader();
-          reader.onload = function(e) {
-            $(container).append(
-              '<div class="col-md-2" style="margin-bottom:10px;">' +
-              '<img src="' + e.target.result + '" class="img-thumbnail" style="width:100%;height:150px;object-fit:cover;">' +
-              '</div>'
-            );
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-    }
-  };
-</script>
-
-<!-- ===== CUSTOM SCRIPTS CHO TỪNG TRANG (TÙY CHỌN) ===== -->
-<?php if (isset($extra_scripts)): ?>
-  <?= $extra_scripts ?>
-<?php endif; ?>
-
+  </script>
 </body>
 </html>
