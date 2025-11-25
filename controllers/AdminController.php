@@ -21,6 +21,8 @@ class AdminController extends BaseController {
     private $pretripChecklistModel;
     private $guideModel;
     private $assignmentModel;
+    private $serviceModel;
+    private $serviceAssignmentModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
@@ -31,6 +33,8 @@ class AdminController extends BaseController {
         $this->pretripChecklistModel = new PretripChecklistModel();
         $this->guideModel = new GuideModel();
         $this->assignmentModel = new AssignmentModel();
+        $this->serviceModel = new ServiceModel();
+        $this->serviceAssignmentModel = new ServiceAssignmentModel();
     }
 
     
@@ -1070,6 +1074,286 @@ class AdminController extends BaseController {
             $this->assignmentModel->toggleStatus($id);
         }
         $this->redirect(BASE_URL . '?act=admin-assignments');
+    }
+
+    /* ==================== SERVICE MANAGEMENT ==================== */
+
+    /**
+     * Danh sách dịch vụ
+     * Route: ?act=admin-services
+     */
+    public function listServices() {
+        $this->checkLogin();
+        
+        $filters = [];
+        if (!empty($_GET['loai_dich_vu'])) {
+            $filters['loai_dich_vu'] = $_GET['loai_dich_vu'];
+        }
+        if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
+            $filters['trang_thai'] = (int)$_GET['trang_thai'];
+        }
+        if (!empty($_GET['nha_cung_cap'])) {
+            $filters['nha_cung_cap'] = $_GET['nha_cung_cap'];
+        }
+
+        $services = $this->serviceModel->getAllServices($filters);
+        $serviceTypes = ServiceModel::getServiceTypes();
+        $this->loadView('admin/services/list', compact('services', 'filters', 'serviceTypes'), 'admin/layout');
+    }
+
+    /**
+     * Form tạo dịch vụ
+     * Route: ?act=admin-service-create
+     */
+    public function createService() {
+        $this->checkLogin();
+
+        $serviceTypes = ServiceModel::getServiceTypes();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->serviceModel->createService($_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Tạo dịch vụ thành công!';
+                $this->redirect(BASE_URL . '?act=admin-services');
+            } else {
+                $error = 'Không thể tạo dịch vụ. Vui lòng kiểm tra lại dữ liệu.';
+                $this->loadView('admin/services/create', compact('serviceTypes', 'error'), 'admin/layout');
+            }
+        } else {
+            $this->loadView('admin/services/create', compact('serviceTypes'), 'admin/layout');
+        }
+    }
+
+    /**
+     * Form sửa dịch vụ
+     * Route: ?act=admin-service-edit&id=X
+     */
+    public function editService() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->redirect(BASE_URL . '?act=admin-services');
+        }
+
+        $service = $this->serviceModel->getServiceByID($id);
+        if (!$service) {
+            $_SESSION['error'] = 'Không tìm thấy dịch vụ';
+            $this->redirect(BASE_URL . '?act=admin-services');
+        }
+
+        $serviceTypes = ServiceModel::getServiceTypes();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->serviceModel->updateService($id, $_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật dịch vụ thành công!';
+            } else {
+                $_SESSION['error'] = 'Không thể cập nhật dịch vụ';
+            }
+            $this->redirect(BASE_URL . '?act=admin-services');
+        }
+
+        $this->loadView('admin/services/edit', compact('service', 'serviceTypes'), 'admin/layout');
+    }
+
+    /**
+     * Xóa dịch vụ
+     * Route: ?act=admin-service-delete&id=X
+     */
+    public function deleteService() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID dịch vụ không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-services');
+        }
+
+        $result = $this->serviceModel->deleteService($id);
+        if ($result) {
+            $_SESSION['success'] = 'Xóa dịch vụ thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể xóa dịch vụ';
+        }
+        $this->redirect(BASE_URL . '?act=admin-services');
+    }
+
+    /**
+     * Toggle trạng thái dịch vụ
+     * Route: ?act=admin-service-toggle&id=X
+     */
+    public function toggleServiceStatus() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if ($id) {
+            $this->serviceModel->toggleStatus($id);
+        }
+        $this->redirect(BASE_URL . '?act=admin-services');
+    }
+
+    /* ==================== SERVICE ASSIGNMENT MANAGEMENT ==================== */
+
+    /**
+     * Danh sách gán dịch vụ
+     * Route: ?act=admin-service-assignments
+     */
+    public function listServiceAssignments() {
+        $this->checkLogin();
+        
+        $filters = [];
+        if (!empty($_GET['id_lich_khoi_hanh'])) {
+            $filters['id_lich_khoi_hanh'] = (int)$_GET['id_lich_khoi_hanh'];
+        }
+        if (!empty($_GET['loai_dich_vu'])) {
+            $filters['loai_dich_vu'] = $_GET['loai_dich_vu'];
+        }
+        if (!empty($_GET['trang_thai'])) {
+            $filters['trang_thai'] = $_GET['trang_thai'];
+        }
+
+        $assignments = $this->serviceAssignmentModel->getAllAssignments($filters);
+        $serviceTypes = ServiceModel::getServiceTypes();
+        $statuses = ServiceAssignmentModel::getStatuses();
+        $this->loadView('admin/service-assignments/list', compact('assignments', 'filters', 'serviceTypes', 'statuses'), 'admin/layout');
+    }
+
+    /**
+     * Form tạo gán dịch vụ
+     * Route: ?act=admin-service-assignment-create
+     */
+    public function createServiceAssignment() {
+        $this->checkLogin();
+
+        $departurePlanId = $_GET['departure_plan_id'] ?? null;
+        $departurePlan = null;
+        if ($departurePlanId) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($departurePlanId);
+        }
+
+        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+        $serviceTypes = ServiceModel::getServiceTypes();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->serviceAssignmentModel->createAssignment($_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Gán dịch vụ thành công!';
+                $redirectUrl = BASE_URL . '?act=admin-service-assignments';
+                if ($departurePlanId) {
+                    $redirectUrl .= '&id_lich_khoi_hanh=' . $departurePlanId;
+                }
+                $this->redirect($redirectUrl);
+            } else {
+                $error = 'Không thể gán dịch vụ. Vui lòng kiểm tra lại dữ liệu.';
+                $this->loadView('admin/service-assignments/create', compact('services', 'departurePlans', 'departurePlan', 'departurePlanId', 'serviceTypes', 'error'), 'admin/layout');
+            }
+        } else {
+            $this->loadView('admin/service-assignments/create', compact('services', 'departurePlans', 'departurePlan', 'departurePlanId', 'serviceTypes'), 'admin/layout');
+        }
+    }
+
+    /**
+     * Form sửa gán dịch vụ
+     * Route: ?act=admin-service-assignment-edit&id=X
+     */
+    public function editServiceAssignment() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        }
+
+        $assignment = $this->serviceAssignmentModel->getAssignmentByID($id);
+        if (!$assignment) {
+            $_SESSION['error'] = 'Không tìm thấy gán dịch vụ';
+            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        }
+
+        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+        $serviceTypes = ServiceModel::getServiceTypes();
+        $statuses = ServiceAssignmentModel::getStatuses();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->serviceAssignmentModel->updateAssignment($id, $_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật gán dịch vụ thành công!';
+            } else {
+                $_SESSION['error'] = 'Không thể cập nhật gán dịch vụ';
+            }
+            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        }
+
+        $this->loadView('admin/service-assignments/edit', compact('assignment', 'services', 'departurePlans', 'serviceTypes', 'statuses'), 'admin/layout');
+    }
+
+    /**
+     * Xác nhận dịch vụ
+     * Route: ?act=admin-service-assignment-confirm&id=X
+     */
+    public function confirmServiceAssignment() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        }
+
+        $result = $this->serviceAssignmentModel->confirmAssignment($id);
+        if ($result) {
+            $_SESSION['success'] = 'Xác nhận dịch vụ thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể xác nhận dịch vụ';
+        }
+        $this->redirect(BASE_URL . '?act=admin-service-assignments');
+    }
+
+    /**
+     * Hủy gán dịch vụ
+     * Route: ?act=admin-service-assignment-cancel&id=X
+     */
+    public function cancelServiceAssignment() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        }
+
+        $result = $this->serviceAssignmentModel->cancelAssignment($id);
+        if ($result) {
+            $_SESSION['success'] = 'Hủy dịch vụ thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể hủy dịch vụ';
+        }
+        $this->redirect(BASE_URL . '?act=admin-service-assignments');
+    }
+
+    /**
+     * Xóa gán dịch vụ
+     * Route: ?act=admin-service-assignment-delete&id=X
+     */
+    public function deleteServiceAssignment() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        }
+
+        $result = $this->serviceAssignmentModel->deleteAssignment($id);
+        if ($result) {
+            $_SESSION['success'] = 'Xóa gán dịch vụ thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể xóa gán dịch vụ';
+        }
+        $this->redirect(BASE_URL . '?act=admin-service-assignments');
     }
 
     /* ==================== HELPER METHODS ==================== */

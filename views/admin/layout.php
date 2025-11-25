@@ -717,6 +717,22 @@ $msg   = $msg   ?? null;
       </div>
       
       <div class="nav-section">
+        <div class="nav-section-title">Dịch vụ</div>
+        <div class="nav-item">
+          <a href="?act=admin-services" class="nav-link">
+            <i class="fas fa-concierge-bell"></i>
+            <span>Danh sách Dịch vụ</span>
+          </a>
+        </div>
+        <div class="nav-item">
+          <a href="?act=admin-service-assignments" class="nav-link">
+            <i class="fas fa-tasks"></i>
+            <span>Gán Dịch vụ</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
         <div class="nav-section-title">Nội dung</div>
         <div class="nav-item">
           <a href="?act=blog-list" class="nav-link">

@@ -53,6 +53,8 @@ try {
         require_once './models/PretripChecklistModel.php';
         require_once './models/GuideModel.php';
         require_once './models/AssignmentModel.php';
+        require_once './models/ServiceModel.php';
+        require_once './models/ServiceAssignmentModel.php';
 
         // Controller
         require_once './controllers/BaseController.php';
@@ -231,6 +233,63 @@ try {
         case 'admin-assignment-toggle':
             require_once './models/AssignmentModel.php';
             (new AdminController())->toggleAssignmentStatus();
+            break;
+
+        // ==================== SERVICE MANAGEMENT ====================
+        case 'admin-services':
+            require_once './models/ServiceModel.php';
+            (new AdminController())->listServices();
+            break;
+
+        case 'admin-service-create':
+            require_once './models/ServiceModel.php';
+            (new AdminController())->createService();
+            break;
+
+        case 'admin-service-edit':
+            require_once './models/ServiceModel.php';
+            (new AdminController())->editService();
+            break;
+
+        case 'admin-service-delete':
+            require_once './models/ServiceModel.php';
+            (new AdminController())->deleteService();
+            break;
+
+        case 'admin-service-toggle':
+            require_once './models/ServiceModel.php';
+            (new AdminController())->toggleServiceStatus();
+            break;
+
+        // ==================== SERVICE ASSIGNMENT MANAGEMENT ====================
+        case 'admin-service-assignments':
+            require_once './models/ServiceAssignmentModel.php';
+            (new AdminController())->listServiceAssignments();
+            break;
+
+        case 'admin-service-assignment-create':
+            require_once './models/ServiceAssignmentModel.php';
+            (new AdminController())->createServiceAssignment();
+            break;
+
+        case 'admin-service-assignment-edit':
+            require_once './models/ServiceAssignmentModel.php';
+            (new AdminController())->editServiceAssignment();
+            break;
+
+        case 'admin-service-assignment-confirm':
+            require_once './models/ServiceAssignmentModel.php';
+            (new AdminController())->confirmServiceAssignment();
+            break;
+
+        case 'admin-service-assignment-cancel':
+            require_once './models/ServiceAssignmentModel.php';
+            (new AdminController())->cancelServiceAssignment();
+            break;
+
+        case 'admin-service-assignment-delete':
+            require_once './models/ServiceAssignmentModel.php';
+            (new AdminController())->deleteServiceAssignment();
             break;
 
         // ==================== CHI TIẾT TOUR (MỚI) ====================
