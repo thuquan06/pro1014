@@ -1,11 +1,11 @@
 <?php
 /**
- * Admin Dashboard - GLASSMORPHISM DESIGN
- * Version: 4.0 - Ultra Colorful
+ * Admin Dashboard - MINIMALIST CLEAN DESIGN
+ * Version: 5.0 - Simple & Clean
  * Updated: 2025-11-25
  */
 
-// Lấy số liệu an toàn
+// Lấy số liệu
 $cnt1 = $stats['cnt1'] ?? 0;     // Hóa đơn
 $ks   = $stats['ks']   ?? 0;     // Khách sạn
 $cnt2 = $stats['cnt2'] ?? 0;     // Góp ý
@@ -15,140 +15,18 @@ $blog = $stats['blog'] ?? 0;     // Blog
 ?>
 
 <style>
-  .dashboard-header {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-  
-  .welcome-card {
-    grid-column: 1 / -1;
-    background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
-    border-radius: 30px;
-    padding: 40px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.3);
-  }
-  
-  .welcome-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
-    animation: float 6s ease-in-out infinite;
-  }
-  
-  @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-20px, 20px) scale(1.1); }
-  }
-  
-  .welcome-card h2 {
-    font-size: 42px;
-    font-weight: 900;
-    margin: 0 0 10px 0;
-    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
-  }
-  
-  .welcome-card p {
-    font-size: 18px;
-    margin: 0;
-    opacity: 0.95;
-    font-weight: 600;
-  }
-  
-  .welcome-card .emoji {
-    position: absolute;
-    right: 50px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 120px;
-    opacity: 0.15;
-  }
-  
-  .mini-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-  }
-  
-  .mini-stat {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border-radius: 20px;
-    padding: 25px 20px;
-    text-align: center;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .mini-stat::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-  }
-  
-  .mini-stat:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-  }
-  
-  .mini-stat-icon {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 15px;
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .page-title {
     font-size: 28px;
-    color: white;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  }
-  
-  .mini-stat-icon.red { background: linear-gradient(135deg, #FF6B6B 0%, #FF5A5F 100%); }
-  .mini-stat-icon.blue { background: linear-gradient(135deg, #4ECDC4 0%, #5DADE2 100%); }
-  .mini-stat-icon.yellow { background: linear-gradient(135deg, #FFD93D 0%, #FFA07A 100%); }
-  .mini-stat-icon.green { background: linear-gradient(135deg, #6BCF7F 0%, #4ECDC4 100%); }
-  .mini-stat-icon.purple { background: linear-gradient(135deg, #C77DFF 0%, #FF6BB5 100%); }
-  .mini-stat-icon.orange { background: linear-gradient(135deg, #FFA07A 0%, #FF6B6B 100%); }
-  
-  .mini-stat h3 {
-    font-size: 36px;
-    font-weight: 900;
-    color: #2c3e50;
-    margin: 0 0 5px 0;
-    line-height: 1;
-  }
-  
-  .mini-stat p {
-    font-size: 13px;
-    color: #5a6c7d;
-    margin: 0;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--text-dark);
+    margin: 0 0 24px 0;
   }
   
   .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    gap: 25px;
-    margin-bottom: 30px;
+    gap: 24px;
+    margin-bottom: 32px;
   }
   
   .col-12 { grid-column: span 12; }
@@ -156,325 +34,324 @@ $blog = $stats['blog'] ?? 0;     // Blog
   .col-4 { grid-column: span 4; }
   .col-6 { grid-column: span 6; }
   
-  @media (max-width: 1200px) {
+  @media (max-width: 1024px) {
     .col-8, .col-4, .col-6 { grid-column: span 12; }
   }
   
-  .action-cards {
+  .quick-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
   }
   
-  .action-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border-radius: 22px;
-    padding: 30px;
+  .quick-action {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
     text-align: center;
     text-decoration: none;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    transition: all 0.4s;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.2s;
   }
   
-  .action-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, transparent 0%, rgba(255, 107, 107, 0.1) 100%);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  
-  .action-card:hover::before {
-    opacity: 1;
-  }
-  
-  .action-card:hover {
-    transform: translateY(-10px) rotate(-2deg);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  .quick-action:hover {
     border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
   }
   
   .action-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 20px;
-    border-radius: 22px;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 40px;
+    font-size: 22px;
+    background: var(--bg-light);
+    color: var(--primary);
+  }
+  
+  .quick-action:hover .action-icon {
+    background: var(--primary);
     color: white;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    position: relative;
-    z-index: 1;
   }
   
-  .action-card h4 {
-    font-size: 17px;
-    font-weight: 800;
-    color: #2c3e50;
-    margin: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    position: relative;
-    z-index: 1;
-  }
-  
-  .chart-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border-radius: 25px;
-    padding: 30px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  }
-  
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-  }
-  
-  .chart-header h3 {
-    font-size: 24px;
-    font-weight: 900;
-    color: #2c3e50;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .chart-header h3 i {
-    font-size: 28px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .action-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
   }
   
   .chart-container {
     position: relative;
-    height: 350px;
+    height: 320px;
+    padding: 10px;
   }
   
-  .activity-feed {
-    max-height: 500px;
+  .activity-list {
+    max-height: 420px;
     overflow-y: auto;
-    padding-right: 10px;
   }
   
-  .activity-feed::-webkit-scrollbar {
-    width: 6px;
+  .activity-list::-webkit-scrollbar {
+    width: 5px;
   }
   
-  .activity-feed::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+  .activity-list::-webkit-scrollbar-thumb {
+    background: var(--border);
     border-radius: 10px;
   }
   
   .activity-item {
     display: flex;
-    gap: 18px;
-    padding: 20px;
-    border-radius: 18px;
-    margin-bottom: 12px;
-    transition: all 0.3s;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
   }
   
-  .activity-item:hover {
-    background: rgba(255, 255, 255, 0.9);
-    transform: translateX(5px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  .activity-item:last-child {
+    border-bottom: none;
   }
   
   .activity-icon {
-    min-width: 50px;
-    width: 50px;
-    height: 50px;
-    border-radius: 15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    color: white;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  
+  .activity-icon.blue {
+    background: #dbeafe;
+    color: var(--primary);
+  }
+  
+  .activity-icon.green {
+    background: #d1fae5;
+    color: var(--success);
+  }
+  
+  .activity-icon.orange {
+    background: #fed7aa;
+    color: var(--warning);
+  }
+  
+  .activity-icon.red {
+    background: #fee2e2;
+    color: var(--danger);
   }
   
   .activity-content {
     flex: 1;
+    min-width: 0;
   }
   
-  .activity-content h5 {
-    font-size: 15px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin: 0 0 5px 0;
-  }
-  
-  .activity-content p {
+  .activity-title {
     font-size: 14px;
-    color: #5a6c7d;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0 0 4px 0;
+  }
+  
+  .activity-desc {
+    font-size: 13px;
+    color: var(--text-light);
     margin: 0;
   }
   
   .activity-time {
     font-size: 12px;
-    color: #95a5a6;
-    font-weight: 600;
+    color: var(--text-light);
     white-space: nowrap;
   }
   
-  .progress-section {
-    padding: 15px 0;
+  .tour-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
   
-  .progress-item {
-    margin-bottom: 25px;
+  .tour-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
   }
   
-  .progress-header {
+  .tour-item:last-child {
+    border-bottom: none;
+  }
+  
+  .tour-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
   }
   
-  .progress-label {
+  .tour-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+  }
+  
+  .tour-percent {
+    font-size: 14px;
     font-weight: 700;
-    color: #2c3e50;
-    font-size: 15px;
+    color: var(--primary);
   }
   
-  .progress-value {
-    font-weight: 900;
-    font-size: 16px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .progress-bar-container {
-    height: 12px;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 20px;
+  .progress-bar {
+    height: 6px;
+    background: var(--bg-light);
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
-  .progress-bar-fill {
+  .progress-fill {
     height: 100%;
-    border-radius: 20px;
-    transition: width 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: var(--primary);
+    border-radius: 10px;
+    transition: width 1s ease-out;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-light);
+  }
+  
+  .empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  .empty-state p {
+    margin: 0;
+    font-size: 14px;
   }
 </style>
 
-<!-- Welcome Card -->
-<div class="welcome-card">
-  <div style="position: relative; z-index: 1;">
-    <h2>Welcome Back, <?= htmlspecialchars($_SESSION['alogin'] ?? 'Admin') ?>! 🎉</h2>
-    <p>Here's what's happening with your travel business today</p>
-  </div>
-  <div class="emoji">✈️</div>
-</div>
-
-<!-- Mini Stats -->
-<div class="mini-stats">
-  <div class="mini-stat">
-    <div class="mini-stat-icon red">
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">
       <i class="fas fa-file-invoice-dollar"></i>
     </div>
-    <h3><?= number_format($cnt1) ?></h3>
-    <p>Invoices</p>
+    <div class="stat-details">
+      <h4><?= number_format($cnt1) ?></h4>
+      <p>Tổng hóa đơn</p>
+      <small>↑ 12% so với tháng trước</small>
+    </div>
   </div>
   
-  <div class="mini-stat">
-    <div class="mini-stat-icon blue">
+  <div class="stat-card">
+    <div class="stat-icon green">
       <i class="fas fa-map-marked-alt"></i>
     </div>
-    <h3><?= number_format($goi) ?></h3>
-    <p>Tours</p>
+    <div class="stat-details">
+      <h4><?= number_format($goi) ?></h4>
+      <p>Tour du lịch</p>
+      <small>↑ 8% so với tháng trước</small>
+    </div>
   </div>
   
-  <div class="mini-stat">
-    <div class="mini-stat-icon yellow">
+  <div class="stat-card">
+    <div class="stat-icon orange">
       <i class="fas fa-newspaper"></i>
     </div>
-    <h3><?= number_format($blog) ?></h3>
-    <p>Blogs</p>
+    <div class="stat-details">
+      <h4><?= number_format($blog) ?></h4>
+      <p>Bài viết</p>
+      <small>↑ 5% so với tháng trước</small>
+    </div>
   </div>
   
-  <div class="mini-stat">
-    <div class="mini-stat-icon green">
+  <div class="stat-card">
+    <div class="stat-icon red">
       <i class="fas fa-hotel"></i>
     </div>
-    <h3><?= number_format($ks) ?></h3>
-    <p>Hotels</p>
+    <div class="stat-details">
+      <h4><?= number_format($ks) ?></h4>
+      <p>Khách sạn</p>
+      <small>Không đổi</small>
+    </div>
   </div>
   
-  <div class="mini-stat">
-    <div class="mini-stat-icon purple">
+  <div class="stat-card">
+    <div class="stat-icon purple">
       <i class="fas fa-comments"></i>
     </div>
-    <h3><?= number_format($cnt2) ?></h3>
-    <p>Feedback</p>
+    <div class="stat-details">
+      <h4><?= number_format($cnt2) ?></h4>
+      <p>Góp ý</p>
+      <small>↑ 15% so với tháng trước</small>
+    </div>
   </div>
   
-  <div class="mini-stat">
-    <div class="mini-stat-icon orange">
+  <div class="stat-card">
+    <div class="stat-icon cyan">
       <i class="fas fa-life-ring"></i>
     </div>
-    <h3><?= number_format($cnt5) ?></h3>
-    <p>Support</p>
+    <div class="stat-details">
+      <h4><?= number_format($cnt5) ?></h4>
+      <p>Yêu cầu hỗ trợ</p>
+      <small style="color: var(--danger);">↓ 3% so với tháng trước</small>
+    </div>
   </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="card glass-white">
+<div class="card">
   <div class="card-header">
-    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+    <h3><i class="fas fa-bolt"></i> Thao tác nhanh</h3>
   </div>
   <div class="card-body">
-    <div class="action-cards">
-      <a href="<?= BASE_URL ?>?act=admin-tour-create" class="action-card">
-        <div class="action-icon" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF5A5F 100%);">
+    <div class="quick-actions">
+      <a href="<?= BASE_URL ?>?act=admin-tour-create" class="quick-action">
+        <div class="action-icon">
           <i class="fas fa-plus-circle"></i>
         </div>
-        <h4>New Tour</h4>
+        <div class="action-text">Thêm Tour mới</div>
       </a>
       
-      <a href="<?= BASE_URL ?>?act=blog-create" class="action-card">
-        <div class="action-icon" style="background: linear-gradient(135deg, #4ECDC4 0%, #5DADE2 100%);">
-          <i class="fas fa-pen-fancy"></i>
+      <a href="<?= BASE_URL ?>?act=blog-create" class="quick-action">
+        <div class="action-icon">
+          <i class="fas fa-pen"></i>
         </div>
-        <h4>Write Blog</h4>
+        <div class="action-text">Viết bài mới</div>
       </a>
       
-      <a href="<?= BASE_URL ?>?act=hoadon-list" class="action-card">
-        <div class="action-icon" style="background: linear-gradient(135deg, #FFD93D 0%, #FFA07A 100%);">
+      <a href="<?= BASE_URL ?>?act=hoadon-list" class="quick-action">
+        <div class="action-icon">
           <i class="fas fa-file-invoice"></i>
         </div>
-        <h4>Invoices</h4>
+        <div class="action-text">Quản lý hóa đơn</div>
       </a>
       
-      <a href="<?= BASE_URL ?>?act=province-create" class="action-card">
-        <div class="action-icon" style="background: linear-gradient(135deg, #C77DFF 0%, #FF6BB5 100%);">
+      <a href="<?= BASE_URL ?>?act=province-create" class="quick-action">
+        <div class="action-icon">
           <i class="fas fa-map-marker-alt"></i>
         </div>
-        <h4>Add Location</h4>
+        <div class="action-text">Thêm địa điểm</div>
+      </a>
+      
+      <a href="<?= BASE_URL ?>?act=admin-tours" class="quick-action">
+        <div class="action-icon">
+          <i class="fas fa-list"></i>
+        </div>
+        <div class="action-text">Xem tất cả tour</div>
+      </a>
+      
+      <a href="<?= BASE_URL ?>?act=blog-list" class="quick-action">
+        <div class="action-icon">
+          <i class="fas fa-newspaper"></i>
+        </div>
+        <div class="action-text">Danh sách bài viết</div>
       </a>
     </div>
   </div>
@@ -484,154 +361,173 @@ $blog = $stats['blog'] ?? 0;     // Blog
 <div class="dashboard-grid">
   <!-- Revenue Chart -->
   <div class="col-8">
-    <div class="chart-card">
-      <div class="chart-header">
-        <h3><i class="fas fa-chart-area"></i> Revenue Overview</h3>
-        <select style="padding: 10px 15px; border-radius: 12px; border: 2px solid rgba(0,0,0,0.1); font-weight: 600; background: white;">
-          <option>Last 6 Months</option>
-          <option>Last Year</option>
-          <option>This Year</option>
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-chart-line"></i> Doanh thu 6 tháng gần đây</h3>
+        <select class="form-control" style="width: 150px;">
+          <option>6 tháng</option>
+          <option>12 tháng</option>
+          <option>Năm nay</option>
         </select>
       </div>
-      <div class="chart-container">
-        <canvas id="revenueChart"></canvas>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="revenueChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
   
   <!-- Recent Activity -->
   <div class="col-4">
-    <div class="chart-card">
-      <div class="chart-header">
-        <h3><i class="fas fa-history"></i> Recent Activity</h3>
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-clock"></i> Hoạt động gần đây</h3>
       </div>
-      <div class="activity-feed">
-        <div class="activity-item">
-          <div class="activity-icon" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF5A5F 100%);">
-            <i class="fas fa-map-marked-alt"></i>
+      <div class="card-body" style="padding: 24px 24px 12px 24px;">
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon blue">
+              <i class="fas fa-map-marked-alt"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">Tour mới được thêm</div>
+              <div class="activity-desc">Tour "Hà Nội - Hạ Long" vừa được tạo</div>
+            </div>
+            <div class="activity-time">2 giờ</div>
           </div>
-          <div class="activity-content">
-            <h5>New Tour Added</h5>
-            <p>Hanoi - Halong Bay Tour created</p>
+          
+          <div class="activity-item">
+            <div class="activity-icon green">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">Đơn hàng xác nhận</div>
+              <div class="activity-desc">Hóa đơn #12345 đã thanh toán</div>
+            </div>
+            <div class="activity-time">3 giờ</div>
           </div>
-          <div class="activity-time">2h ago</div>
-        </div>
-        
-        <div class="activity-item">
-          <div class="activity-icon" style="background: linear-gradient(135deg, #6BCF7F 0%, #4ECDC4 100%);">
-            <i class="fas fa-check-circle"></i>
+          
+          <div class="activity-item">
+            <div class="activity-icon orange">
+              <i class="fas fa-newspaper"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">Blog mới đăng</div>
+              <div class="activity-desc">"10 địa điểm du lịch mùa hè"</div>
+            </div>
+            <div class="activity-time">5 giờ</div>
           </div>
-          <div class="activity-content">
-            <h5>Order Confirmed</h5>
-            <p>Invoice #12345 paid successfully</p>
+          
+          <div class="activity-item">
+            <div class="activity-icon red">
+              <i class="fas fa-star"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">Đánh giá mới</div>
+              <div class="activity-desc">5 sao cho Tour Đà Nẵng</div>
+            </div>
+            <div class="activity-time">1 ngày</div>
           </div>
-          <div class="activity-time">3h ago</div>
-        </div>
-        
-        <div class="activity-item">
-          <div class="activity-icon" style="background: linear-gradient(135deg, #FFD93D 0%, #FFA07A 100%);">
-            <i class="fas fa-newspaper"></i>
+          
+          <div class="activity-item">
+            <div class="activity-icon blue">
+              <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">Khách hàng mới</div>
+              <div class="activity-desc">Nguyễn Văn A đăng ký</div>
+            </div>
+            <div class="activity-time">1 ngày</div>
           </div>
-          <div class="activity-content">
-            <h5>Blog Published</h5>
-            <p>"Top 10 Summer Destinations"</p>
+          
+          <div class="activity-item">
+            <div class="activity-icon green">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">Thanh toán thành công</div>
+              <div class="activity-desc">15.000.000đ từ Tour Phú Quốc</div>
+            </div>
+            <div class="activity-time">2 ngày</div>
           </div>
-          <div class="activity-time">5h ago</div>
-        </div>
-        
-        <div class="activity-item">
-          <div class="activity-icon" style="background: linear-gradient(135deg, #C77DFF 0%, #FF6BB5 100%);">
-            <i class="fas fa-star"></i>
-          </div>
-          <div class="activity-content">
-            <h5>New Review</h5>
-            <p>5-star rating for Danang Tour</p>
-          </div>
-          <div class="activity-time">1d ago</div>
-        </div>
-        
-        <div class="activity-item">
-          <div class="activity-icon" style="background: linear-gradient(135deg, #5DADE2 0%, #4ECDC4 100%);">
-            <i class="fas fa-user-plus"></i>
-          </div>
-          <div class="activity-content">
-            <h5>New Customer</h5>
-            <p>Nguyen Van A registered</p>
-          </div>
-          <div class="activity-time">1d ago</div>
         </div>
       </div>
     </div>
   </div>
   
-  <!-- Tour Categories -->
+  <!-- Tour Categories Chart -->
   <div class="col-6">
-    <div class="chart-card">
-      <div class="chart-header">
-        <h3><i class="fas fa-chart-pie"></i> Tour Categories</h3>
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-chart-pie"></i> Phân loại Tour</h3>
       </div>
-      <div class="chart-container" style="height: 320px;">
-        <canvas id="categoriesChart"></canvas>
+      <div class="card-body">
+        <div class="chart-container" style="height: 280px;">
+          <canvas id="categoriesChart"></canvas>
+        </div>
       </div>
     </div>
   </div>
   
-  <!-- Top Performing Tours -->
+  <!-- Top Tours -->
   <div class="col-6">
-    <div class="chart-card">
-      <div class="chart-header">
-        <h3><i class="fas fa-fire"></i> Top Performing</h3>
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-fire"></i> Tour phổ biến</h3>
       </div>
-      <div class="progress-section">
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Hanoi - Halong Bay</span>
-            <span class="progress-value">92%</span>
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: 92%; background: linear-gradient(90deg, #FF6B6B 0%, #FF5A5F 100%);"></div>
-          </div>
-        </div>
-        
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Danang - Hoi An</span>
-            <span class="progress-value">85%</span>
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: 85%; background: linear-gradient(90deg, #4ECDC4 0%, #5DADE2 100%);"></div>
-          </div>
-        </div>
-        
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Phu Quoc Island</span>
-            <span class="progress-value">78%</span>
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: 78%; background: linear-gradient(90deg, #FFD93D 0%, #FFA07A 100%);"></div>
-          </div>
-        </div>
-        
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Nha Trang Beach</span>
-            <span class="progress-value">71%</span>
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: 71%; background: linear-gradient(90deg, #6BCF7F 0%, #4ECDC4 100%);"></div>
-          </div>
-        </div>
-        
-        <div class="progress-item">
-          <div class="progress-header">
-            <span class="progress-label">Sapa Adventure</span>
-            <span class="progress-value">65%</span>
-          </div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" style="width: 65%; background: linear-gradient(90deg, #C77DFF 0%, #FF6BB5 100%);"></div>
-          </div>
-        </div>
+      <div class="card-body">
+        <ul class="tour-list">
+          <li class="tour-item">
+            <div class="tour-header">
+              <span class="tour-name">Hà Nội - Hạ Long</span>
+              <span class="tour-percent">85%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 85%;"></div>
+            </div>
+          </li>
+          
+          <li class="tour-item">
+            <div class="tour-header">
+              <span class="tour-name">Đà Nẵng - Hội An</span>
+              <span class="tour-percent">72%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 72%; background: var(--success);"></div>
+            </div>
+          </li>
+          
+          <li class="tour-item">
+            <div class="tour-header">
+              <span class="tour-name">Phú Quốc</span>
+              <span class="tour-percent">68%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 68%; background: var(--warning);"></div>
+            </div>
+          </li>
+          
+          <li class="tour-item">
+            <div class="tour-header">
+              <span class="tour-name">Nha Trang</span>
+              <span class="tour-percent">55%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 55%; background: #06b6d4;"></div>
+            </div>
+          </li>
+          
+          <li class="tour-item">
+            <div class="tour-header">
+              <span class="tour-name">Sapa</span>
+              <span class="tour-percent">45%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 45%; background: #9333ea;"></div>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
   </div>
@@ -644,22 +540,20 @@ if (revenueCtx) {
   new Chart(revenueCtx, {
     type: 'line',
     data: {
-      labels: ['June', 'July', 'August', 'September', 'October', 'November'],
+      labels: ['Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11'],
       datasets: [{
-        label: 'Revenue (Million VND)',
+        label: 'Doanh thu (triệu đồng)',
         data: [450, 520, 480, 650, 720, 850],
-        borderColor: '#FF6B6B',
-        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-        borderWidth: 4,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.05)',
+        borderWidth: 2,
         tension: 0.4,
         fill: true,
-        pointBackgroundColor: '#FF6B6B',
+        pointBackgroundColor: '#2563eb',
         pointBorderColor: '#fff',
-        pointBorderWidth: 3,
-        pointRadius: 8,
-        pointHoverRadius: 12,
-        pointHoverBackgroundColor: '#FF5A5F',
-        pointHoverBorderWidth: 4
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
       }]
     },
     options: {
@@ -668,26 +562,25 @@ if (revenueCtx) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          padding: 16,
-          titleFont: { size: 16, weight: 'bold' },
-          bodyFont: { size: 14 },
-          cornerRadius: 12,
-          displayColors: false
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: { size: 13 },
+          bodyFont: { size: 13 },
+          cornerRadius: 8
         }
       },
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(0, 0, 0, 0.05)' },
+          grid: { color: '#e5e7eb' },
           ticks: {
-            font: { size: 13, weight: '600' },
+            font: { size: 12 },
             callback: function(value) { return value + 'M'; }
           }
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 13, weight: '600' } }
+          ticks: { font: { size: 12 } }
         }
       }
     }
@@ -700,18 +593,17 @@ if (categoriesCtx) {
   new Chart(categoriesCtx, {
     type: 'doughnut',
     data: {
-      labels: ['Beach Tours', 'Mountain Tours', 'City Tours', 'Cultural Tours', 'Others'],
+      labels: ['Tour Biển', 'Tour Núi', 'Tour Thành Phố', 'Tour Văn Hóa', 'Khác'],
       datasets: [{
         data: [35, 25, 20, 15, 5],
         backgroundColor: [
-          'rgba(255, 107, 107, 0.9)',
-          'rgba(78, 205, 196, 0.9)',
-          'rgba(255, 217, 61, 0.9)',
-          'rgba(199, 125, 255, 0.9)',
-          'rgba(255, 107, 181, 0.9)'
+          '#2563eb',
+          '#10b981',
+          '#f59e0b',
+          '#ef4444',
+          '#9333ea'
         ],
-        borderColor: '#fff',
-        borderWidth: 4
+        borderWidth: 0
       }]
     },
     options: {
@@ -721,18 +613,17 @@ if (categoriesCtx) {
         legend: {
           position: 'bottom',
           labels: {
-            padding: 20,
-            font: { size: 13, weight: '700' },
-            usePointStyle: true,
-            pointStyle: 'circle'
+            padding: 15,
+            font: { size: 12 },
+            usePointStyle: true
           }
         },
         tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          padding: 16,
-          titleFont: { size: 16, weight: 'bold' },
-          bodyFont: { size: 14 },
-          cornerRadius: 12,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: { size: 13 },
+          bodyFont: { size: 13 },
+          cornerRadius: 8,
           callbacks: {
             label: function(context) {
               return context.label + ': ' + context.parsed + '%';
@@ -744,14 +635,14 @@ if (categoriesCtx) {
   });
 }
 
-// Animate progress bars on load
+// Animate progress bars
 window.addEventListener('load', () => {
-  document.querySelectorAll('.progress-bar-fill').forEach(bar => {
+  document.querySelectorAll('.progress-fill').forEach(bar => {
     const width = bar.style.width;
     bar.style.width = '0%';
     setTimeout(() => {
       bar.style.width = width;
-    }, 300);
+    }, 100);
   });
 });
 </script>
