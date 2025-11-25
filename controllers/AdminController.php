@@ -455,8 +455,11 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
         
-        // Render view
-        $content = $this->renderView('admin/tours/detail', ['tour' => $tour]);
+        // Load view
+        ob_start();
+        require_once './views/admin/tours/detail.php';
+        $content = ob_get_clean();
+        
         require_once './views/admin/layout.php';
     }
 
