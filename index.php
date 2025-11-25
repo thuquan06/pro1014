@@ -51,6 +51,8 @@ try {
         require_once './models/ProvinceModel.php';
         require_once './models/DeparturePlanModel.php';
         require_once './models/PretripChecklistModel.php';
+        require_once './models/GuideModel.php';
+        require_once './models/AssignmentModel.php';
 
         // Controller
         require_once './controllers/BaseController.php';
@@ -177,6 +179,58 @@ try {
         case 'admin-pretrip-checklist-delete':
             require_once './models/PretripChecklistModel.php';
             (new AdminController())->deletePretripChecklist();
+            break;
+
+        // ==================== GUIDE MANAGEMENT ====================
+        case 'admin-guides':
+            require_once './models/GuideModel.php';
+            (new AdminController())->listGuides();
+            break;
+
+        case 'admin-guide-create':
+            require_once './models/GuideModel.php';
+            (new AdminController())->createGuide();
+            break;
+
+        case 'admin-guide-edit':
+            require_once './models/GuideModel.php';
+            (new AdminController())->editGuide();
+            break;
+
+        case 'admin-guide-delete':
+            require_once './models/GuideModel.php';
+            (new AdminController())->deleteGuide();
+            break;
+
+        case 'admin-guide-toggle':
+            require_once './models/GuideModel.php';
+            (new AdminController())->toggleGuideStatus();
+            break;
+
+        // ==================== ASSIGNMENT MANAGEMENT ====================
+        case 'admin-assignments':
+            require_once './models/AssignmentModel.php';
+            (new AdminController())->listAssignments();
+            break;
+
+        case 'admin-assignment-create':
+            require_once './models/AssignmentModel.php';
+            (new AdminController())->createAssignment();
+            break;
+
+        case 'admin-assignment-edit':
+            require_once './models/AssignmentModel.php';
+            (new AdminController())->editAssignment();
+            break;
+
+        case 'admin-assignment-delete':
+            require_once './models/AssignmentModel.php';
+            (new AdminController())->deleteAssignment();
+            break;
+
+        case 'admin-assignment-toggle':
+            require_once './models/AssignmentModel.php';
+            (new AdminController())->toggleAssignmentStatus();
             break;
 
         // ==================== CHI TIẾT TOUR (MỚI) ====================

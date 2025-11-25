@@ -703,6 +703,16 @@ $msg   = $msg   ?? null;
             <i class="fas fa-calendar-alt"></i>
             <span>Lịch khởi hành</span>
           </a>
+          
+          <a href="?act=admin-guides" class="nav-link">
+            <i class="fas fa-user-tie"></i>
+            <span>Hướng dẫn viên</span>
+          </a>
+          
+          <a href="?act=admin-assignments" class="nav-link">
+            <i class="fas fa-calendar-plus"></i>
+            <span>Phân công HDV</span>
+          </a>
         </div>
       </div>
       

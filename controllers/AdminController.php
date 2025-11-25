@@ -19,6 +19,8 @@ class AdminController extends BaseController {
     private $provinceModel;
     private $departurePlanModel;
     private $pretripChecklistModel;
+    private $guideModel;
+    private $assignmentModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
@@ -27,6 +29,8 @@ class AdminController extends BaseController {
         $this->provinceModel  = new ProvinceModel();
         $this->departurePlanModel = new DeparturePlanModel();
         $this->pretripChecklistModel = new PretripChecklistModel();
+        $this->guideModel = new GuideModel();
+        $this->assignmentModel = new AssignmentModel();
     }
 
     
@@ -794,6 +798,278 @@ class AdminController extends BaseController {
             }
         }
         $this->redirect($redirectUrl);
+    }
+
+    /* ==================== GUIDE MANAGEMENT ==================== */
+
+    /**
+     * Danh sách HDV
+     * Route: ?act=admin-guides
+     */
+    public function listGuides() {
+        $this->checkLogin();
+        
+        $filters = [];
+        if (!empty($_GET['ky_nang'])) {
+            $filters['ky_nang'] = $_GET['ky_nang'];
+        }
+        if (!empty($_GET['tuyen_chuyen'])) {
+            $filters['tuyen_chuyen'] = $_GET['tuyen_chuyen'];
+        }
+        if (!empty($_GET['ngon_ngu'])) {
+            $filters['ngon_ngu'] = $_GET['ngon_ngu'];
+        }
+        if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
+            $filters['trang_thai'] = (int)$_GET['trang_thai'];
+        }
+
+        $guides = $this->guideModel->getAllGuides($filters);
+        $this->loadView('admin/guides/list', compact('guides', 'filters'), 'admin/layout');
+    }
+
+    /**
+     * Form tạo HDV
+     * Route: ?act=admin-guide-create
+     */
+    public function createGuide() {
+        $this->checkLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->guideModel->createGuide($_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Tạo HDV thành công!';
+                $this->redirect(BASE_URL . '?act=admin-guides');
+            } else {
+                $error = 'Không thể tạo HDV. Vui lòng kiểm tra lại dữ liệu.';
+                $this->loadView('admin/guides/create', compact('error'), 'admin/layout');
+            }
+        } else {
+            $this->loadView('admin/guides/create', [], 'admin/layout');
+        }
+    }
+
+    /**
+     * Form sửa HDV
+     * Route: ?act=admin-guide-edit&id=X
+     */
+    public function editGuide() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->redirect(BASE_URL . '?act=admin-guides');
+        }
+
+        $guide = $this->guideModel->getGuideByID($id);
+        if (!$guide) {
+            $_SESSION['error'] = 'Không tìm thấy HDV';
+            $this->redirect(BASE_URL . '?act=admin-guides');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->guideModel->updateGuide($id, $_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật HDV thành công!';
+            } else {
+                $_SESSION['error'] = 'Không thể cập nhật HDV';
+            }
+            $this->redirect(BASE_URL . '?act=admin-guides');
+        }
+
+        $this->loadView('admin/guides/edit', compact('guide'), 'admin/layout');
+    }
+
+    /**
+     * Xóa HDV
+     * Route: ?act=admin-guide-delete&id=X
+     */
+    public function deleteGuide() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID HDV không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-guides');
+        }
+
+        $result = $this->guideModel->deleteGuide($id);
+        if ($result) {
+            $_SESSION['success'] = 'Xóa HDV thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể xóa HDV';
+        }
+        $this->redirect(BASE_URL . '?act=admin-guides');
+    }
+
+    /**
+     * Toggle trạng thái HDV
+     * Route: ?act=admin-guide-toggle&id=X
+     */
+    public function toggleGuideStatus() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if ($id) {
+            $this->guideModel->toggleStatus($id);
+        }
+        $this->redirect(BASE_URL . '?act=admin-guides');
+    }
+
+    /* ==================== ASSIGNMENT MANAGEMENT ==================== */
+
+    /**
+     * Danh sách phân công HDV
+     * Route: ?act=admin-assignments
+     */
+    public function listAssignments() {
+        $this->checkLogin();
+        
+        $filters = [];
+        if (!empty($_GET['id_lich_khoi_hanh'])) {
+            $filters['id_lich_khoi_hanh'] = (int)$_GET['id_lich_khoi_hanh'];
+        }
+        if (!empty($_GET['id_hdv'])) {
+            $filters['id_hdv'] = (int)$_GET['id_hdv'];
+        }
+        if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
+            $filters['trang_thai'] = (int)$_GET['trang_thai'];
+        }
+
+        $assignments = $this->assignmentModel->getAllAssignments($filters);
+        $this->loadView('admin/assignments/list', compact('assignments', 'filters'), 'admin/layout');
+    }
+
+    /**
+     * Form tạo phân công HDV
+     * Route: ?act=admin-assignment-create
+     */
+    public function createAssignment() {
+        $this->checkLogin();
+
+        $departurePlanId = $_GET['departure_plan_id'] ?? null;
+        $departurePlan = null;
+        if ($departurePlanId) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($departurePlanId);
+        }
+
+        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Kiểm tra trùng lịch
+            $conflicts = $this->assignmentModel->checkScheduleConflict(
+                $_POST['id_hdv'],
+                $_POST['ngay_bat_dau'],
+                $_POST['ngay_ket_thuc']
+            );
+
+            if (!empty($conflicts) && empty($_POST['force_assign'])) {
+                $error = 'HDV này đã có lịch trùng trong khoảng thời gian này!';
+                $conflictDetails = $conflicts;
+                $this->loadView('admin/assignments/create', compact('guides', 'departurePlans', 'departurePlan', 'departurePlanId', 'error', 'conflictDetails'), 'admin/layout');
+                return;
+            }
+
+            $result = $this->assignmentModel->createAssignment($_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Phân công HDV thành công!';
+                $redirectUrl = BASE_URL . '?act=admin-assignments';
+                if ($departurePlanId) {
+                    $redirectUrl .= '&id_lich_khoi_hanh=' . $departurePlanId;
+                }
+                $this->redirect($redirectUrl);
+            } else {
+                $error = 'Không thể phân công HDV. Vui lòng kiểm tra lại dữ liệu.';
+                $this->loadView('admin/assignments/create', compact('guides', 'departurePlans', 'departurePlan', 'departurePlanId', 'error'), 'admin/layout');
+            }
+        } else {
+            $this->loadView('admin/assignments/create', compact('guides', 'departurePlans', 'departurePlan', 'departurePlanId'), 'admin/layout');
+        }
+    }
+
+    /**
+     * Form sửa phân công HDV
+     * Route: ?act=admin-assignment-edit&id=X
+     */
+    public function editAssignment() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->redirect(BASE_URL . '?act=admin-assignments');
+        }
+
+        $assignment = $this->assignmentModel->getAssignmentByID($id);
+        if (!$assignment) {
+            $_SESSION['error'] = 'Không tìm thấy phân công';
+            $this->redirect(BASE_URL . '?act=admin-assignments');
+        }
+
+        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Kiểm tra trùng lịch (loại trừ phân công hiện tại)
+            $conflicts = $this->assignmentModel->checkScheduleConflict(
+                $_POST['id_hdv'],
+                $_POST['ngay_bat_dau'],
+                $_POST['ngay_ket_thuc'],
+                $id
+            );
+
+            if (!empty($conflicts) && empty($_POST['force_assign'])) {
+                $error = 'HDV này đã có lịch trùng trong khoảng thời gian này!';
+                $conflictDetails = $conflicts;
+                $this->loadView('admin/assignments/edit', compact('assignment', 'guides', 'departurePlans', 'error', 'conflictDetails'), 'admin/layout');
+                return;
+            }
+
+            $result = $this->assignmentModel->updateAssignment($id, $_POST);
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật phân công thành công!';
+            } else {
+                $_SESSION['error'] = 'Không thể cập nhật phân công';
+            }
+            $this->redirect(BASE_URL . '?act=admin-assignments');
+        }
+
+        $this->loadView('admin/assignments/edit', compact('assignment', 'guides', 'departurePlans'), 'admin/layout');
+    }
+
+    /**
+     * Xóa phân công HDV
+     * Route: ?act=admin-assignment-delete&id=X
+     */
+    public function deleteAssignment() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-assignments');
+        }
+
+        $result = $this->assignmentModel->deleteAssignment($id);
+        if ($result) {
+            $_SESSION['success'] = 'Xóa phân công thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể xóa phân công';
+        }
+        $this->redirect(BASE_URL . '?act=admin-assignments');
+    }
+
+    /**
+     * Toggle trạng thái phân công
+     * Route: ?act=admin-assignment-toggle&id=X
+     */
+    public function toggleAssignmentStatus() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if ($id) {
+            $this->assignmentModel->toggleStatus($id);
+        }
+        $this->redirect(BASE_URL . '?act=admin-assignments');
     }
 
     /* ==================== HELPER METHODS ==================== */
