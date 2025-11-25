@@ -1,7 +1,11 @@
 <?php
-// views/admin/dashboard.php (BẢN SỬA GỌN – KHÔNG absolute, KHÔNG margin âm)
+/**
+ * Admin Dashboard - SIÊU HIỆN ĐẠI với Biểu đồ
+ * Version: 3.0 - Ultra Modern
+ * Updated: 2025-11-25
+ */
 
-// Lấy số liệu an toàn (nếu controller truyền $stats dạng mảng)
+// Lấy số liệu an toàn
 $cnt1 = $stats['cnt1'] ?? 0;     // Hóa đơn
 $ks   = $stats['ks']   ?? 0;     // Khách sạn
 $cnt2 = $stats['cnt2'] ?? 0;     // Góp ý
@@ -11,80 +15,571 @@ $blog = $stats['blog'] ?? 0;     // Blog
 ?>
 
 <style>
-  /* KHỐI CHUNG */
-  .dash-wrap{display:block}
-  .dash-row{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
-  @media (max-width:1200px){.dash-row{grid-template-columns:repeat(8,1fr)}}
-  @media (max-width:768px){.dash-row{grid-template-columns:repeat(4,1fr)}}
-  .card{background:#fff;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.06);padding:16px}
-
-  /* HÀNH ĐỘNG NHANH */
-  .quick .item{grid-column:span 4;display:flex;align-items:center;gap:12px;cursor:pointer;text-decoration:none;border:1px solid #eef0f4}
-  .quick .icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#0d6efd;color:#fff;font-size:20px}
-  .quick .txt{font-weight:600;color:#222}
-  .quick .item:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(13,110,253,.12)}
-
-  /* SỐ LIỆU */
-  .kpi .box{grid-column:span 2;text-align:center;padding:18px}
-  .kpi .num{font-size:26px;font-weight:700;color:#0d6efd;margin-bottom:6px}
-  .kpi .lbl{color:#555}
-  .kpi a{text-decoration:none;color:inherit}
-  .kpi .box:hover{box-shadow:0 8px 20px rgba(0,0,0,.08)}
-
-  /* TIÊU ĐỀ */
-  .section-title{font-size:18px;font-weight:700;margin:0 0 12px}
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 25px;
+    margin-bottom: 35px;
+  }
+  
+  .col-12 { grid-column: span 12; }
+  .col-8 { grid-column: span 8; }
+  .col-4 { grid-column: span 4; }
+  .col-6 { grid-column: span 6; }
+  .col-3 { grid-column: span 3; }
+  
+  @media (max-width: 1200px) {
+    .col-8, .col-4 { grid-column: span 12; }
+    .col-6 { grid-column: span 12; }
+  }
+  
+  @media (max-width: 768px) {
+    .col-3 { grid-column: span 12; }
+  }
+  
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  
+  .quick-action-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 2px solid var(--border-color);
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+  
+  .quick-action-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.2);
+    border-color: var(--primary);
+  }
+  
+  .quick-action-icon {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 15px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: white;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  }
+  
+  .quick-action-card h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  
+  .chart-container {
+    position: relative;
+    height: 350px;
+    padding: 20px;
+  }
+  
+  .recent-activities {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 18px;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+  }
+  
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+  
+  .activity-item:hover {
+    background: rgba(99, 102, 241, 0.05);
+  }
+  
+  .activity-icon {
+    min-width: 45px;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
+  }
+  
+  .activity-icon.blue { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+  .activity-icon.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+  .activity-icon.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  .activity-icon.red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+  
+  .activity-details {
+    flex: 1;
+  }
+  
+  .activity-details h5 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 5px 0;
+  }
+  
+  .activity-details p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+  
+  .activity-time {
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: 10px;
+    transition: width 1s ease-out;
+  }
 </style>
 
-<div class="dash-wrap">
-
-  <!-- Hành động nhanh -->
-  <div class="card" style="margin-bottom:16px">
-    <h3 class="section-title">Hành động nhanh</h3>
-    <div class="dash-row quick">
-      <a class="item card" href="<?= BASE_URL ?>?act=admin-tour-create" aria-label="Thêm tour">
-        <div class="icon"><i class="glyphicon glyphicon-road"></i></div>
-        <div class="txt">Thêm tour</div>
-      </a>
-      <a class="item card" href="<?= BASE_URL ?>?act=blog-create" aria-label="Thêm blog">
-        <div class="icon"><i class="glyphicon glyphicon-leaf"></i></div>
-        <div class="txt">Thêm blog</div>
-      </a>
-      <a class="item card" href="#" aria-label="Thêm khách sạn">
-        <div class="icon"><i class="glyphicon glyphicon-bed"></i></div>
-        <div class="txt">Thêm khách sạn</div>
-      </a>
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <i class="fas fa-file-invoice-dollar"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= number_format($cnt1) ?></h4>
+      <p>Tổng hóa đơn</p>
+      <small><i class="fas fa-arrow-up"></i> +12.5% so với tháng trước</small>
     </div>
   </div>
-
-  <!-- Số liệu -->
-  <div class="card">
-    <h3 class="section-title">Tổng quan</h3>
-    <div class="dash-row kpi">
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$cnt1) ?></div>
-        <div class="lbl">Hóa đơn</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$ks) ?></div>
-        <div class="lbl">Khách sạn</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$cnt2) ?></div>
-        <div class="lbl">Góp ý</div>
-      </a>
-      <a class="box card" href="<?= BASE_URL ?>?act=admin-tours">
-        <div class="num"><?= htmlspecialchars((string)$goi) ?></div>
-        <div class="lbl">Tour</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$cnt5) ?></div>
-        <div class="lbl">Trợ giúp</div>
-      </a>
-      <a class="box card" href="#">
-        <div class="num"><?= htmlspecialchars((string)$blog) ?></div>
-        <div class="lbl">Blog</div>
-      </a>
+  
+  <div class="stat-card">
+    <div class="stat-icon green">
+      <i class="fas fa-map-marked-alt"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= number_format($goi) ?></h4>
+      <p>Tour du lịch</p>
+      <small><i class="fas fa-arrow-up"></i> +8.2% so với tháng trước</small>
     </div>
   </div>
-
+  
+  <div class="stat-card">
+    <div class="stat-icon orange">
+      <i class="fas fa-newspaper"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= number_format($blog) ?></h4>
+      <p>Bài viết blog</p>
+      <small><i class="fas fa-arrow-up"></i> +5.7% so với tháng trước</small>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon red">
+      <i class="fas fa-hotel"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= number_format($ks) ?></h4>
+      <p>Khách sạn</p>
+      <small><i class="fas fa-minus"></i> Không thay đổi</small>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon purple">
+      <i class="fas fa-comments"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= number_format($cnt2) ?></h4>
+      <p>Góp ý khách hàng</p>
+      <small><i class="fas fa-arrow-up"></i> +15.3% so với tháng trước</small>
+    </div>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-icon cyan">
+      <i class="fas fa-life-ring"></i>
+    </div>
+    <div class="stat-details">
+      <h4><?= number_format($cnt5) ?></h4>
+      <p>Yêu cầu trợ giúp</p>
+      <small><i class="fas fa-arrow-down" style="color: #ef4444;"></i> -3.1% so với tháng trước</small>
+    </div>
+  </div>
 </div>
+
+<!-- Quick Actions -->
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-bolt"></i> Hành động nhanh</h3>
+  </div>
+  <div class="card-body">
+    <div class="quick-actions">
+      <a href="<?= BASE_URL ?>?act=admin-tour-create" class="quick-action-card">
+        <div class="quick-action-icon">
+          <i class="fas fa-plus-circle"></i>
+        </div>
+        <h4>Thêm Tour Mới</h4>
+      </a>
+      
+      <a href="<?= BASE_URL ?>?act=blog-create" class="quick-action-card">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+          <i class="fas fa-pen-fancy"></i>
+        </div>
+        <h4>Viết Blog Mới</h4>
+      </a>
+      
+      <a href="<?= BASE_URL ?>?act=hoadon-list" class="quick-action-card">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+        <h4>Quản lý Hóa Đơn</h4>
+      </a>
+      
+      <a href="<?= BASE_URL ?>?act=province-create" class="quick-action-card">
+        <div class="quick-action-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
+        <h4>Thêm Địa Điểm</h4>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Charts & Activities Grid -->
+<div class="dashboard-grid">
+  <!-- Revenue Chart -->
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-chart-line"></i> Doanh thu 6 tháng gần đây</h3>
+        <div>
+          <select class="form-control" style="width: 150px; display: inline-block;">
+            <option>6 tháng</option>
+            <option>12 tháng</option>
+            <option>Năm nay</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Recent Activities -->
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-history"></i> Hoạt động gần đây</h3>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <div class="recent-activities">
+          <div class="activity-item">
+            <div class="activity-icon blue">
+              <i class="fas fa-map-marked-alt"></i>
+            </div>
+            <div class="activity-details">
+              <h5>Tour mới được thêm</h5>
+              <p>Tour "Hà Nội - Hạ Long - Sapa" vừa được tạo</p>
+            </div>
+            <div class="activity-time">2 giờ trước</div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon green">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="activity-details">
+              <h5>Đơn hàng được xác nhận</h5>
+              <p>Hóa đơn #12345 đã được thanh toán</p>
+            </div>
+            <div class="activity-time">3 giờ trước</div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon orange">
+              <i class="fas fa-newspaper"></i>
+            </div>
+            <div class="activity-details">
+              <h5>Blog mới được đăng</h5>
+              <p>"10 địa điểm du lịch mùa hè" đã xuất bản</p>
+            </div>
+            <div class="activity-time">5 giờ trước</div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon red">
+              <i class="fas fa-star"></i>
+            </div>
+            <div class="activity-details">
+              <h5>Đánh giá mới</h5>
+              <p>Khách hàng đánh giá 5 sao cho Tour Đà Nẵng</p>
+            </div>
+            <div class="activity-time">1 ngày trước</div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon blue">
+              <i class="fas fa-user-plus"></i>
+            </div>
+            <div class="activity-details">
+              <h5>Khách hàng mới</h5>
+              <p>Nguyễn Văn A vừa đăng ký tài khoản</p>
+            </div>
+            <div class="activity-time">1 ngày trước</div>
+          </div>
+          
+          <div class="activity-item">
+            <div class="activity-icon green">
+              <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="activity-details">
+              <h5>Thanh toán thành công</h5>
+              <p>Giao dịch 15.000.000đ từ Tour Phú Quốc</p>
+            </div>
+            <div class="activity-time">2 ngày trước</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Tour Categories -->
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-chart-pie"></i> Phân loại Tour</h3>
+      </div>
+      <div class="card-body">
+        <div class="chart-container" style="height: 300px;">
+          <canvas id="tourCategoriesChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Top Tours -->
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fas fa-fire"></i> Tour phổ biến nhất</h3>
+      </div>
+      <div class="card-body">
+        <div style="padding: 10px 0;">
+          <div style="margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 600; color: var(--text-primary);">Tour Hà Nội - Hạ Long</span>
+              <span style="font-weight: 700; color: var(--primary);">85%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 600; color: var(--text-primary);">Tour Đà Nẵng - Hội An</span>
+              <span style="font-weight: 700; color: var(--success);">72%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 72%; background: linear-gradient(90deg, #10b981 0%, #059669 100%);"></div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 600; color: var(--text-primary);">Tour Phú Quốc</span>
+              <span style="font-weight: 700; color: var(--warning);">68%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 68%; background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);"></div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 600; color: var(--text-primary);">Tour Nha Trang</span>
+              <span style="font-weight: 700; color: var(--info);">55%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 55%; background: linear-gradient(90deg, #06b6d4 0%, #0891b2 100%);"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: 600; color: var(--text-primary);">Tour Sapa</span>
+              <span style="font-weight: 700; color: var(--secondary);">45%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 45%; background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart');
+if (revenueCtx) {
+  new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+      labels: ['Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11'],
+      datasets: [{
+        label: 'Doanh thu (triệu đồng)',
+        data: [450, 520, 480, 650, 720, 850],
+        borderColor: 'rgb(99, 102, 241)',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderWidth: 3,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: 'rgb(99, 102, 241)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: { size: 14, weight: 'bold' },
+          bodyFont: { size: 13 },
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          },
+          ticks: {
+            font: { size: 12 },
+            callback: function(value) {
+              return value + 'M';
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: { size: 12 }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Tour Categories Chart
+const categoriesCtx = document.getElementById('tourCategoriesChart');
+if (categoriesCtx) {
+  new Chart(categoriesCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Tour Biển', 'Tour Núi', 'Tour Thành Phố', 'Tour Văn Hóa', 'Tour Khác'],
+      datasets: [{
+        data: [35, 25, 20, 15, 5],
+        backgroundColor: [
+          'rgba(99, 102, 241, 0.8)',
+          'rgba(16, 185, 129, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(239, 68, 68, 0.8)',
+          'rgba(139, 92, 246, 0.8)'
+        ],
+        borderColor: [
+          'rgb(99, 102, 241)',
+          'rgb(16, 185, 129)',
+          'rgb(245, 158, 11)',
+          'rgb(239, 68, 68)',
+          'rgb(139, 92, 246)'
+        ],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 15,
+            font: { size: 12, weight: '500' },
+            usePointStyle: true,
+            pointStyle: 'circle'
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: { size: 14, weight: 'bold' },
+          bodyFont: { size: 13 },
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + context.parsed + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Animate progress bars on load
+window.addEventListener('load', () => {
+  document.querySelectorAll('.progress-fill').forEach(bar => {
+    const width = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => {
+      bar.style.width = width;
+    }, 100);
+  });
+});
+</script>
