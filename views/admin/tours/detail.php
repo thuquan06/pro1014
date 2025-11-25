@@ -251,6 +251,133 @@ function safe_html($value) {
 .management-link i {
   font-size: 18px;
 }
+
+/* Departure Plans Section */
+.departure-plans-section {
+  margin-top: 24px;
+}
+
+.departure-plans-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.departure-plans-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.departure-plans-title i {
+  color: var(--primary);
+}
+
+.departure-plans-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.departure-plans-table th {
+  background: var(--bg-light);
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dark);
+  border-bottom: 2px solid var(--border);
+}
+
+.departure-plans-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+.departure-plans-table tbody tr:hover {
+  background: var(--bg-light);
+}
+
+.departure-plans-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.departure-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.departure-status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.departure-status-badge.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.departure-action-btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px;
+  transition: all 0.2s;
+}
+
+.departure-action-btn.edit {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.departure-action-btn.edit:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+.departure-action-btn.delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.departure-action-btn.delete:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.empty-departure-plans {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-light);
+}
+
+.empty-departure-plans i {
+  font-size: 48px;
+  opacity: 0.3;
+  margin-bottom: 12px;
+}
+
+.empty-departure-plans p {
+  margin-bottom: 16px;
+}
 </style>
 
 <div class="tour-detail-page">
@@ -418,6 +545,113 @@ function safe_html($value) {
                 </span>
               <?php endif; ?>
             </div>
+          </div>
+
+          <!-- Departure Plans Section -->
+          <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h4 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--text-dark);">
+                <i class="fas fa-calendar-alt" style="color: var(--primary);"></i> Lịch khởi hành
+              </h4>
+              <a href="<?= BASE_URL ?>?act=admin-departure-plan-create&id_tour=<?= $tour['id_goi'] ?>" 
+                 class="btn btn-primary" 
+                 style="padding: 6px 12px; font-size: 12px;">
+                <i class="fas fa-plus"></i> Thêm
+              </a>
+            </div>
+            
+            <?php if (!empty($departurePlans) && is_array($departurePlans)): ?>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <thead>
+                    <tr style="background: var(--bg-light); border-bottom: 2px solid var(--border);">
+                      <th style="padding: 10px; text-align: left; font-weight: 600;">Ngày/Giờ</th>
+                      <th style="padding: 10px; text-align: left; font-weight: 600;">Điểm tập trung</th>
+                      <th style="padding: 10px; text-align: center; font-weight: 600;">Số chỗ</th>
+                      <th style="padding: 10px; text-align: left; font-weight: 600;">Ghi chú</th>
+                      <th style="padding: 10px; text-align: center; font-weight: 600;">Trạng thái</th>
+                      <th style="padding: 10px; text-align: center; font-weight: 600;">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($departurePlans as $plan): 
+                      $ngay_khoi_hanh = $plan['ngay_khoi_hanh'] ?? '';
+                      $gio_khoi_hanh = $plan['gio_khoi_hanh'] ?? '';
+                      $diem_tap_trung = $plan['diem_tap_trung'] ?? '-';
+                      $so_cho_du_kien = $plan['so_cho_du_kien'] ?? null;
+                      $ghi_chu_van_hanh = $plan['ghi_chu_van_hanh'] ?? '';
+                      $trang_thai = $plan['trang_thai'] ?? 0;
+                      
+                      // Format ngày giờ
+                      $ngay_gio = '';
+                      if ($ngay_khoi_hanh) {
+                        $ngay_gio = date('d/m/Y', strtotime($ngay_khoi_hanh));
+                        if ($gio_khoi_hanh) {
+                          $ngay_gio .= ' ' . date('H:i', strtotime($gio_khoi_hanh));
+                        }
+                      }
+                    ?>
+                      <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 10px;">
+                          <strong><?= safe_html($ngay_gio ?: '-') ?></strong>
+                        </td>
+                        <td style="padding: 10px;"><?= safe_html($diem_tap_trung) ?></td>
+                        <td style="padding: 10px; text-align: center;">
+                          <?php if ($so_cho_du_kien): ?>
+                            <strong><?= number_format($so_cho_du_kien) ?></strong>
+                          <?php else: ?>
+                            <span style="color: var(--text-light);">-</span>
+                          <?php endif; ?>
+                        </td>
+                        <td style="padding: 10px;">
+                          <?php if ($ghi_chu_van_hanh): ?>
+                            <span title="<?= safe_html($ghi_chu_van_hanh) ?>">
+                              <?= mb_substr($ghi_chu_van_hanh, 0, 30) . (mb_strlen($ghi_chu_van_hanh) > 30 ? '...' : '') ?>
+                            </span>
+                          <?php else: ?>
+                            <span style="color: var(--text-light);">-</span>
+                          <?php endif; ?>
+                        </td>
+                        <td style="padding: 10px; text-align: center;">
+                          <?php if ($trang_thai == 1): ?>
+                            <span class="badge-status active" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #d1fae5; color: #065f46;">
+                              <i class="fas fa-check-circle"></i> Hoạt động
+                            </span>
+                          <?php else: ?>
+                            <span class="badge-status inactive" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #fee2e2; color: #991b1b;">
+                              <i class="fas fa-ban"></i> Tạm dừng
+                            </span>
+                          <?php endif; ?>
+                        </td>
+                        <td style="padding: 10px; text-align: center;">
+                          <a href="<?= BASE_URL ?>?act=admin-departure-plan-edit&id=<?= $plan['id'] ?>&tour_id=<?= $tour['id_goi'] ?>" 
+                             title="Sửa"
+                             style="padding: 4px 8px; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #fef3c7; color: #78350f; margin: 2px;">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                          <a href="<?= BASE_URL ?>?act=admin-departure-plan-delete&id=<?= $plan['id'] ?>&tour_id=<?= $tour['id_goi'] ?>" 
+                             title="Xóa"
+                             onclick="return confirm('Bạn có chắc muốn xóa lịch khởi hành này?')"
+                             style="padding: 4px 8px; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #fee2e2; color: #991b1b; margin: 2px;">
+                            <i class="fas fa-trash"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php else: ?>
+              <div style="text-align: center; padding: 30px 20px; color: var(--text-light);">
+                <i class="fas fa-calendar-times" style="font-size: 36px; opacity: 0.3; margin-bottom: 8px;"></i>
+                <p style="margin-bottom: 12px; font-size: 14px;">Chưa có lịch khởi hành</p>
+                <a href="<?= BASE_URL ?>?act=admin-departure-plan-create&id_tour=<?= $tour['id_goi'] ?>" 
+                   class="btn btn-primary" 
+                   style="padding: 8px 16px; font-size: 13px;">
+                  <i class="fas fa-plus"></i> Tạo lịch khởi hành
+                </a>
+              </div>
+            <?php endif; ?>
           </div>
 
           <!-- Management Links in Info Card -->

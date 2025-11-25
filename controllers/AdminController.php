@@ -17,12 +17,14 @@ class AdminController extends BaseController {
     private $tourModel;
     private $adminModel;
     private $provinceModel;
+    private $departurePlanModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
         $this->tourModel      = new TourModel();
         $this->adminModel     = new AdminModel();
         $this->provinceModel  = new ProvinceModel();
+        $this->departurePlanModel = new DeparturePlanModel();
     }
 
     
@@ -457,6 +459,9 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
         
+        // Lấy danh sách lịch khởi hành của tour
+        $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($id);
+        
         // Render view
         // Load view
         ob_start();
@@ -464,6 +469,175 @@ class AdminController extends BaseController {
         $content = ob_get_clean();
         
         require_once './views/admin/layout.php';
+    }
+
+    /* ==================== DEPARTURE PLAN MANAGEMENT ==================== */
+
+    /**
+     * Danh sách lịch khởi hành
+     * Route: ?act=admin-departure-plans
+     * Route: ?act=admin-departure-plans&tour_id=X (filter theo tour)
+     */
+    public function listDeparturePlans() {
+        $this->checkLogin();
+        
+        $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : null;
+        $tour = null;
+        
+        if ($tourId && $tourId > 0) {
+            // Lấy lịch khởi hành theo tour ID
+            $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($tourId);
+            // Lấy thông tin tour để hiển thị
+            $tour = $this->tourModel->getTourByID($tourId);
+        } else {
+            // Lấy tất cả lịch khởi hành
+            $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+        }
+        
+        $this->loadView('admin/departure-plans/list', compact('departurePlans', 'tour', 'tourId'), 'admin/layout');
+    }
+
+    /**
+     * Form tạo lịch khởi hành
+     * Route: ?act=admin-departure-plan-create
+     */
+    public function createDeparturePlan() {
+        $this->checkLogin();
+        $tours = $this->tourModel->getAllTours();
+        $tourId = $_GET['id_tour'] ?? null;
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $result = $this->departurePlanModel->createDeparturePlan($_POST);
+            $redirectTourId = $_POST['id_tour'] ?? $tourId;
+
+            if ($result) {
+                $_SESSION['success'] = 'Tạo lịch khởi hành thành công!';
+                // Redirect về trang list với tour_id nếu có
+                $redirectUrl = BASE_URL . '?act=admin-departure-plans';
+                if ($redirectTourId) {
+                    $redirectUrl .= '&tour_id=' . $redirectTourId;
+                }
+                $this->redirect($redirectUrl);
+            } else {
+                $error = 'Không thể tạo lịch khởi hành. Vui lòng kiểm tra lại dữ liệu.';
+                $this->loadView('admin/departure-plans/create', compact('tours', 'error', 'tourId'), 'admin/layout');
+            }
+        } else {
+            $this->loadView('admin/departure-plans/create', compact('tours', 'tourId'), 'admin/layout');
+        }
+    }
+
+    /**
+     * Form sửa lịch khởi hành
+     * Route: ?act=admin-departure-plan-edit&id=X
+     */
+    public function editDeparturePlan() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        $tourId = $_GET['tour_id'] ?? null;
+        
+        if (!$id) {
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id);
+        if (!$departurePlan) {
+            $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        $tours = $this->tourModel->getAllTours();
+        $this->loadView('admin/departure-plans/edit', compact('departurePlan', 'tours', 'tourId'), 'admin/layout');
+    }
+
+    /**
+     * Cập nhật lịch khởi hành
+     * Route: ?act=admin-departure-plan-update
+     */
+    public function updateDeparturePlan() {
+        $this->checkLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+            if (!$id || $id <= 0) {
+                $_SESSION['error'] = 'ID lịch khởi hành không hợp lệ';
+                $this->redirect(BASE_URL . '?act=admin-departure-plans');
+            }
+
+            $result = $this->departurePlanModel->updateDeparturePlan($id, $_POST);
+            $redirectTourId = $_POST['id_tour'] ?? null;
+
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật lịch khởi hành thành công!';
+            } else {
+                $_SESSION['error'] = 'Không thể cập nhật lịch khởi hành';
+            }
+
+            // Redirect về trang list với tour_id nếu có
+            $redirectUrl = BASE_URL . '?act=admin-departure-plans';
+            if ($redirectTourId) {
+                $redirectUrl .= '&tour_id=' . $redirectTourId;
+            }
+            $this->redirect($redirectUrl);
+        }
+
+        $this->redirect(BASE_URL . '?act=admin-departure-plans');
+    }
+
+    /**
+     * Xóa lịch khởi hành
+     * Route: ?act=admin-departure-plan-delete&id=X
+     */
+    public function deleteDeparturePlan() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        $tourId = $_GET['tour_id'] ?? null;
+        
+        if (!$id) {
+            $_SESSION['error'] = 'ID lịch khởi hành không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        $result = $this->departurePlanModel->deleteDeparturePlan($id);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Xóa lịch khởi hành thành công!';
+        } else {
+            $_SESSION['error'] = 'Không thể xóa lịch khởi hành';
+        }
+        
+        // Redirect về trang list với tour_id nếu có
+        $redirectUrl = BASE_URL . '?act=admin-departure-plans';
+        if ($tourId) {
+            $redirectUrl .= '&tour_id=' . $tourId;
+        }
+        $this->redirect($redirectUrl);
+    }
+
+    /**
+     * Toggle trạng thái lịch khởi hành
+     * Route: ?act=admin-departure-plan-toggle&id=X
+     */
+    public function toggleDeparturePlanStatus() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        $tourId = $_GET['tour_id'] ?? null;
+        
+        if ($id) {
+            $this->departurePlanModel->toggleStatus($id);
+        }
+        
+        // Redirect về trang list với tour_id nếu có
+        $redirectUrl = BASE_URL . "?act=admin-departure-plans";
+        if ($tourId) {
+            $redirectUrl .= "&tour_id=" . $tourId;
+        }
+        
+        header("Location: " . $redirectUrl);
+        exit();
     }
 
     /* ==================== HELPER METHODS ==================== */

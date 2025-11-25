@@ -49,6 +49,7 @@ try {
         require_once './models/TourModel.php';
         require_once './models/AdminModel.php';
         require_once './models/ProvinceModel.php';
+        require_once './models/DeparturePlanModel.php';
 
         // Controller
         require_once './controllers/BaseController.php';
@@ -129,6 +130,31 @@ try {
             break;
         case 'admin-tour-detail':
             (new AdminController())->viewTourDetail();
+            break;
+
+        // --- Departure Plan Management ---
+        case 'admin-departure-plans':
+            (new AdminController())->listDeparturePlans();
+            break;
+
+        case 'admin-departure-plan-create':
+            (new AdminController())->createDeparturePlan();
+            break;
+
+        case 'admin-departure-plan-edit':
+            (new AdminController())->editDeparturePlan();
+            break;
+
+        case 'admin-departure-plan-update':
+            (new AdminController())->updateDeparturePlan();
+            break;
+
+        case 'admin-departure-plan-delete':
+            (new AdminController())->deleteDeparturePlan();
+            break;
+
+        case 'admin-departure-plan-toggle':
+            (new AdminController())->toggleDeparturePlanStatus();
             break;
 
         // ==================== CHI TIẾT TOUR (MỚI) ====================

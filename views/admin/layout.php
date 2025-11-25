@@ -698,6 +698,12 @@ $msg   = $msg   ?? null;
             <span>Xuất bản Tour</span>
           </a>
         </div>
+        <div class="nav-item">
+          <a href="?act=admin-departure-plans" class="nav-link">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Lịch khởi hành</span>
+          </a>
+        </div>
       </div>
       
       <div class="nav-section">
