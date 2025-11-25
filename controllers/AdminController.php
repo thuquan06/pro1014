@@ -435,6 +435,31 @@ class AdminController extends BaseController {
         exit();
     }
 
+    /**
+     * Xem chi tiết tour đầy đủ
+     * Route: ?act=admin-tour-detail&id=X
+     */
+    public function viewTourDetail() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'Không tìm thấy tour';
+            $this->redirect(BASE_URL . '?act=admin-tours');
+        }
+        
+        // Lấy thông tin tour
+        $tour = $this->tourModel->getTourByID($id);
+        if (!$tour) {
+            $_SESSION['error'] = 'Không tìm thấy tour';
+            $this->redirect(BASE_URL . '?act=admin-tours');
+        }
+        
+        // Render view
+        $content = $this->renderView('admin/tours/detail', ['tour' => $tour]);
+        require_once './views/admin/layout.php';
+    }
+
     /* ==================== HELPER METHODS ==================== */
 
     /**

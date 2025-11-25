@@ -84,12 +84,21 @@ function safe_html($value) {
                                 <?php endif; ?>
                             </td>
 
-                            <td style="width: 194px;">
-                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo safe_html($id_goi);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
-                                    <button type="button" class="btn btn-primary btn-block" style="border-bottom: 2px solid;">Xóa</button>
+                            <td style="width: 230px;">
+                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-detail&id=<?php echo safe_html($id_goi);?>">
+                                    <button type="button" class="btn btn-info btn-block" style="margin-bottom: 5px;">
+                                        <i class="fas fa-eye"></i> Xem chi tiết
+                                    </button>
                                 </a>
                                 <a href="<?php echo BASE_URL; ?>?act=admin-tour-edit&id=<?php echo safe_html($id_goi);?>">
-                                    <button type="button" class="btn btn-primary btn-block" >Chỉnh sửa</button>
+                                    <button type="button" class="btn btn-primary btn-block" style="margin-bottom: 5px;">
+                                        <i class="fas fa-edit"></i> Chỉnh sửa
+                                    </button>
+                                </a>
+                                <a href="<?php echo BASE_URL; ?>?act=admin-tour-delete&id=<?php echo safe_html($id_goi);?>" onclick="return confirm('Bạn có chắc chắn xóa')">
+                                    <button type="button" class="btn btn-danger btn-block">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
                                 </a>
                             </td>
 

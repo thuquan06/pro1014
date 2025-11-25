@@ -128,6 +128,10 @@ try {
             (new AdminController())->toggleTourStatus();
             break;
 
+        case 'admin-tour-detail':
+            (new AdminController())->viewTourDetail();
+            break;
+
         // ==================== CHI TIẾT TOUR (MỚI) ====================
 
         // LỊCH TRÌNH
