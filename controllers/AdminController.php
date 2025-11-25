@@ -991,6 +991,106 @@ class AdminController extends BaseController {
     }
 
     /**
+     * Validate departure plan data (dùng chung cho create và update)
+     * @param array $data
+     * @return Validator
+     */
+    private function validateDeparturePlanData($data) {
+        $validator = new Validator($data);
+        
+        // Tour ID
+        $validator->required('id_tour', 'Tour là bắt buộc')
+                  ->integer('id_tour', 'Tour ID phải là số nguyên')
+                  ->min('id_tour', 1, 'Tour ID không hợp lệ');
+        
+        // Ngày khởi hành
+        $validator->required('ngay_khoi_hanh', 'Ngày khởi hành là bắt buộc')
+                  ->date('ngay_khoi_hanh', 'Y-m-d', 'Ngày khởi hành không hợp lệ (định dạng: YYYY-MM-DD)')
+                  ->custom('ngay_khoi_hanh', function($value) {
+                      $date = DateTime::createFromFormat('Y-m-d', $value);
+                      return $date && $date >= new DateTime('today');
+                  }, 'Ngày khởi hành phải là hôm nay hoặc trong tương lai');
+        
+        // Giờ khởi hành
+        $validator->required('gio_khoi_hanh', 'Giờ khởi hành là bắt buộc')
+                  ->pattern('gio_khoi_hanh', '/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', 'Giờ khởi hành không hợp lệ (định dạng: HH:mm)');
+        
+        // Validation thời gian thực: Kiểm tra ngày + giờ kết hợp
+        // Validate sau khi các field cơ bản đã được validate
+        if (!empty($data['ngay_khoi_hanh']) && !empty($data['gio_khoi_hanh'])) {
+            // Lưu lại để validate sau
+            $ngayKhoiHanh = $data['ngay_khoi_hanh'];
+            $gioKhoiHanh = $data['gio_khoi_hanh'];
+            
+            $validator->custom('gio_khoi_hanh', function($gio) use ($ngayKhoiHanh, $gioKhoiHanh) {
+                try {
+                    // Set timezone
+                    $timezone = 'Asia/Ho_Chi_Minh';
+                    date_default_timezone_set($timezone);
+                    
+                    // Kết hợp ngày và giờ thành DateTime đầy đủ
+                    $thoiGianKhoiHanh = DateTime::createFromFormat(
+                        'Y-m-d H:i', 
+                        trim($ngayKhoiHanh) . ' ' . trim($gioKhoiHanh),
+                        new DateTimeZone($timezone)
+                    );
+                    
+                    if (!$thoiGianKhoiHanh) {
+                        error_log("Cannot parse datetime: " . $ngayKhoiHanh . ' ' . $gioKhoiHanh);
+                        return false;
+                    }
+                    
+                    // Lấy thời gian hiện tại
+                    $thoiGianHienTai = new DateTime('now', new DateTimeZone($timezone));
+                    
+                    // Thời gian khởi hành phải sau thời gian hiện tại ít nhất 30 phút
+                    $thoiGianToiThieu = clone $thoiGianHienTai;
+                    $thoiGianToiThieu->modify('+30 minutes');
+                    
+                    // So sánh timestamp để chính xác hơn
+                    $timestampKhoiHanh = $thoiGianKhoiHanh->getTimestamp();
+                    $timestampToiThieu = $thoiGianToiThieu->getTimestamp();
+                    
+                    // Debug log để kiểm tra
+                    $isValid = $timestampKhoiHanh >= $timestampToiThieu;
+                    error_log(sprintf(
+                        "Validation Time: Now=%s, Min=%s, Departure=%s, Valid=%s, Diff=%d minutes",
+                        $thoiGianHienTai->format('Y-m-d H:i:s'),
+                        $thoiGianToiThieu->format('Y-m-d H:i:s'),
+                        $thoiGianKhoiHanh->format('Y-m-d H:i:s'),
+                        $isValid ? 'YES' : 'NO',
+                        round(($timestampKhoiHanh - $timestampToiThieu) / 60)
+                    ));
+                    
+                    return $isValid;
+                } catch (Exception $e) {
+                    error_log("Validation exception: " . $e->getMessage());
+                    return false;
+                }
+            }, 'Thời gian khởi hành phải sau thời gian hiện tại ít nhất 30 phút');
+        }
+        
+        // Điểm tập trung
+        $validator->required('diem_tap_trung', 'Điểm tập trung là bắt buộc')
+                  ->minLength('diem_tap_trung', 5, 'Điểm tập trung phải có ít nhất 5 ký tự')
+                  ->maxLength('diem_tap_trung', 255, 'Điểm tập trung không được quá 255 ký tự');
+        
+        // Số chỗ dự kiến (nếu có)
+        if (!empty($data['so_cho_du_kien'])) {
+            $validator->integer('so_cho_du_kien', 'Số chỗ dự kiến phải là số nguyên')
+                      ->min('so_cho_du_kien', 1, 'Số chỗ dự kiến phải lớn hơn 0')
+                      ->max('so_cho_du_kien', 1000, 'Số chỗ dự kiến không được quá 1000');
+        }
+        
+        // Ghi chú vận hành (nếu có)
+        if (!empty($data['ghi_chu_van_hanh'])) {
+            $validator->maxLength('ghi_chu_van_hanh', 2000, 'Ghi chú vận hành không được quá 2000 ký tự');
+        }
+        
+        return $validator;
+    }
+
+    /**
      * Form tạo lịch khởi hành
      * Route: ?act=admin-departure-plan-create
      */
@@ -1000,8 +1100,22 @@ class AdminController extends BaseController {
         $tourId = $_GET['id_tour'] ?? null;
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $result = $this->departurePlanModel->createDeparturePlan($_POST);
-            $redirectTourId = $_POST['id_tour'] ?? $tourId;
+            // ===== VALIDATE INPUT =====
+            $validator = $this->validateDeparturePlanData($_POST);
+            
+            if ($validator->fails()) {
+                $error = $validator->firstError();
+                $this->loadView('admin/departure-plans/create', compact('tours', 'error', 'tourId'), 'admin/layout');
+                return;
+            }
+            
+            // ===== PREPARE DATA =====
+            $validated = $validator->validated();
+            $validated['trang_thai'] = isset($_POST['trang_thai']) ? 1 : 0;
+            
+            // ===== SAVE TO DATABASE =====
+            $result = $this->departurePlanModel->createDeparturePlan($validated);
+            $redirectTourId = $validated['id_tour'] ?? $tourId;
 
             if ($result) {
                 $_SESSION['success'] = 'Tạo lịch khởi hành thành công!';
@@ -1052,14 +1166,41 @@ class AdminController extends BaseController {
         $this->checkLogin();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Validate ID
             $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
             if (!$id || $id <= 0) {
                 $_SESSION['error'] = 'ID lịch khởi hành không hợp lệ';
                 $this->redirect(BASE_URL . '?act=admin-departure-plans');
             }
+            
+            // Check departure plan exists
+            $existingPlan = $this->departurePlanModel->getDeparturePlanByID($id);
+            if (!$existingPlan) {
+                $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+                $this->redirect(BASE_URL . '?act=admin-departure-plans');
+            }
 
-            $result = $this->departurePlanModel->updateDeparturePlan($id, $_POST);
-            $redirectTourId = $_POST['id_tour'] ?? null;
+            // ===== VALIDATE INPUT =====
+            $validator = $this->validateDeparturePlanData($_POST);
+            
+            if ($validator->fails()) {
+                $_SESSION['error'] = $validator->firstError();
+                $redirectTourId = $_POST['id_tour'] ?? null;
+                $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                if ($redirectTourId) {
+                    $redirectUrl .= '&tour_id=' . $redirectTourId;
+                }
+                $this->redirect($redirectUrl);
+                return;
+            }
+            
+            // ===== PREPARE DATA =====
+            $validated = $validator->validated();
+            $validated['trang_thai'] = isset($_POST['trang_thai']) ? 1 : 0;
+            
+            // ===== UPDATE DATABASE =====
+            $result = $this->departurePlanModel->updateDeparturePlan($id, $validated);
+            $redirectTourId = $validated['id_tour'] ?? null;
 
             if ($result) {
                 $_SESSION['success'] = 'Cập nhật lịch khởi hành thành công!';
