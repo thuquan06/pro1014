@@ -292,7 +292,7 @@ function safe_html($value) {
       <!-- Basic Information -->
       <div class="card info-section">
         <div class="card-header">
-          <h3><i class="fas fa-info-circle"></i> Thông tin cơ bản</h3>
+          <h3><i class="fas fa-info-circle"></i> Thông tin tour</h3>
         </div>
         <div class="card-body">
           <div class="info-row">
@@ -366,6 +366,44 @@ function safe_html($value) {
 
           <div class="info-row">
             <div class="info-label">
+              <i class="fas fa-clock"></i>
+              Giờ đi
+            </div>
+            <div class="info-value"><?= safe_html($tour['giodi']) ?></div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar-day"></i>
+              Ngày xuất phát
+            </div>
+            <div class="info-value">
+              <?= !empty($tour['ngayxuatphat']) ? date('d/m/Y', strtotime($tour['ngayxuatphat'])) : 'Chưa xác định' ?>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar-check"></i>
+              Ngày về
+            </div>
+            <div class="info-value">
+              <?= !empty($tour['ngayve']) ? date('d/m/Y', strtotime($tour['ngayve'])) : 'Chưa xác định' ?>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar-plus"></i>
+              Ngày đăng
+            </div>
+            <div class="info-value">
+              <?= !empty($tour['ngaydang']) ? date('d/m/Y H:i', strtotime($tour['ngaydang'])) : 'Chưa xác định' ?>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
               <i class="fas fa-toggle-on"></i>
               Trạng thái
             </div>
@@ -422,62 +460,6 @@ function safe_html($value) {
               </p>
               <h3 class="price-value"><?= number_format($tour['giatrenho'] ?? 0, 0, ',', '.') ?></h3>
               <p class="price-unit">VNĐ</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Schedule & Time Information -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-calendar-alt"></i> Thông tin thời gian</h3>
-        </div>
-        <div class="card-body">
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-days"></i>
-              Số ngày
-            </div>
-            <div class="info-value">
-              <strong style="font-size: 16px;"><?= safe_html($tour['songay']) ?> ngày</strong>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-clock"></i>
-              Giờ đi
-            </div>
-            <div class="info-value"><?= safe_html($tour['giodi']) ?></div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-day"></i>
-              Ngày xuất phát
-            </div>
-            <div class="info-value">
-              <?= !empty($tour['ngayxuatphat']) ? date('d/m/Y', strtotime($tour['ngayxuatphat'])) : 'Chưa xác định' ?>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-check"></i>
-              Ngày về
-            </div>
-            <div class="info-value">
-              <?= !empty($tour['ngayve']) ? date('d/m/Y', strtotime($tour['ngayve'])) : 'Chưa xác định' ?>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-plus"></i>
-              Ngày đăng
-            </div>
-            <div class="info-value">
-              <?= !empty($tour['ngaydang']) ? date('d/m/Y H:i', strtotime($tour['ngaydang'])) : 'Chưa xác định' ?>
             </div>
           </div>
         </div>
