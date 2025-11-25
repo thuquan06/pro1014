@@ -469,7 +469,13 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
       </div>
     </div>
 
-    <input type="hidden" name="ngaydang" value="<?=date('Y-m-d')?>">
+    <div class="form-group-modern">
+      <label for="ngaydang">Ngày đăng</label>
+      <input type="date" name="ngaydang" id="ngaydang" value="<?=date('Y-m-d')?>" readonly style="background: var(--bg-light); cursor: not-allowed;">
+      <small style="color: var(--text-light); font-size: 12px; margin-top: 4px; display: block;">
+        <i class="fas fa-info-circle"></i> Ngày đăng tự động là ngày hôm nay
+      </small>
+    </div>
   </div>
 
   <!-- Card 6: Hình ảnh -->
