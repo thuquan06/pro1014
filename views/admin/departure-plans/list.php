@@ -29,6 +29,11 @@ if (!isset($tourId)) {
 if ($tourId === 0 || $tourId === '0' || $tourId === '') {
     $tourId = null;
 }
+
+// Đảm bảo biến checklists được định nghĩa
+if (!isset($checklists)) {
+    $checklists = [];
+}
 ?>
 
 <style>
@@ -147,6 +152,36 @@ if ($tourId === 0 || $tourId === '0' || $tourId === '') {
   color: white;
 }
 
+.btn-action.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.btn-action.success:hover {
+  background: #10b981;
+  color: white;
+}
+
+.btn-action.warning {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.btn-action.warning:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-action.info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-action.info:hover {
+  background: #3b82f6;
+  color: white;
+}
+
 .btn-action.toggle {
   background: #dbeafe;
   color: #1e40af;
@@ -244,6 +279,7 @@ if ($tourId === 0 || $tourId === '0' || $tourId === '') {
           <th>Điểm tập trung</th>
           <th>Số chỗ dự kiến</th>
           <th>Ghi chú</th>
+          <th>Checklist</th>
           <th>Trạng thái</th>
           <th>Thao tác</th>
         </tr>
@@ -289,6 +325,36 @@ if ($tourId === 0 || $tourId === '0' || $tourId === '') {
                 </span>
               <?php else: ?>
                 <span style="color: var(--text-light);">-</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <?php
+              $checklist = $checklists[$id] ?? null;
+              if ($checklist):
+                $items = json_decode($checklist['checklist_items'], true);
+                $allChecked = true;
+                if ($items) {
+                  foreach ($items as $item) {
+                    if (!isset($item['checked']) || !$item['checked']) {
+                      $allChecked = false;
+                      break;
+                    }
+                  }
+                }
+              ?>
+                <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-create&departure_plan_id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
+                   class="btn-action <?= $allChecked ? 'success' : 'warning' ?>" 
+                   title="<?= $allChecked ? 'Ready - Xem/Sửa checklist' : 'Chưa ready - Xem/Sửa checklist' ?>">
+                  <i class="fas fa-<?= $allChecked ? 'check-circle' : 'clipboard-check' ?>"></i>
+                  <?= $allChecked ? 'Ready' : 'Chưa Ready' ?>
+                </a>
+              <?php else: ?>
+                <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-create&departure_plan_id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
+                   class="btn-action info" 
+                   title="Tạo checklist">
+                  <i class="fas fa-plus-circle"></i>
+                  Tạo checklist
+                </a>
               <?php endif; ?>
             </td>
             <td><?= getTrangThaiText($trang_thai) ?></td>

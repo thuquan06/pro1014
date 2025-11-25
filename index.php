@@ -50,6 +50,7 @@ try {
         require_once './models/AdminModel.php';
         require_once './models/ProvinceModel.php';
         require_once './models/DeparturePlanModel.php';
+        require_once './models/PretripChecklistModel.php';
 
         // Controller
         require_once './controllers/BaseController.php';
@@ -155,6 +156,27 @@ try {
 
         case 'admin-departure-plan-toggle':
             (new AdminController())->toggleDeparturePlanStatus();
+            break;
+
+        // ==================== PRETRIP CHECKLIST ====================
+        case 'admin-pretrip-checklists':
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->listPretripChecklists();
+            break;
+
+        case 'admin-pretrip-checklist-create':
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->createPretripChecklist();
+            break;
+
+        case 'admin-pretrip-checklist-edit':
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->editPretripChecklist();
+            break;
+
+        case 'admin-pretrip-checklist-delete':
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->deletePretripChecklist();
             break;
 
         // ==================== CHI TIẾT TOUR (MỚI) ====================
