@@ -555,6 +555,7 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->login();
@@ -567,6 +568,7 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->logout();
@@ -579,6 +581,7 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->dashboard();
@@ -591,6 +594,7 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->listAssignments();
@@ -603,6 +607,7 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->assignmentDetail();
@@ -615,6 +620,7 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->profile();
@@ -627,9 +633,75 @@ try {
             require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->schedule();
+            break;
+
+        case 'guide-journals':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->listJournals();
+            break;
+
+        case 'guide-journal-create':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->createJournal();
+            break;
+
+        case 'guide-journal-detail':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->journalDetail();
+            break;
+
+        case 'guide-journal-edit':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->editJournal();
+            break;
+
+        case 'guide-journal-delete':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->deleteJournal();
             break;
 
         // API
