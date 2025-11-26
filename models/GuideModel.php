@@ -197,6 +197,91 @@ class GuideModel extends BaseModel
         $decoded = json_decode($jsonString, true);
         return $decoded ?: [];
     }
+
+    /**
+     * Kiểm tra đăng nhập guide bằng email
+     * @param string $email Email của guide
+     * @param string $password Mật khẩu (có thể là CMND/CCCD hoặc password riêng)
+     * @return array|false Thông tin guide nếu đúng, false nếu sai
+     */
+    public function checkLogin($email, $password)
+    {
+        try {
+            // Tìm guide theo email (không phân biệt hoa thường, bỏ qua khoảng trắng)
+            $sql = "SELECT * FROM huong_dan_vien WHERE LOWER(TRIM(email)) = LOWER(TRIM(:email)) LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':email' => $email]);
+            $guide = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$guide) {
+                error_log("Guide login: Không tìm thấy guide với email: " . $email);
+                return false;
+            }
+            
+            // Kiểm tra trạng thái (cảnh báo nhưng vẫn cho phép đăng nhập)
+            if ($guide['trang_thai'] != 1) {
+                error_log("Guide login: Guide có trạng thái không hoạt động (ID: " . $guide['id'] . ")");
+                // Vẫn cho phép đăng nhập nhưng cảnh báo
+            }
+            
+            // Kiểm tra password (có thể là CMND/CCCD hoặc password riêng)
+            // Tạm thời dùng CMND/CCCD làm password
+            if (!empty($guide['cmnd_cccd']) && trim($guide['cmnd_cccd']) === trim($password)) {
+                error_log("Guide login: Đăng nhập thành công - Guide ID: " . $guide['id']);
+                return $guide;
+            }
+            
+            // Nếu không có CMND/CCCD, thử kiểm tra với số điện thoại
+            if (empty($guide['cmnd_cccd']) && !empty($guide['so_dien_thoai']) && trim($guide['so_dien_thoai']) === trim($password)) {
+                error_log("Guide login: Đăng nhập thành công bằng số điện thoại - Guide ID: " . $guide['id']);
+                return $guide;
+            }
+            
+            error_log("Guide login: Mật khẩu không đúng cho guide ID: " . $guide['id']);
+            return false;
+        } catch (PDOException $e) {
+            error_log("Guide login error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy phân công của guide theo ID guide
+     */
+    public function getAssignmentsByGuideID($guideId, $filters = [])
+    {
+        $sql = "SELECT pc.*, 
+                       dp.ngay_khoi_hanh, dp.gio_khoi_hanh, dp.diem_tap_trung,
+                       g.tengoi AS ten_tour, g.id_goi AS id_tour
+                FROM phan_cong_hdv pc
+                LEFT JOIN lich_khoi_hanh dp ON pc.id_lich_khoi_hanh = dp.id
+                LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
+                WHERE pc.id_hdv = :id_hdv";
+        $params = [':id_hdv' => $guideId];
+
+        // Filter theo trạng thái
+        if (isset($filters['trang_thai'])) {
+            $sql .= " AND pc.trang_thai = :trang_thai";
+            $params[':trang_thai'] = $filters['trang_thai'];
+        }
+
+        // Filter theo ngày
+        if (!empty($filters['from_date'])) {
+            $sql .= " AND pc.ngay_bat_dau >= :from_date";
+            $params[':from_date'] = $filters['from_date'];
+        }
+
+        if (!empty($filters['to_date'])) {
+            $sql .= " AND pc.ngay_ket_thuc <= :to_date";
+            $params[':to_date'] = $filters['to_date'];
+        }
+
+        $sql .= " ORDER BY pc.ngay_bat_dau DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 
 
