@@ -600,6 +600,16 @@ $msg   = $msg   ?? null;
       </div>
       
       <div class="nav-section">
+        <div class="nav-section-title">Nhật ký</div>
+        <div class="nav-item">
+          <a href="?act=guide-journals" class="nav-link">
+            <i class="fas fa-book"></i>
+            <span>Nhật ký tour</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="nav-section">
         <div class="nav-section-title">Tài khoản</div>
         <div class="nav-item">
           <a href="?act=guide-profile" class="nav-link">
