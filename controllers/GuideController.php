@@ -8,6 +8,7 @@ class GuideController extends BaseController {
     private $serviceAssignmentModel;
     private $departurePlanModel;
     private $tourModel;
+    private $journalModel;
 
     public function __construct() {
         $this->guideModel = new GuideModel();
@@ -15,6 +16,7 @@ class GuideController extends BaseController {
         $this->serviceAssignmentModel = new ServiceAssignmentModel();
         $this->departurePlanModel = new DeparturePlanModel();
         $this->tourModel = new TourModel();
+        $this->journalModel = new TourJournalModel();
     }
 
     /**
@@ -248,6 +250,297 @@ class GuideController extends BaseController {
         $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['trang_thai' => 1]);
         
         $this->loadView('guide/schedule', compact('assignments'), 'guide/layout');
+    }
+
+    /**
+     * Danh sách nhật ký tour
+     * Route: ?act=guide-journals
+     */
+    public function listJournals() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $filters = [];
+        
+        // Filter theo phân công
+        if (!empty($_GET['id_phan_cong'])) {
+            $filters['id_phan_cong'] = (int)$_GET['id_phan_cong'];
+        }
+        
+        // Filter theo ngày
+        if (!empty($_GET['from_date'])) {
+            $filters['from_date'] = $_GET['from_date'];
+        }
+        if (!empty($_GET['to_date'])) {
+            $filters['to_date'] = $_GET['to_date'];
+        }
+        
+        $journals = $this->journalModel->getJournalsByGuideID($guideId, $filters);
+        
+        // Lấy danh sách phân công để filter
+        $assignments = $this->guideModel->getAssignmentsByGuideID($guideId);
+        
+        $this->loadView('guide/journals/list', compact('journals', 'filters', 'assignments'), 'guide/layout');
+    }
+
+    /**
+     * Tạo nhật ký mới
+     * Route: ?act=guide-journal-create&assignment_id=X
+     */
+    public function createJournal() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? null;
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập phân công
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Bạn không có quyền tạo nhật ký cho phân công này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Xử lý POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $images = [];
+            
+            // Xử lý upload ảnh
+            if (!empty($_FILES['hinh_anh']['name'][0])) {
+                foreach ($_FILES['hinh_anh']['name'] as $key => $name) {
+                    if ($_FILES['hinh_anh']['error'][$key] === UPLOAD_ERR_OK) {
+                        $file = [
+                            'name' => $_FILES['hinh_anh']['name'][$key],
+                            'type' => $_FILES['hinh_anh']['type'][$key],
+                            'tmp_name' => $_FILES['hinh_anh']['tmp_name'][$key],
+                            'error' => $_FILES['hinh_anh']['error'][$key],
+                            'size' => $_FILES['hinh_anh']['size'][$key]
+                        ];
+                        
+                        $uploadedPath = uploadFile($file, 'uploads/journals/');
+                        if ($uploadedPath) {
+                            $images[] = $uploadedPath;
+                        }
+                    }
+                }
+            }
+            
+            $data = [
+                'id_phan_cong' => $assignmentId,
+                'ngay' => $_POST['ngay'] ?? date('Y-m-d'),
+                'dien_bien' => $_POST['dien_bien'] ?? null,
+                'su_co' => $_POST['su_co'] ?? null,
+                'thoi_tiet' => $_POST['thoi_tiet'] ?? null,
+                'diem_nhan' => $_POST['diem_nhan'] ?? null,
+                'hinh_anh' => $images
+            ];
+            
+            $journalId = $this->journalModel->createJournal($data);
+            
+            if ($journalId) {
+                $_SESSION['success'] = 'Tạo nhật ký thành công!';
+                $this->redirect(BASE_URL . '?act=guide-journal-detail&id=' . $journalId);
+            } else {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi tạo nhật ký. Vui lòng thử lại.';
+            }
+        }
+        
+        // Lấy thông tin phân công và tour
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/journals/create', compact('assignment', 'departurePlan', 'tour'), 'guide/layout');
+    }
+
+    /**
+     * Chi tiết nhật ký
+     * Route: ?act=guide-journal-detail&id=X
+     */
+    public function journalDetail() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $journalId = $_GET['id'] ?? null;
+        
+        if (!$journalId) {
+            $_SESSION['error'] = 'ID nhật ký không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        $journal = $this->journalModel->getJournalByID($journalId);
+        
+        if (!$journal) {
+            $_SESSION['error'] = 'Không tìm thấy nhật ký';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập
+        if (!$this->journalModel->checkGuideAccess($journalId, $guideId)) {
+            $_SESSION['error'] = 'Bạn không có quyền xem nhật ký này';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        // Lấy thông tin phân công và tour
+        $assignment = $this->assignmentModel->getAssignmentByID($journal['id_phan_cong']);
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment && $assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/journals/detail', compact('journal', 'assignment', 'departurePlan', 'tour'), 'guide/layout');
+    }
+
+    /**
+     * Chỉnh sửa nhật ký
+     * Route: ?act=guide-journal-edit&id=X
+     */
+    public function editJournal() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $journalId = $_GET['id'] ?? null;
+        
+        if (!$journalId) {
+            $_SESSION['error'] = 'ID nhật ký không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        $journal = $this->journalModel->getJournalByID($journalId);
+        
+        if (!$journal) {
+            $_SESSION['error'] = 'Không tìm thấy nhật ký';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập
+        if (!$this->journalModel->checkGuideAccess($journalId, $guideId)) {
+            $_SESSION['error'] = 'Bạn không có quyền chỉnh sửa nhật ký này';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        // Xử lý POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $images = $journal['hinh_anh'] ?? [];
+            
+            // Xử lý upload ảnh mới
+            if (!empty($_FILES['hinh_anh']['name'][0])) {
+                foreach ($_FILES['hinh_anh']['name'] as $key => $name) {
+                    if ($_FILES['hinh_anh']['error'][$key] === UPLOAD_ERR_OK) {
+                        $file = [
+                            'name' => $_FILES['hinh_anh']['name'][$key],
+                            'type' => $_FILES['hinh_anh']['type'][$key],
+                            'tmp_name' => $_FILES['hinh_anh']['tmp_name'][$key],
+                            'error' => $_FILES['hinh_anh']['error'][$key],
+                            'size' => $_FILES['hinh_anh']['size'][$key]
+                        ];
+                        
+                        $uploadedPath = uploadFile($file, 'uploads/journals/');
+                        if ($uploadedPath) {
+                            $images[] = $uploadedPath;
+                        }
+                    }
+                }
+            }
+            
+            // Xử lý xóa ảnh
+            if (!empty($_POST['delete_images'])) {
+                $deleteImages = is_array($_POST['delete_images']) ? $_POST['delete_images'] : [$_POST['delete_images']];
+                foreach ($deleteImages as $imageToDelete) {
+                    if (($key = array_search($imageToDelete, $images)) !== false) {
+                        deleteFile($imageToDelete);
+                        unset($images[$key]);
+                    }
+                }
+                $images = array_values($images); // Re-index array
+            }
+            
+            $data = [
+                'ngay' => $_POST['ngay'] ?? $journal['ngay'],
+                'dien_bien' => $_POST['dien_bien'] ?? null,
+                'su_co' => $_POST['su_co'] ?? null,
+                'thoi_tiet' => $_POST['thoi_tiet'] ?? null,
+                'diem_nhan' => $_POST['diem_nhan'] ?? null,
+                'hinh_anh' => $images
+            ];
+            
+            $result = $this->journalModel->updateJournal($journalId, $data);
+            
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật nhật ký thành công!';
+                $this->redirect(BASE_URL . '?act=guide-journal-detail&id=' . $journalId);
+            } else {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi cập nhật nhật ký. Vui lòng thử lại.';
+            }
+        }
+        
+        // Lấy thông tin phân công và tour
+        $assignment = $this->assignmentModel->getAssignmentByID($journal['id_phan_cong']);
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment && $assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/journals/edit', compact('journal', 'assignment', 'departurePlan', 'tour'), 'guide/layout');
+    }
+
+    /**
+     * Xóa nhật ký
+     * Route: ?act=guide-journal-delete&id=X
+     */
+    public function deleteJournal() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $journalId = $_GET['id'] ?? null;
+        
+        if (!$journalId) {
+            $_SESSION['error'] = 'ID nhật ký không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập
+        if (!$this->journalModel->checkGuideAccess($journalId, $guideId)) {
+            $_SESSION['error'] = 'Bạn không có quyền xóa nhật ký này';
+            $this->redirect(BASE_URL . '?act=guide-journals');
+            return;
+        }
+        
+        $result = $this->journalModel->deleteJournal($journalId);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Xóa nhật ký thành công!';
+        } else {
+            $_SESSION['error'] = 'Có lỗi xảy ra khi xóa nhật ký. Vui lòng thử lại.';
+        }
+        
+        $this->redirect(BASE_URL . '?act=guide-journals');
     }
 }
 
