@@ -5,9 +5,14 @@
 <div class="card" style="margin-bottom: 24px;">
   <div class="card-header">
     <h3><i class="fas fa-info-circle"></i> Chi tiết phân công</h3>
-    <a href="?act=guide-assignments" class="btn btn-sm" style="background: var(--bg-light); color: var(--text-dark);">
-      <i class="fas fa-arrow-left"></i> Quay lại
-    </a>
+    <div style="display: flex; gap: 12px;">
+      <a href="?act=guide-journal-create&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm btn-primary">
+        <i class="fas fa-book"></i> Tạo nhật ký
+      </a>
+      <a href="?act=guide-assignments" class="btn btn-sm" style="background: var(--bg-light); color: var(--text-dark);">
+        <i class="fas fa-arrow-left"></i> Quay lại
+      </a>
+    </div>
   </div>
   <div class="card-body">
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
