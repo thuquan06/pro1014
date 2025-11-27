@@ -13,9 +13,11 @@ $nuocngoai=isset($tour['nuocngoai'])?(int)$tour['nuocngoai']:0;
 $khuyenmai=isset($tour['khuyenmai'])?(int)$tour['khuyenmai']:0;
 $quocgia=safe_value($tour['quocgia']??'Việt Nam');
 $ten_tinh=safe_value($tour['ten_tinh']??'');
+$mato=safe_value($tour['mato']??'');
 $tengoi=safe_value($tour['tengoi']??'');
 $noixuatphat=safe_value($tour['noixuatphat']??'');
 $vitri=safe_value($tour['vitri']??'');
+$tuyendiem=safe_value($tour['tuyendiem']??'');
 $giagoi=safe_value($tour['giagoi']??'');
 $giatreem=safe_value($tour['giatreem']??'');
 $giatrenho=safe_value($tour['giatrenho']??'');
@@ -27,6 +29,7 @@ $giodi=safe_value($tour['giodi']??'');
 $ngayxuatphat=safe_value($tour['ngayxuatphat']??'');
 $ngayve=safe_value($tour['ngayve']??'');
 $phuongtien=safe_value($tour['phuongtien']??'');
+$socho=safe_value($tour['socho']??'');
 $hinhanh=safe_value($tour['hinhanh']??'');
 $ngaycapnhat=safe_value($tour['ngaycapnhat']??'');
 $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
@@ -368,6 +371,11 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
     </div>
 
     <div class="form-group-modern">
+      <label for="mato">Mã tour <span class="required">*</span></label>
+      <input type="text" name="mato" id="mato" value="<?=$mato?>" required placeholder="Ví dụ: TOUR-HL-001">
+    </div>
+
+    <div class="form-group-modern">
       <label for="tengoi">Tên tour <span class="required">*</span></label>
       <input type="text" name="tengoi" id="tengoi" value="<?=$tengoi?>" required placeholder="Ví dụ: Du lịch Hà Nội - Hạ Long 3 ngày 2 đêm">
     </div>
@@ -382,6 +390,11 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
         <label for="vitri">Điểm đến <span class="required">*</span></label>
         <input type="text" name="vitri" id="vitri" value="<?=$vitri?>" required placeholder="Ví dụ: Vịnh Hạ Long">
       </div>
+    </div>
+
+    <div class="form-group-modern">
+      <label for="tuyendiem">Tuyến điểm <span class="required">*</span></label>
+      <input type="text" name="tuyendiem" id="tuyendiem" value="<?=$tuyendiem?>" required placeholder="Ví dụ: Hà Nội - Hạ Long - Cát Bà">
     </div>
   </div>
 
@@ -449,6 +462,11 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
       <div class="form-group-modern">
         <label for="phuongtien">Phương tiện <span class="required">*</span></label>
         <input type="text" name="phuongtien" id="phuongtien" value="<?=$phuongtien?>" required placeholder="Ví dụ: Xe khách, Máy bay">
+      </div>
+
+      <div class="form-group-modern">
+        <label for="socho">Số chỗ <span class="required">*</span></label>
+        <input type="number" name="socho" id="socho" value="<?=$socho?>" required min="1" placeholder="Ví dụ: 30">
       </div>
     </div>
 

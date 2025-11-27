@@ -10,7 +10,7 @@ class DeparturePlanModel extends BaseModel
      */
     public function getAllDeparturePlans()
     {
-        $sql = "SELECT dp.*, g.tengoi, g.id_goi 
+        $sql = "SELECT dp.*, g.tengoi, g.id_goi, g.songay
                 FROM lich_khoi_hanh dp
                 LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
                 ORDER BY dp.ngay_khoi_hanh DESC, dp.gio_khoi_hanh ASC";
@@ -24,7 +24,7 @@ class DeparturePlanModel extends BaseModel
      */
     public function getDeparturePlanByID($id)
     {
-        $sql = "SELECT dp.*, g.tengoi, g.id_goi 
+        $sql = "SELECT dp.*, g.tengoi, g.id_goi, g.songay
                 FROM lich_khoi_hanh dp
                 LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
                 WHERE dp.id = :id";
@@ -38,7 +38,7 @@ class DeparturePlanModel extends BaseModel
      */
     public function getDeparturePlansByTourID($tourId)
     {
-        $sql = "SELECT dp.*, g.tengoi, g.id_goi 
+        $sql = "SELECT dp.*, g.tengoi, g.id_goi, g.songay
                 FROM lich_khoi_hanh dp
                 LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
                 WHERE dp.id_tour = :tour_id 
@@ -55,12 +55,12 @@ class DeparturePlanModel extends BaseModel
     {
         try {
             $sql = "INSERT INTO lich_khoi_hanh (
-                        id_tour, ngay_khoi_hanh, gio_khoi_hanh, 
-                        diem_tap_trung, so_cho_du_kien, ghi_chu_van_hanh, 
+                        id_tour, ngay_khoi_hanh, gio_khoi_hanh, gio_tap_trung,
+                        diem_tap_trung, so_cho_con_trong, ghi_chu_van_hanh, 
                         trang_thai, ngay_tao, ngay_cap_nhat
                     ) VALUES (
-                        :id_tour, :ngay_khoi_hanh, :gio_khoi_hanh,
-                        :diem_tap_trung, :so_cho_du_kien, :ghi_chu_van_hanh,
+                        :id_tour, :ngay_khoi_hanh, :gio_khoi_hanh, :gio_tap_trung,
+                        :diem_tap_trung, :so_cho_con_trong, :ghi_chu_van_hanh,
                         :trang_thai, NOW(), NOW()
                     )";
 
@@ -69,8 +69,9 @@ class DeparturePlanModel extends BaseModel
                 ':id_tour' => $data['id_tour'] ?? null,
                 ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
                 ':gio_khoi_hanh' => $data['gio_khoi_hanh'] ?? null,
+                ':gio_tap_trung' => $data['gio_tap_trung'] ?? null,
                 ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
-                ':so_cho_du_kien' => $data['so_cho_du_kien'] ?? null,
+                ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
@@ -92,8 +93,9 @@ class DeparturePlanModel extends BaseModel
                         id_tour = :id_tour,
                         ngay_khoi_hanh = :ngay_khoi_hanh,
                         gio_khoi_hanh = :gio_khoi_hanh,
+                        gio_tap_trung = :gio_tap_trung,
                         diem_tap_trung = :diem_tap_trung,
-                        so_cho_du_kien = :so_cho_du_kien,
+                        so_cho_con_trong = :so_cho_con_trong,
                         ghi_chu_van_hanh = :ghi_chu_van_hanh,
                         trang_thai = :trang_thai,
                         ngay_cap_nhat = NOW()
@@ -105,8 +107,9 @@ class DeparturePlanModel extends BaseModel
                 ':id_tour' => $data['id_tour'] ?? null,
                 ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
                 ':gio_khoi_hanh' => $data['gio_khoi_hanh'] ?? null,
+                ':gio_tap_trung' => $data['gio_tap_trung'] ?? null,
                 ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
-                ':so_cho_du_kien' => $data['so_cho_du_kien'] ?? null,
+                ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);

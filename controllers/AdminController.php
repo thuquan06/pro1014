@@ -625,6 +625,11 @@ class AdminController extends BaseController {
     private function validateTourData($data) {
         $validator = new Validator($data);
         
+        // Mã tour
+        $validator->required('mato', 'Mã tour là bắt buộc')
+                  ->minLength('mato', 2, 'Mã tour phải có ít nhất 2 ký tự')
+                  ->maxLength('mato', 50, 'Mã tour không được quá 50 ký tự');
+        
         // Tên gói tour
         $validator->required('tengoi', 'Tên gói tour là bắt buộc')
                   ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
@@ -639,6 +644,11 @@ class AdminController extends BaseController {
         $validator->required('vitri', 'Vị trí là bắt buộc')
                   ->minLength('vitri', 3, 'Vị trí phải có ít nhất 3 ký tự')
                   ->maxLength('vitri', 255, 'Vị trí không được quá 255 ký tự');
+        
+        // Tuyến điểm
+        $validator->required('tuyendiem', 'Tuyến điểm là bắt buộc')
+                  ->minLength('tuyendiem', 3, 'Tuyến điểm phải có ít nhất 3 ký tự')
+                  ->maxLength('tuyendiem', 255, 'Tuyến điểm không được quá 255 ký tự');
         
         // Giá gói
         $validator->required('giagoi', 'Giá gói là bắt buộc')
@@ -669,6 +679,12 @@ class AdminController extends BaseController {
                   ->min('songay', 1, 'Số ngày phải lớn hơn 0')
                   ->max('songay', 365, 'Số ngày không được quá 365 ngày');
         
+        // Số chỗ
+        $validator->required('socho', 'Số chỗ là bắt buộc')
+                  ->integer('socho', 'Số chỗ phải là số nguyên')
+                  ->min('socho', 1, 'Số chỗ phải lớn hơn 0')
+                  ->max('socho', 1000, 'Số chỗ không được quá 1000');
+        
         // Giờ đi
         if (!empty($data['giodi'])) {
             $validator->pattern('giodi', '/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', 'Giờ đi không hợp lệ (định dạng: HH:mm)');
@@ -676,11 +692,7 @@ class AdminController extends BaseController {
         
         // Ngày xuất phát
         if (!empty($data['ngayxuatphat'])) {
-            $validator->date('ngayxuatphat', 'Y-m-d', 'Ngày xuất phát không hợp lệ (định dạng: YYYY-MM-DD)')
-                      ->custom('ngayxuatphat', function($value) {
-                          $date = DateTime::createFromFormat('Y-m-d', $value);
-                          return $date && $date >= new DateTime('today');
-                      }, 'Ngày xuất phát phải là ngày hôm nay hoặc trong tương lai');
+            $validator->date('ngayxuatphat', 'Y-m-d', 'Ngày xuất phát không hợp lệ (định dạng: YYYY-MM-DD)');
         }
         
         // Ngày về
@@ -735,8 +747,10 @@ class AdminController extends BaseController {
 
             if ($validator->fails()) {
                 $error = $validator->firstError();
+                $errors = $validator->errors();
+                $oldData = $_POST; // Giữ lại dữ liệu đã nhập
                 $provinces = $this->provinceModel->getAll();
-                return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
+                return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
             }
 
             // ===== VALIDATE & UPLOAD IMAGE =====
@@ -750,20 +764,26 @@ class AdminController extends BaseController {
 
                 if (!$fileValidation['valid']) {
                     $error = $fileValidation['error'];
+                    $errors = ['packageimage' => $fileValidation['error']];
+                    $oldData = $_POST; // Giữ lại dữ liệu đã nhập
                     $provinces = $this->provinceModel->getAll();
-                    return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
+                    return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
                 }
 
                 $hinhanh = uploadFile($_FILES["packageimage"], 'uploads/tours/');
                 if ($hinhanh === null) {
                     $error = "Upload ảnh thất bại.";
+                    $errors = ['packageimage' => "Upload ảnh thất bại."];
+                    $oldData = $_POST; // Giữ lại dữ liệu đã nhập
                     $provinces = $this->provinceModel->getAll();
-                    return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
+                    return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
                 }
             } else {
                 $error = "Ảnh tour là bắt buộc.";
+                $errors = ['packageimage' => "Ảnh tour là bắt buộc."];
+                $oldData = $_POST; // Giữ lại dữ liệu đã nhập
                 $provinces = $this->provinceModel->getAll();
-                return $this->loadView('admin/tours/create', compact('provinces', 'error'), 'admin/layout');
+                return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
             }
 
             // ===== PREPARE DATA =====
@@ -773,7 +793,7 @@ class AdminController extends BaseController {
             $validated['ten_tinh'] = sanitizeInput($validated['ten_tinh'] ?? null);
             $validated['khuyenmai'] = isset($validated['khuyenmai']) ? 1 : 0;
             $validated['nuocngoai'] = isset($validated['nuocngoai']) ? 1 : 0;
-
+            
             // ===== SAVE TO DATABASE =====
             $this->tourModel->createTour($validated, null);
             $_SESSION['success'] = 'Tạo tour thành công!';
@@ -829,7 +849,7 @@ class AdminController extends BaseController {
             $validated['ten_tinh'] = sanitizeInput($validated['ten_tinh'] ?? null);
             $validated['khuyenmai'] = isset($_POST['khuyenmai']) ? 1 : 0;
             $validated['nuocngoai'] = isset($_POST['nuocngoai']) ? 1 : 0;
-
+            
             $this->tourModel->updateTour($id, $validated);
             $_SESSION['success'] = 'Cập nhật tour thành công!';
             $this->redirect(BASE_URL . '?act=admin-tours');
@@ -1005,82 +1025,26 @@ class AdminController extends BaseController {
         
         // Ngày khởi hành
         $validator->required('ngay_khoi_hanh', 'Ngày khởi hành là bắt buộc')
-                  ->date('ngay_khoi_hanh', 'Y-m-d', 'Ngày khởi hành không hợp lệ (định dạng: YYYY-MM-DD)')
-                  ->custom('ngay_khoi_hanh', function($value) {
-                      $date = DateTime::createFromFormat('Y-m-d', $value);
-                      return $date && $date >= new DateTime('today');
-                  }, 'Ngày khởi hành phải là hôm nay hoặc trong tương lai');
+                  ->date('ngay_khoi_hanh', 'Y-m-d', 'Ngày khởi hành không hợp lệ (định dạng: YYYY-MM-DD)');
         
         // Giờ khởi hành
         $validator->required('gio_khoi_hanh', 'Giờ khởi hành là bắt buộc')
                   ->pattern('gio_khoi_hanh', '/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', 'Giờ khởi hành không hợp lệ (định dạng: HH:mm)');
         
-        // Validation thời gian thực: Kiểm tra ngày + giờ kết hợp
-        // Validate sau khi các field cơ bản đã được validate
-        if (!empty($data['ngay_khoi_hanh']) && !empty($data['gio_khoi_hanh'])) {
-            // Lưu lại để validate sau
-            $ngayKhoiHanh = $data['ngay_khoi_hanh'];
-            $gioKhoiHanh = $data['gio_khoi_hanh'];
-            
-            $validator->custom('gio_khoi_hanh', function($gio) use ($ngayKhoiHanh, $gioKhoiHanh) {
-                try {
-                    // Set timezone
-                    $timezone = 'Asia/Ho_Chi_Minh';
-                    date_default_timezone_set($timezone);
-                    
-                    // Kết hợp ngày và giờ thành DateTime đầy đủ
-                    $thoiGianKhoiHanh = DateTime::createFromFormat(
-                        'Y-m-d H:i', 
-                        trim($ngayKhoiHanh) . ' ' . trim($gioKhoiHanh),
-                        new DateTimeZone($timezone)
-                    );
-                    
-                    if (!$thoiGianKhoiHanh) {
-                        error_log("Cannot parse datetime: " . $ngayKhoiHanh . ' ' . $gioKhoiHanh);
-                        return false;
-                    }
-                    
-                    // Lấy thời gian hiện tại
-                    $thoiGianHienTai = new DateTime('now', new DateTimeZone($timezone));
-                    
-                    // Thời gian khởi hành phải sau thời gian hiện tại ít nhất 30 phút
-                    $thoiGianToiThieu = clone $thoiGianHienTai;
-                    $thoiGianToiThieu->modify('+30 minutes');
-                    
-                    // So sánh timestamp để chính xác hơn
-                    $timestampKhoiHanh = $thoiGianKhoiHanh->getTimestamp();
-                    $timestampToiThieu = $thoiGianToiThieu->getTimestamp();
-                    
-                    // Debug log để kiểm tra
-                    $isValid = $timestampKhoiHanh >= $timestampToiThieu;
-                    error_log(sprintf(
-                        "Validation Time: Now=%s, Min=%s, Departure=%s, Valid=%s, Diff=%d minutes",
-                        $thoiGianHienTai->format('Y-m-d H:i:s'),
-                        $thoiGianToiThieu->format('Y-m-d H:i:s'),
-                        $thoiGianKhoiHanh->format('Y-m-d H:i:s'),
-                        $isValid ? 'YES' : 'NO',
-                        round(($timestampKhoiHanh - $timestampToiThieu) / 60)
-                    ));
-                    
-                    return $isValid;
-                } catch (Exception $e) {
-                    error_log("Validation exception: " . $e->getMessage());
-                    return false;
-                }
-            }, 'Thời gian khởi hành phải sau thời gian hiện tại ít nhất 30 phút');
-        }
+        // Giờ tập trung
+        $validator->required('gio_tap_trung', 'Giờ tập trung là bắt buộc')
+                  ->pattern('gio_tap_trung', '/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', 'Giờ tập trung không hợp lệ (định dạng: HH:mm)');
         
         // Điểm tập trung
         $validator->required('diem_tap_trung', 'Điểm tập trung là bắt buộc')
                   ->minLength('diem_tap_trung', 5, 'Điểm tập trung phải có ít nhất 5 ký tự')
                   ->maxLength('diem_tap_trung', 255, 'Điểm tập trung không được quá 255 ký tự');
         
-        // Số chỗ dự kiến (nếu có)
-        if (!empty($data['so_cho_du_kien'])) {
-            $validator->integer('so_cho_du_kien', 'Số chỗ dự kiến phải là số nguyên')
-                      ->min('so_cho_du_kien', 1, 'Số chỗ dự kiến phải lớn hơn 0')
-                      ->max('so_cho_du_kien', 1000, 'Số chỗ dự kiến không được quá 1000');
-        }
+        // Số chỗ còn trống
+        $validator->required('so_cho_con_trong', 'Số chỗ còn trống là bắt buộc')
+                  ->integer('so_cho_con_trong', 'Số chỗ còn trống phải là số nguyên')
+                  ->min('so_cho_con_trong', 0, 'Số chỗ còn trống phải lớn hơn hoặc bằng 0')
+                  ->max('so_cho_con_trong', 1000, 'Số chỗ còn trống không được quá 1000');
         
         // Ghi chú vận hành (nếu có)
         if (!empty($data['ghi_chu_van_hanh'])) {
@@ -1096,8 +1060,28 @@ class AdminController extends BaseController {
      */
     public function createDeparturePlan() {
         $this->checkLogin();
-        $tours = $this->tourModel->getAllTours();
+        
         $tourId = $_GET['id_tour'] ?? null;
+        
+        // Lấy tất cả tours
+        $allTours = $this->tourModel->getAllTours();
+        
+        // Lấy danh sách tour ID đã có lịch khởi hành
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+        $toursWithPlans = [];
+        foreach ($departurePlans as $dp) {
+            if (!empty($dp['id_tour'])) {
+                $toursWithPlans[$dp['id_tour']] = true;
+            }
+        }
+        
+        // Lọc bỏ các tour đã có lịch khởi hành khỏi danh sách
+        $tours = [];
+        foreach ($allTours as $tour) {
+            if (!isset($toursWithPlans[$tour['id_goi']])) {
+                $tours[] = $tour;
+            }
+        }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ===== VALIDATE INPUT =====
@@ -1111,7 +1095,7 @@ class AdminController extends BaseController {
             
             // ===== PREPARE DATA =====
             $validated = $validator->validated();
-            $validated['trang_thai'] = isset($_POST['trang_thai']) ? 1 : 0;
+            $validated['trang_thai'] = isset($_POST['trang_thai']) ? (int)$_POST['trang_thai'] : 1;
             
             // ===== SAVE TO DATABASE =====
             $result = $this->departurePlanModel->createDeparturePlan($validated);
@@ -1196,7 +1180,7 @@ class AdminController extends BaseController {
             
             // ===== PREPARE DATA =====
             $validated = $validator->validated();
-            $validated['trang_thai'] = isset($_POST['trang_thai']) ? 1 : 0;
+            $validated['trang_thai'] = isset($_POST['trang_thai']) ? (int)$_POST['trang_thai'] : 1;
             
             // ===== UPDATE DATABASE =====
             $result = $this->departurePlanModel->updateDeparturePlan($id, $validated);
@@ -2142,6 +2126,7 @@ class AdminController extends BaseController {
         }
     }
 
+
     /**
      * Xóa người dùng
      * Route: ?act=admin-user-delete&id=X
@@ -2185,6 +2170,7 @@ class AdminController extends BaseController {
     }
 
     /* ==================== HELPER METHODS ==================== */
+
 
     /**
      * Check đăng nhập - redirect nếu chưa login

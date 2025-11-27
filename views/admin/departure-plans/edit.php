@@ -234,10 +234,13 @@ function safe_html($value) {
           </label>
           <select name="trang_thai" required>
             <option value="1" <?= ($departurePlan['trang_thai'] == 1) ? 'selected' : '' ?>>
-              Hoạt động
+              Mở bán
             </option>
             <option value="0" <?= ($departurePlan['trang_thai'] == 0) ? 'selected' : '' ?>>
-              Tạm dừng
+              Đóng
+            </option>
+            <option value="2" <?= ($departurePlan['trang_thai'] == 2) ? 'selected' : '' ?>>
+              Hết chỗ
             </option>
           </select>
         </div>
@@ -270,6 +273,17 @@ function safe_html($value) {
       <div class="form-row">
         <div class="form-group-modern">
           <label>
+            Giờ tập trung <span class="required">*</span>
+          </label>
+          <input type="time" 
+                 name="gio_tap_trung" 
+                 value="<?= safe_html($departurePlan['gio_tap_trung'] ?? '') ?>" 
+                 required>
+          <span class="help-text">Chọn giờ tập trung (ví dụ: 07:30)</span>
+        </div>
+
+        <div class="form-group-modern">
+          <label>
             Điểm tập trung <span class="required">*</span>
           </label>
           <input type="text" 
@@ -279,17 +293,20 @@ function safe_html($value) {
                  required>
           <span class="help-text">Địa điểm tập trung trước khi khởi hành</span>
         </div>
+      </div>
 
+      <div class="form-row">
         <div class="form-group-modern">
           <label>
-            Số chỗ dự kiến
+            Số chỗ còn trống <span class="required">*</span>
           </label>
           <input type="number" 
-                 name="so_cho_du_kien" 
-                 value="<?= safe_html($departurePlan['so_cho_du_kien'] ?? '') ?>" 
-                 placeholder="Ví dụ: 30"
-                 min="1">
-          <span class="help-text">Số lượng chỗ dự kiến (không bắt buộc)</span>
+                 name="so_cho_con_trong" 
+                 value="<?= safe_html($departurePlan['so_cho_con_trong'] ?? '') ?>" 
+                 placeholder="Ví dụ: 25"
+                 min="0"
+                 required>
+          <span class="help-text">Số lượng chỗ còn trống</span>
         </div>
       </div>
 

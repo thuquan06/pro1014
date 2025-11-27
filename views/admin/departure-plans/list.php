@@ -277,7 +277,6 @@ if (!isset($checklists)) {
           <?php endif; ?>
           <th>Ngày/Giờ khởi hành</th>
           <th>Điểm tập trung</th>
-          <th>Số chỗ dự kiến</th>
           <th>Ghi chú</th>
           <th>Checklist</th>
           <th>Trạng thái</th>
@@ -293,7 +292,6 @@ if (!isset($checklists)) {
           $ngay_khoi_hanh = $plan['ngay_khoi_hanh'] ?? '';
           $gio_khoi_hanh = $plan['gio_khoi_hanh'] ?? '';
           $diem_tap_trung = $plan['diem_tap_trung'] ?? '-';
-          $so_cho_du_kien = $plan['so_cho_du_kien'] ?? null;
           $ghi_chu_van_hanh = $plan['ghi_chu_van_hanh'] ?? '';
           $trang_thai = $plan['trang_thai'] ?? 0;
         ?>
@@ -311,13 +309,6 @@ if (!isset($checklists)) {
               <strong><?= formatDateTime($ngay_khoi_hanh, $gio_khoi_hanh) ?></strong>
             </td>
             <td><?= safe_html($diem_tap_trung) ?></td>
-            <td>
-              <?php if ($so_cho_du_kien): ?>
-                <strong><?= number_format($so_cho_du_kien) ?></strong> chỗ
-              <?php else: ?>
-                <span style="color: var(--text-light);">-</span>
-              <?php endif; ?>
-            </td>
             <td>
               <?php if ($ghi_chu_van_hanh): ?>
                 <span title="<?= safe_html($ghi_chu_van_hanh) ?>">

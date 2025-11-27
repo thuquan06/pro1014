@@ -167,7 +167,7 @@ $departurePlans = $departurePlans ?? [];
     <?php else: ?>
       <div class="form-group-modern">
         <label>Lịch khởi hành <span style="color: #ef4444;">*</span></label>
-        <select name="id_lich_khoi_hanh" required>
+        <select name="id_lich_khoi_hanh" id="id_lich_khoi_hanh" required onchange="loadAssignmentDates()">
           <option value="">-- Chọn lịch khởi hành --</option>
           <?php foreach ($departurePlans as $dp): 
             $ngay_gio = '';
@@ -177,8 +177,17 @@ $departurePlans = $departurePlans ?? [];
                 $ngay_gio .= ' ' . date('H:i', strtotime($dp['gio_khoi_hanh']));
               }
             }
+            // Format ngày khởi hành cho data attribute (YYYY-MM-DD)
+            $ngayKhoiHanhFormatted = '';
+            if (!empty($dp['ngay_khoi_hanh'])) {
+              $ngayKhoiHanhFormatted = date('Y-m-d', strtotime($dp['ngay_khoi_hanh']));
+            }
+            // Lấy số ngày của tour
+            $songay = $dp['songay'] ?? 0;
           ?>
-            <option value="<?= $dp['id'] ?>">
+            <option value="<?= $dp['id'] ?>" 
+                    data-ngay-khoi-hanh="<?= $ngayKhoiHanhFormatted ?>"
+                    data-songay="<?= $songay ?>">
               <?= safe_html($dp['tengoi'] ?? 'Tour') ?> - <?= $ngay_gio ?>
             </option>
           <?php endforeach; ?>
@@ -213,12 +222,30 @@ $departurePlans = $departurePlans ?? [];
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
       <div class="form-group-modern">
         <label>Ngày bắt đầu <span style="color: #ef4444;">*</span></label>
-        <input type="date" name="ngay_bat_dau" id="ngay_bat_dau" required onchange="checkSchedule()">
+        <input type="date" 
+               name="ngay_bat_dau" 
+               id="ngay_bat_dau" 
+               value="<?= $departurePlan && !empty($departurePlan['ngay_khoi_hanh']) ? date('Y-m-d', strtotime($departurePlan['ngay_khoi_hanh'])) : '' ?>"
+               required 
+               onchange="checkSchedule()">
       </div>
 
       <div class="form-group-modern">
         <label>Ngày kết thúc <span style="color: #ef4444;">*</span></label>
-        <input type="date" name="ngay_ket_thuc" id="ngay_ket_thuc" required onchange="checkSchedule()">
+        <input type="date" 
+               name="ngay_ket_thuc" 
+               id="ngay_ket_thuc"
+               value="<?php 
+                 if ($departurePlan && !empty($departurePlan['ngay_khoi_hanh'])) {
+                   $ngayKhoiHanh = strtotime($departurePlan['ngay_khoi_hanh']);
+                   $songay = $departurePlan['songay'] ?? 1;
+                   // Ngày kết thúc = ngày khởi hành + số ngày - 1
+                   $ngayKetThuc = date('Y-m-d', strtotime('+' . ($songay - 1) . ' days', $ngayKhoiHanh));
+                   echo $ngayKetThuc;
+                 }
+               ?>"
+               required 
+               onchange="checkSchedule()">
       </div>
     </div>
 
@@ -250,6 +277,40 @@ $departurePlans = $departurePlans ?? [];
 </form>
 
 <script>
+function loadAssignmentDates() {
+  const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
+  const ngayBatDauInput = document.getElementById('ngay_bat_dau');
+  const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
+  
+  if (!lichKhoiHanhSelect || !ngayBatDauInput || !ngayKetThucInput) {
+    return;
+  }
+  
+  const selectedOption = lichKhoiHanhSelect.options[lichKhoiHanhSelect.selectedIndex];
+  const ngayKhoiHanh = selectedOption.getAttribute('data-ngay-khoi-hanh');
+  const songay = parseInt(selectedOption.getAttribute('data-songay')) || 1;
+  
+  if (ngayKhoiHanh && ngayKhoiHanh.trim() !== '') {
+    // Ngày bắt đầu = ngày khởi hành
+    ngayBatDauInput.value = ngayKhoiHanh;
+    
+    // Ngày kết thúc = ngày khởi hành + số ngày - 1
+    const ngayKhoiHanhDate = new Date(ngayKhoiHanh);
+    ngayKhoiHanhDate.setDate(ngayKhoiHanhDate.getDate() + (songay - 1));
+    
+    // Format thành YYYY-MM-DD
+    const ngayKetThuc = ngayKhoiHanhDate.toISOString().split('T')[0];
+    ngayKetThucInput.value = ngayKetThuc;
+    
+    // Trigger check schedule để kiểm tra trùng lịch
+    checkSchedule();
+  } else {
+    // Nếu không có ngày khởi hành, xóa giá trị
+    ngayBatDauInput.value = '';
+    ngayKetThucInput.value = '';
+  }
+}
+
 function checkSchedule() {
   const hdvId = document.getElementById('id_hdv').value;
   const ngayBatDau = document.getElementById('ngay_bat_dau').value;
@@ -258,6 +319,20 @@ function checkSchedule() {
   // Validation sẽ được kiểm tra ở server
   // Có thể thêm AJAX check ở đây nếu cần
 }
+
+// Tự động load ngày khi trang được tải (nếu đã có lịch khởi hành được chọn)
+document.addEventListener('DOMContentLoaded', function() {
+  const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
+  if (lichKhoiHanhSelect && lichKhoiHanhSelect.value) {
+    loadAssignmentDates();
+  }
+  
+  // Nếu đã có departurePlan được chọn từ URL
+  <?php if ($departurePlan && !empty($departurePlan['ngay_khoi_hanh'])): ?>
+    // Đã tự động điền ở server-side, chỉ cần trigger check schedule
+    checkSchedule();
+  <?php endif; ?>
+});
 </script>
 
 

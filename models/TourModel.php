@@ -30,15 +30,15 @@ class TourModel extends BaseModel
             }
 
             $sql = "INSERT INTO goidulich (
-                        khuyenmai, nuocngoai, quocgia, ten_tinh, tengoi,
-                        noixuatphat, vitri, giagoi, giatreem, giatrenho,
+                        khuyenmai, nuocngoai, quocgia, ten_tinh, mato, tengoi,
+                        noixuatphat, vitri, tuyendiem, giagoi, giatreem, giatrenho,
                         chitietgoi, chuongtrinh, luuy,
-                        songay, giodi, ngayxuatphat, ngayve, phuongtien, hinhanh, ngaydang
+                        songay, giodi, ngayxuatphat, ngayve, phuongtien, socho, hinhanh, ngaydang
                     ) VALUES (
-                        :khuyenmai, :nuocngoai, :quocgia, :ten_tinh, :tengoi,
-                        :noixuatphat, :vitri, :giagoi, :giatreem, :giatrenho,
+                        :khuyenmai, :nuocngoai, :quocgia, :ten_tinh, :mato, :tengoi,
+                        :noixuatphat, :vitri, :tuyendiem, :giagoi, :giatreem, :giatrenho,
                         :chitietgoi, :chuongtrinh, :luuy,
-                        :songay, :giodi, :ngayxuatphat, :ngayve, :phuongtien, :hinhanh, NOW()
+                        :songay, :giodi, :ngayxuatphat, :ngayve, :phuongtien, :socho, :hinhanh, NOW()
                     )";
 
             $stmt = $this->conn->prepare($sql);
@@ -47,9 +47,11 @@ class TourModel extends BaseModel
                 ':nuocngoai'    => $data['nuocngoai']  ?? 0,
                 ':quocgia'      => $data['quocgia']    ?? 'Việt Nam',
                 ':ten_tinh'     => $data['ten_tinh']   ?? null,
+                ':mato'         => $data['mato'] ?? null,
                 ':tengoi'       => $data['tengoi'],
                 ':noixuatphat'  => $data['noixuatphat'],
                 ':vitri'        => $data['vitri'],
+                ':tuyendiem'    => $data['tuyendiem'] ?? null,
                 ':giagoi'       => $data['giagoi'],
                 ':giatreem'     => $data['giatreem'],
                 ':giatrenho'    => $data['giatrenho'],
@@ -61,6 +63,7 @@ class TourModel extends BaseModel
                 ':ngayxuatphat' => $data['ngayxuatphat'],
                 ':ngayve'       => $data['ngayve'],
                 ':phuongtien'   => $data['phuongtien'],
+                ':socho'        => $data['socho'] ?? null,
                 ':hinhanh'      => $hinhanh,
             ]);
 
@@ -94,9 +97,11 @@ class TourModel extends BaseModel
                         nuocngoai    = :nuocngoai,
                         quocgia      = :quocgia,
                         ten_tinh     = :ten_tinh,
+                        mato         = :mato,
                         tengoi       = :tengoi,
                         noixuatphat  = :noixuatphat,
                         vitri        = :vitri,
+                        tuyendiem    = :tuyendiem,
                         giagoi       = :giagoi,
                         giatreem     = :giatreem,
                         giatrenho    = :giatrenho,
@@ -107,7 +112,8 @@ class TourModel extends BaseModel
                         giodi        = :giodi,
                         ngayxuatphat = :ngayxuatphat,
                         ngayve       = :ngayve,
-                        phuongtien   = :phuongtien
+                        phuongtien   = :phuongtien,
+                        socho        = :socho
                     WHERE id_goi = :id";
 
             $stmt = $this->conn->prepare($sql);
@@ -116,9 +122,11 @@ class TourModel extends BaseModel
                 ':nuocngoai'    => $data['nuocngoai']  ?? 0,
                 ':quocgia'      => $data['quocgia']    ?? 'Việt Nam',
                 ':ten_tinh'     => $data['ten_tinh']   ?? null,
+                ':mato'         => $data['mato'] ?? null,
                 ':tengoi'       => $data['tengoi'],
                 ':noixuatphat'  => $data['noixuatphat'],
                 ':vitri'        => $data['vitri'],
+                ':tuyendiem'    => $data['tuyendiem'] ?? null,
                 ':giagoi'       => $data['giagoi'],
                 ':giatreem'     => $data['giatreem'],
                 ':giatrenho'    => $data['giatrenho'],
@@ -130,6 +138,7 @@ class TourModel extends BaseModel
                 ':ngayxuatphat' => $data['ngayxuatphat'],
                 ':ngayve'       => $data['ngayve'],
                 ':phuongtien'   => $data['phuongtien'],
+                ':socho'        => $data['socho'] ?? null,
                 ':id'           => $id,
             ]);
         } catch (PDOException $e) {
