@@ -639,7 +639,6 @@ try {
             (new GuideController())->schedule();
             break;
 
-        // ==================== GUIDE JOURNAL ROUTES ====================
         case 'guide-journals':
             require_once './models/BaseModel.php';
             require_once './models/GuideModel.php';
