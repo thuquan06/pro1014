@@ -78,8 +78,10 @@ try {
     switch ($act) {
         // ===== PUBLIC ROUTES =====
         case 'home':
+        case '':
             require_once './models/BaseModel.php';
-            require_once './models/ProductModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/DeparturePlanModel.php';
             require_once './controllers/ProductController.php';
             (new ProductController())->Home();
             break;
