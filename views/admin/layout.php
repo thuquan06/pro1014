@@ -759,7 +759,6 @@ $msg   = $msg   ?? null;
           <a href="?act=hoadon-list" class="nav-link">
             <i class="fas fa-file-invoice-dollar"></i>
             <span>Hóa đơn</span>
-            <span class="badge">3</span>
           </a>
         </div>
       </div>
