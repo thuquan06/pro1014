@@ -9,6 +9,9 @@
       <a href="?act=guide-journal-create&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm btn-primary">
         <i class="fas fa-book"></i> Tạo nhật ký
       </a>
+      <a href="?act=guide-incident-create&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: var(--warning); color: white;">
+        <i class="fas fa-exclamation-triangle"></i> Báo cáo sự cố
+      </a>
       <a href="?act=guide-assignments" class="btn btn-sm" style="background: var(--bg-light); color: var(--text-dark);">
         <i class="fas fa-arrow-left"></i> Quay lại
       </a>
