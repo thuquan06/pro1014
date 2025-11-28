@@ -706,6 +706,76 @@ try {
             (new GuideController())->deleteJournal();
             break;
 
+        case 'guide-incidents':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './models/IncidentReportModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->listIncidents();
+            break;
+
+        case 'guide-incident-create':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './models/IncidentReportModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->createIncident();
+            break;
+
+        case 'guide-incident-detail':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './models/IncidentReportModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->incidentDetail();
+            break;
+
+        case 'guide-incident-edit':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './models/IncidentReportModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->editIncident();
+            break;
+
+        case 'guide-incident-delete':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './models/IncidentReportModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->deleteIncident();
+            break;
+
         // API
         case 'api-tour-chitiet':
             (new TourChiTietController())->apiChiTiet();
