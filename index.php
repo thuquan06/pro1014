@@ -152,6 +152,12 @@ try {
             (new AdminController())->viewTourDetail();
             break;
 
+        case 'admin-tours-lichtrinh':
+            require_once './models/TourChiTietModel.php';
+            require_once './controllers/TourChiTietController.php';
+            (new TourChiTietController())->danhSachLichTrinh();
+            break;
+
         // --- Departure Plan Management ---
         case 'admin-departure-plans':
             (new AdminController())->listDeparturePlans();
