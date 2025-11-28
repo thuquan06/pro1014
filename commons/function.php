@@ -9,18 +9,36 @@ function connectDB() {
     $dbname = DB_NAME;
 
     try {
-        $conn = new PDO("mysql:host=$host;port=$port;dbname=$dbname", DB_USERNAME, DB_PASSWORD);
+        $conn = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", DB_USERNAME, DB_PASSWORD);
 
         // Cài đặt chế độ báo lỗi là xử lý ngoại lệ
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         // Cài đặt chế độ trả dữ liệu
         $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        
+        // Cài đặt timeout
+        $conn->setAttribute(PDO::ATTR_TIMEOUT, 5);
     
         return $conn;
     } catch (PDOException $e) {
-        error_log("Connection failed: " . $e->getMessage());
-        die("Lỗi kết nối database. Vui lòng thử lại sau.");
+        $errorMsg = "Connection failed: " . $e->getMessage();
+        $errorMsg .= " | Host: $host | Port: $port | Database: $dbname | User: " . DB_USERNAME;
+        error_log($errorMsg);
+        
+        // Trong môi trường development, hiển thị chi tiết lỗi
+        $isProduction = false; // Có thể lấy từ env.php nếu cần
+        if (!$isProduction) {
+            die("Lỗi kết nối database: " . htmlspecialchars($e->getMessage()) . 
+                "<br>Host: $host | Port: $port | Database: $dbname" .
+                "<br>Vui lòng kiểm tra:<br>" .
+                "1. MySQL/MariaDB đã được khởi động chưa?<br>" .
+                "2. Port $port có đúng không?<br>" .
+                "3. Database '$dbname' đã được tạo chưa?<br>" .
+                "4. Username và password có đúng không?");
+        } else {
+            die("Lỗi kết nối database. Vui lòng thử lại sau.");
+        }
     }
 }
 
