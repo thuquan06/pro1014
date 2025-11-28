@@ -6,6 +6,79 @@
 class IncidentReportModel extends BaseModel
 {
     /**
+     * Constructor - Tự động tạo bảng nếu chưa tồn tại
+     */
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureTableExists();
+    }
+
+    /**
+     * Đảm bảo bảng bao_cao_su_co tồn tại, tự động tạo nếu chưa có
+     */
+    private function ensureTableExists()
+    {
+        try {
+            // Kiểm tra xem bảng đã tồn tại chưa
+            $checkTable = $this->conn->query("SHOW TABLES LIKE 'bao_cao_su_co'");
+            if ($checkTable->rowCount() > 0) {
+                return; // Bảng đã tồn tại
+            }
+
+            // Tạo bảng nếu chưa tồn tại
+            $sql = "CREATE TABLE IF NOT EXISTS `bao_cao_su_co` (
+              `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID báo cáo',
+              `id_phan_cong` int(11) DEFAULT NULL COMMENT 'ID phân công HDV',
+              `loai_su_co` varchar(50) DEFAULT NULL COMMENT 'Loại sự cố',
+              `mo_ta` text DEFAULT NULL COMMENT 'Mô tả chi tiết về sự cố',
+              `cach_xu_ly` text DEFAULT NULL COMMENT 'Cách xử lý sự cố',
+              `goi_y_xu_ly` text DEFAULT NULL COMMENT 'Gợi ý xử lý (JSON)',
+              `muc_do` enum('thap','trung_binh','cao','nghiem_trong') DEFAULT 'thap' COMMENT 'Mức độ nghiêm trọng',
+              `ngay_xay_ra` date DEFAULT NULL COMMENT 'Ngày xảy ra sự cố',
+              `gio_xay_ra` time DEFAULT NULL COMMENT 'Giờ xảy ra sự cố',
+              `vi_tri_gps` varchar(255) DEFAULT NULL COMMENT 'Vị trí GPS (lat,lng)',
+              `hinh_anh` text DEFAULT NULL COMMENT 'Danh sách hình ảnh (JSON array)',
+              `thong_tin_khach` text DEFAULT NULL COMMENT 'Thông tin khách hàng liên quan',
+              `da_gui_bao_cao` tinyint(1) DEFAULT 0 COMMENT 'Đã gửi báo cáo',
+              `ngay_gui_bao_cao` datetime DEFAULT NULL COMMENT 'Ngày giờ gửi báo cáo',
+              `nguoi_nhan_bao_cao` varchar(255) DEFAULT NULL COMMENT 'Email người nhận báo cáo',
+              `ngay_tao` datetime DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
+              `ngay_cap_nhat` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
+              PRIMARY KEY (`id`),
+              KEY `idx_id_phan_cong` (`id_phan_cong`),
+              KEY `idx_loai_su_co` (`loai_su_co`),
+              KEY `idx_muc_do` (`muc_do`),
+              KEY `idx_ngay_xay_ra` (`ngay_xay_ra`),
+              KEY `idx_ngay_tao` (`ngay_tao`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng quản lý báo cáo sự cố của hướng dẫn viên'";
+
+            $this->conn->exec($sql);
+            error_log("Bảng bao_cao_su_co đã được tạo tự động");
+
+            // Thử tạo foreign key nếu bảng phan_cong_hdv tồn tại
+            $checkParentTable = $this->conn->query("SHOW TABLES LIKE 'phan_cong_hdv'");
+            if ($checkParentTable->rowCount() > 0) {
+                try {
+                    $fkSql = "ALTER TABLE `bao_cao_su_co` 
+                              ADD CONSTRAINT `fk_bao_cao_su_co_phan_cong` 
+                              FOREIGN KEY (`id_phan_cong`) 
+                              REFERENCES `phan_cong_hdv` (`id`) 
+                              ON DELETE SET NULL ON UPDATE CASCADE";
+                    $this->conn->exec($fkSql);
+                    error_log("Foreign key constraint đã được tạo");
+                } catch (PDOException $e) {
+                    // Foreign key có thể đã tồn tại, bỏ qua lỗi
+                    error_log("Không thể tạo foreign key (có thể đã tồn tại): " . $e->getMessage());
+                }
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi khi tạo bảng bao_cao_su_co: " . $e->getMessage());
+            // Không throw exception để không làm gián đoạn ứng dụng
+        }
+    }
+
+    /**
      * Lấy tất cả báo cáo sự cố theo phân công
      */
     public function getReportsByAssignmentID($assignmentId, $filters = [])
