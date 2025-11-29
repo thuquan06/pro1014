@@ -7,6 +7,7 @@ class ProductController
     private $tourModel;
     private $departurePlanModel;
     private $tourChiTietModel;
+    private $blogModel;
 
     public function __construct()
     {
@@ -21,6 +22,18 @@ class ProductController
         $this->tourModel = new TourModel();
         $this->departurePlanModel = new DeparturePlanModel();
         $this->tourChiTietModel = new TourChiTietModel();
+    }
+    
+    /**
+     * Load BlogModel (lazy load)
+     */
+    private function getBlogModel()
+    {
+        if (!$this->blogModel) {
+            require_once './models/BlogModel.php';
+            $this->blogModel = new BlogModel();
+        }
+        return $this->blogModel;
     }
 
     /**
@@ -311,6 +324,100 @@ class ProductController
             'showBanner' => false,
             'breadcrumb' => [
                 ['title' => 'Liên hệ']
+            ]
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
+     * Danh sách blog/tin tức
+     */
+    public function listBlogs()
+    {
+        $blogModel = $this->getBlogModel();
+        
+        // Pagination
+        $page = max(1, intval($_GET['page'] ?? 1));
+        $perPage = 12;
+        
+        // Lấy tất cả blogs
+        $allBlogs = $blogModel->getAll();
+        
+        // Pagination
+        $totalBlogs = count($allBlogs);
+        $totalPages = ceil($totalBlogs / $perPage);
+        $offset = ($page - 1) * $perPage;
+        $blogs = array_slice($allBlogs, $offset, $perPage);
+        
+        // Lấy blog nổi bật (3 bài mới nhất)
+        $featuredBlogs = array_slice($allBlogs, 0, 3);
+        
+        // Load view
+        $pageTitle = 'Tin tức - StarVel Travel';
+        $pageDescription = 'Cập nhật tin tức du lịch, kinh nghiệm và hướng dẫn từ StarVel Travel';
+        $content = $this->loadView('client/blog', [
+            'blogs' => $blogs,
+            'featuredBlogs' => $featuredBlogs,
+            'totalBlogs' => $totalBlogs,
+            'totalPages' => $totalPages,
+            'currentPage' => $page
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false,
+            'breadcrumb' => [
+                ['title' => 'Tin tức']
+            ]
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
+     * Chi tiết blog
+     */
+    public function detailBlog()
+    {
+        $blogId = $_GET['id'] ?? null;
+        
+        if (!$blogId) {
+            header('Location: ' . BASE_URL . '?act=blog');
+            exit;
+        }
+        
+        $blogModel = $this->getBlogModel();
+        $blog = $blogModel->getById($blogId);
+        
+        if (!$blog) {
+            header('Location: ' . BASE_URL . '?act=blog');
+            exit;
+        }
+        
+        // Lấy blog liên quan (cùng chủ đề hoặc mới nhất)
+        $allBlogs = $blogModel->getAll();
+        $relatedBlogs = array_filter($allBlogs, function($b) use ($blogId) {
+            return $b['id_blog'] != $blogId;
+        });
+        $relatedBlogs = array_slice($relatedBlogs, 0, 3);
+        
+        // Load view
+        $pageTitle = htmlspecialchars($blog['chude'] ?? 'Tin tức') . ' - StarVel Travel';
+        $pageDescription = htmlspecialchars($blog['tomtat'] ?? '');
+        $content = $this->loadView('client/blog-detail', [
+            'blog' => $blog,
+            'relatedBlogs' => $relatedBlogs
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false,
+            'breadcrumb' => [
+                ['title' => 'Tin tức', 'url' => BASE_URL . '?act=blog'],
+                ['title' => htmlspecialchars($blog['chude'] ?? 'Chi tiết')]
             ]
         ]);
         require_once './views/client/layout.php';
