@@ -424,6 +424,186 @@ class ProductController
     }
     
     /**
+     * Trang đặt tour
+     */
+    public function booking()
+    {
+        $tourId = $_GET['tour_id'] ?? null;
+        $departureId = $_GET['departure_id'] ?? null;
+        
+        if (!$tourId) {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        // Lấy thông tin tour
+        $tour = $this->tourModel->getTourByID($tourId);
+        if (!$tour) {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        // Lấy lịch khởi hành
+        $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($tourId);
+        
+        // Lấy lịch khởi hành đã chọn (nếu có)
+        $selectedDeparture = null;
+        if ($departureId) {
+            $selectedDeparture = $this->departurePlanModel->getDeparturePlanByID($departureId);
+        } elseif (!empty($departurePlans)) {
+            // Lấy lịch khởi hành đầu tiên còn chỗ
+            foreach ($departurePlans as $plan) {
+                if ($plan['trang_thai'] == 1 && ($plan['so_cho_con_trong'] ?? 0) > 0) {
+                    $selectedDeparture = $plan;
+                    break;
+                }
+            }
+        }
+        
+        // Load view
+        $pageTitle = 'Đặt tour - ' . htmlspecialchars($tour['tengoi']) . ' - StarVel Travel';
+        $pageDescription = 'Đặt tour ' . htmlspecialchars($tour['tengoi']);
+        $content = $this->loadView('client/booking', [
+            'tour' => $tour,
+            'departurePlans' => $departurePlans,
+            'selectedDeparture' => $selectedDeparture
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false,
+            'breadcrumb' => [
+                ['title' => 'Tour', 'url' => BASE_URL . '?act=tours'],
+                ['title' => htmlspecialchars($tour['tengoi']), 'url' => BASE_URL . '?act=tour-detail&id=' . $tourId],
+                ['title' => 'Đặt tour']
+            ]
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
+     * Xử lý đặt tour (POST)
+     */
+    public function storeBooking()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        require_once './models/HoadonModel.php';
+        $hoadonModel = new HoadonModel();
+        
+        // Validate dữ liệu
+        $tourId = $_POST['tour_id'] ?? null;
+        $email = $_POST['email'] ?? '';
+        $nguoilon = intval($_POST['nguoilon'] ?? 1);
+        $treem = intval($_POST['treem'] ?? 0);
+        $trenho = intval($_POST['trenho'] ?? 0);
+        $embe = intval($_POST['embe'] ?? 0);
+        $sophong = intval($_POST['sophong'] ?? 1);
+        $phongdon = isset($_POST['phongdon']) ? 1 : 0;
+        $ngayvao = $_POST['ngayvao'] ?? null;
+        $ngayra = $_POST['ngayra'] ?? null;
+        $ghichu = $_POST['ghichu'] ?? '';
+        $hoten = $_POST['hoten'] ?? '';
+        $phone = $_POST['phone'] ?? '';
+        
+        // Validation
+        if (empty($tourId) || empty($email) || empty($hoten) || empty($phone)) {
+            $_SESSION['booking_error'] = 'Vui lòng điền đầy đủ thông tin bắt buộc.';
+            header('Location: ' . BASE_URL . '?act=booking&tour_id=' . $tourId);
+            exit;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['booking_error'] = 'Email không hợp lệ.';
+            header('Location: ' . BASE_URL . '?act=booking&tour_id=' . $tourId);
+            exit;
+        }
+        
+        if ($nguoilon < 1) {
+            $_SESSION['booking_error'] = 'Số lượng người lớn phải lớn hơn 0.';
+            header('Location: ' . BASE_URL . '?act=booking&tour_id=' . $tourId);
+            exit;
+        }
+        
+        // Lưu vào hoadon
+        $hoadonData = [
+            'id_goi' => $tourId,
+            'email_nguoidung' => $email,
+            'nguoilon' => $nguoilon,
+            'treem' => $treem,
+            'trenho' => $trenho,
+            'embe' => $embe,
+            'sophong' => $sophong,
+            'phongdon' => $phongdon,
+            'ngayvao' => $ngayvao ?: null,
+            'ngayra' => $ngayra ?: null,
+            'ghichu' => $ghichu . "\nHọ tên: " . $hoten . "\nSĐT: " . $phone,
+            'trangthai' => 0 // Chờ xác nhận
+        ];
+        
+        $hoadonId = $hoadonModel->createHoadon($hoadonData);
+        
+        if ($hoadonId) {
+            $_SESSION['booking_success'] = 'Đặt tour thành công! Mã đơn hàng: #' . $hoadonId;
+            header('Location: ' . BASE_URL . '?act=booking-success&id=' . $hoadonId);
+            exit;
+        } else {
+            $_SESSION['booking_error'] = 'Có lỗi xảy ra khi đặt tour. Vui lòng thử lại.';
+            header('Location: ' . BASE_URL . '?act=booking&tour_id=' . $tourId);
+            exit;
+        }
+    }
+    
+    /**
+     * Trang xác nhận đặt tour thành công
+     */
+    public function bookingSuccess()
+    {
+        $hoadonId = $_GET['id'] ?? null;
+        
+        if (!$hoadonId) {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        require_once './models/HoadonModel.php';
+        $hoadonModel = new HoadonModel();
+        $hoadon = $hoadonModel->getHoadonById($hoadonId);
+        
+        if (!$hoadon) {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        // Lấy thông tin tour
+        $tour = $this->tourModel->getTourByID($hoadon['id_goi']);
+        
+        // Load view
+        $pageTitle = 'Đặt tour thành công - StarVel Travel';
+        $pageDescription = 'Cảm ơn bạn đã đặt tour với StarVel Travel';
+        $content = $this->loadView('client/booking-success', [
+            'hoadon' => $hoadon,
+            'tour' => $tour
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false,
+            'breadcrumb' => [
+                ['title' => 'Đặt tour thành công']
+            ]
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
      * Load view (helper method)
      */
     private function loadView($view, $data = [])

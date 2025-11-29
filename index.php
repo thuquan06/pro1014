@@ -40,6 +40,9 @@ if ($act === 'về' || $act === 've') {
 if ($act === 'liên hệ' || $act === 'lien-he') {
     $act = 'contact';
 }
+if ($act === 'đặt chỗ' || $act === 'dat-cho') {
+    $act = 'booking';
+}
 
 // Validate action (allow Vietnamese characters and common URL-safe characters)
 if (!preg_match('/^[a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\-]+$/i', $act)) {
@@ -138,6 +141,33 @@ try {
             require_once './models/BlogModel.php';
             require_once './controllers/ProductController.php';
             (new ProductController())->detailBlog();
+            break;
+
+        case 'booking':
+        case 'đặt chỗ':
+        case 'dat-cho':
+            require_once './models/BaseModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->booking();
+            break;
+
+        case 'booking-store':
+            require_once './models/BaseModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->storeBooking();
+            break;
+
+        case 'booking-success':
+            require_once './models/BaseModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->bookingSuccess();
             break;
 
         // ===== AUTH ROUTES =====
