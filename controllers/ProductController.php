@@ -266,6 +266,57 @@ class ProductController
     }
     
     /**
+     * Trang liên hệ
+     */
+    public function contact()
+    {
+        $message = '';
+        $messageType = '';
+        
+        // Xử lý form liên hệ nếu có POST
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'] ?? '';
+            $email = $_POST['email'] ?? '';
+            $phone = $_POST['phone'] ?? '';
+            $subject = $_POST['subject'] ?? '';
+            $messageText = $_POST['message'] ?? '';
+            
+            // Validate
+            if (empty($name) || empty($email) || empty($messageText)) {
+                $message = 'Vui lòng điền đầy đủ thông tin bắt buộc.';
+                $messageType = 'error';
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $message = 'Email không hợp lệ.';
+                $messageType = 'error';
+            } else {
+                // Ở đây có thể gửi email hoặc lưu vào database
+                // Hiện tại chỉ hiển thị thông báo thành công
+                $message = 'Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất có thể.';
+                $messageType = 'success';
+            }
+        }
+        
+        // Load view
+        $pageTitle = 'Liên hệ - StarVel Travel';
+        $pageDescription = 'Liên hệ với StarVel Travel - Chúng tôi luôn sẵn sàng hỗ trợ bạn';
+        $content = $this->loadView('client/contact', [
+            'message' => $message,
+            'messageType' => $messageType
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false,
+            'breadcrumb' => [
+                ['title' => 'Liên hệ']
+            ]
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
      * Load view (helper method)
      */
     private function loadView($view, $data = [])

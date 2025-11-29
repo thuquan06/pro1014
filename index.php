@@ -33,9 +33,12 @@ require_once './commons/Validation.php';
 // 4. LẤY ACTION
 $act = $_GET['act'] ?? 'home';
 
-// Normalize action: convert Vietnamese "về" to "about" for consistency
+// Normalize action: convert Vietnamese to English for consistency
 if ($act === 'về' || $act === 've') {
     $act = 'about';
+}
+if ($act === 'liên hệ' || $act === 'lien-he') {
+    $act = 'contact';
 }
 
 // Validate action (allow Vietnamese characters and common URL-safe characters)
@@ -113,6 +116,13 @@ try {
             require_once './models/BaseModel.php';
             require_once './controllers/ProductController.php';
             (new ProductController())->about();
+            break;
+
+        case 'contact':
+        case 'liên hệ':
+            require_once './models/BaseModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->contact();
             break;
 
         // ===== AUTH ROUTES =====
