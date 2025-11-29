@@ -574,34 +574,9 @@ class ProductController
             if ($hoadonId) {
                 error_log("Booking created successfully. Hoadon ID: $hoadonId");
                 
-                // Gửi email xác nhận đặt tour
-                try {
-                    require_once './commons/BookingEmailHelper.php';
-                    $hoadon = $hoadonModel->getHoadonById($hoadonId);
-                    
-                    if ($hoadon) {
-                        // Lấy thông tin lịch khởi hành nếu có
-                        $departure = null;
-                        if ($departureId) {
-                            $departure = $this->departurePlanModel->getDeparturePlanByID($departureId);
-                        }
-                        
-                        // Gửi email xác nhận
-                        $emailSent = BookingEmailHelper::sendBookingConfirmation($hoadon, $tour, $departure);
-                        
-                        if ($emailSent) {
-                            error_log("Booking confirmation email sent successfully to: {$email}");
-                        } else {
-                            error_log("Failed to send booking confirmation email to: {$email}");
-                        }
-                    }
-                } catch (Exception $e) {
-                    // Không chặn redirect nếu gửi email lỗi
-                    error_log("Error sending booking confirmation email: " . $e->getMessage());
-                }
-                
-                // Redirect đến trang xác nhận
-                header('Location: ' . BASE_URL . '?act=booking-confirm&id=' . $hoadonId);
+                // KHÔNG gửi email ở đây - sẽ gửi sau khi thanh toán thành công
+                // Redirect đến trang thanh toán ngay lập tức
+                header('Location: ' . BASE_URL . '?act=booking-confirm&id=' . $hoadonId . '&payment=required');
                 exit;
             } else {
                 error_log("Booking failed - createHoadon returned false. Tour ID: $tourId, Email: $email");
@@ -626,11 +601,12 @@ class ProductController
     }
     
     /**
-     * Trang xác nhận đặt tour
+     * Trang xác nhận đặt tour và thanh toán
      */
     public function bookingConfirm()
     {
         $hoadonId = $_GET['id'] ?? null;
+        $paymentRequired = isset($_GET['payment']) && $_GET['payment'] == 'required';
         
         if (!$hoadonId) {
             header('Location: ' . BASE_URL . '?act=tours');
@@ -650,13 +626,24 @@ class ProductController
         $tour = $this->tourModel->getTourByID($hoadon['id_goi']);
         $total = $hoadonModel->calculateTotal($hoadonId);
         
+        // Nếu yêu cầu thanh toán và chưa thanh toán, tự động tạo payment request
+        $autoCreatePayment = false;
+        if ($paymentRequired && $total > 0) {
+            $paymentStatus = $hoadon['trang_thai_thanh_toan'] ?? 0;
+            if ($paymentStatus == 0) { // Chưa thanh toán
+                $autoCreatePayment = true;
+            }
+        }
+        
         // Load view
-        $pageTitle = 'Xác nhận đặt tour - StarVel';
-        $pageDescription = 'Xác nhận đặt tour thành công';
+        $pageTitle = 'Thanh toán đặt tour - StarVel';
+        $pageDescription = 'Thanh toán đặt tour';
         $content = $this->loadView('client/booking-confirm', [
             'hoadon' => $hoadon,
             'tour' => $tour,
-            'total' => $total
+            'total' => $total,
+            'autoCreatePayment' => $autoCreatePayment,
+            'paymentRequired' => $paymentRequired
         ]);
         
         extract([
