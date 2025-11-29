@@ -234,6 +234,38 @@ class ProductController
     }
     
     /**
+     * Trang giới thiệu
+     */
+    public function about()
+    {
+        // Lấy thống kê
+        $allTours = $this->tourModel->getAllTours();
+        $totalTours = count($allTours);
+        $totalCustomers = 100000; // Default value
+        $totalDestinations = count(array_unique(array_filter(array_column($allTours, 'ten_tinh'))));
+        
+        // Load view
+        $pageTitle = 'Giới thiệu - StarVel Travel';
+        $pageDescription = 'Tìm hiểu về StarVel Travel - Chuyên cung cấp các tour du lịch trong nước và quốc tế chất lượng cao';
+        $content = $this->loadView('client/about', [
+            'totalTours' => $totalTours,
+            'totalCustomers' => $totalCustomers,
+            'totalDestinations' => $totalDestinations
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false,
+            'breadcrumb' => [
+                ['title' => 'Giới thiệu']
+            ]
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
      * Load view (helper method)
      */
     private function loadView($view, $data = [])

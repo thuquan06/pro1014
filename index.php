@@ -33,8 +33,13 @@ require_once './commons/Validation.php';
 // 4. LẤY ACTION
 $act = $_GET['act'] ?? 'home';
 
-// Validate action
-if (!preg_match('/^[a-z0-9-]+$/i', $act)) {
+// Normalize action: convert Vietnamese "về" to "about" for consistency
+if ($act === 'về' || $act === 've') {
+    $act = 'about';
+}
+
+// Validate action (allow Vietnamese characters and common URL-safe characters)
+if (!preg_match('/^[a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\-]+$/i', $act)) {
     http_response_code(400);
     die("Invalid action");
 }
@@ -101,6 +106,13 @@ try {
             require_once './models/TourChiTietModel.php';
             require_once './controllers/ProductController.php';
             (new ProductController())->detailTour();
+            break;
+
+        case 'about':
+        case 'về':
+            require_once './models/BaseModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->about();
             break;
 
         // ===== AUTH ROUTES =====
