@@ -125,6 +125,21 @@ try {
             (new ProductController())->contact();
             break;
 
+        case 'blog':
+        case 'tin-tức':
+            require_once './models/BaseModel.php';
+            require_once './models/BlogModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->listBlogs();
+            break;
+
+        case 'blog-detail':
+            require_once './models/BaseModel.php';
+            require_once './models/BlogModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->detailBlog();
+            break;
+
         // ===== AUTH ROUTES =====
         case 'login':
             (new AdminController())->login();
