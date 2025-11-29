@@ -172,6 +172,47 @@ try {
             (new ProductController())->bookingConfirm();
             break;
 
+        // ===== PAYMENT ROUTES =====
+        case 'payment-create':
+            // Đảm bảo không có output trước khi xử lý
+            ob_start();
+            require_once './controllers/BaseController.php';
+            require_once './models/BaseModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './commons/MoMoPaymentHelper.php';
+            require_once './controllers/PaymentController.php';
+            (new PaymentController())->createPayment();
+            break;
+
+        case 'payment-callback':
+            require_once './controllers/BaseController.php';
+            require_once './models/BaseModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './commons/MoMoPaymentHelper.php';
+            require_once './controllers/PaymentController.php';
+            (new PaymentController())->handleCallback();
+            break;
+
+        case 'payment-return':
+            require_once './controllers/BaseController.php';
+            require_once './models/BaseModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './commons/MoMoPaymentHelper.php';
+            require_once './controllers/PaymentController.php';
+            (new PaymentController())->handleReturn();
+            break;
+
+        case 'payment-qrcode':
+            // Đảm bảo không có output trước khi xử lý
+            ob_start();
+            require_once './controllers/BaseController.php';
+            require_once './models/BaseModel.php';
+            require_once './models/HoadonModel.php';
+            require_once './commons/MoMoPaymentHelper.php';
+            require_once './controllers/PaymentController.php';
+            (new PaymentController())->getQRCode();
+            break;
+
         // ===== AUTH ROUTES =====
         case 'login':
             (new AdminController())->login();
