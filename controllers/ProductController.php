@@ -6,6 +6,7 @@ class ProductController
 {
     private $tourModel;
     private $departurePlanModel;
+    private $tourChiTietModel;
 
     public function __construct()
     {
@@ -16,8 +17,10 @@ class ProductController
         require_once './models/BaseModel.php';
         require_once './models/TourModel.php';
         require_once './models/DeparturePlanModel.php';
+        require_once './models/TourChiTietModel.php';
         $this->tourModel = new TourModel();
         $this->departurePlanModel = new DeparturePlanModel();
+        $this->tourChiTietModel = new TourChiTietModel();
     }
 
     /**
@@ -167,6 +170,58 @@ class ProductController
                 'promo' => $promo,
                 'sort' => $sort
             ]
+        ]);
+        
+        extract([
+            'content' => $content,
+            'pageTitle' => $pageTitle,
+            'pageDescription' => $pageDescription,
+            'showBanner' => false
+        ]);
+        require_once './views/client/layout.php';
+    }
+    
+    /**
+     * Chi tiết tour
+     */
+    public function detailTour()
+    {
+        $tourId = $_GET['id'] ?? null;
+        
+        if (!$tourId) {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        // Lấy thông tin tour
+        $tour = $this->tourModel->getTourByID($tourId);
+        
+        if (!$tour) {
+            header('Location: ' . BASE_URL . '?act=tours');
+            exit;
+        }
+        
+        // Lấy lịch trình theo ngày
+        $itinerary = $this->tourChiTietModel->layLichTrinh($tourId);
+        
+        // Lấy gallery ảnh
+        $gallery = $this->tourChiTietModel->layDanhSachAnh($tourId);
+        
+        // Lấy lịch khởi hành
+        $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($tourId);
+        
+        // Lấy chính sách
+        $policies = $this->tourChiTietModel->layChinhSach($tourId);
+        
+        // Load view
+        $pageTitle = htmlspecialchars($tour['tengoi']) . ' - StarVel';
+        $pageDescription = htmlspecialchars($tour['vitri'] ?? 'Tour du lịch') . ' - ' . htmlspecialchars($tour['tengoi']);
+        $content = $this->loadView('client/tour-detail', [
+            'tour' => $tour,
+            'itinerary' => $itinerary,
+            'gallery' => $gallery,
+            'departurePlans' => $departurePlans,
+            'policies' => $policies
         ]);
         
         extract([
