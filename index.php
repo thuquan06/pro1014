@@ -577,6 +577,14 @@ try {
             (new HoadonController())->updateStatus();
             break;
 
+        case 'hoadon-confirm':
+            (new HoadonController())->confirm();
+            break;
+
+        case 'hoadon-complete':
+            (new HoadonController())->complete();
+            break;
+
         case 'hoadon-cancel':
             (new HoadonController())->cancel();
             break;

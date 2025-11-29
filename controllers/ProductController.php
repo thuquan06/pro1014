@@ -573,6 +573,33 @@ class ProductController
             
             if ($hoadonId) {
                 error_log("Booking created successfully. Hoadon ID: $hoadonId");
+                
+                // Gửi email xác nhận đặt tour
+                try {
+                    require_once './commons/BookingEmailHelper.php';
+                    $hoadon = $hoadonModel->getHoadonById($hoadonId);
+                    
+                    if ($hoadon) {
+                        // Lấy thông tin lịch khởi hành nếu có
+                        $departure = null;
+                        if ($departureId) {
+                            $departure = $this->departurePlanModel->getDeparturePlanByID($departureId);
+                        }
+                        
+                        // Gửi email xác nhận
+                        $emailSent = BookingEmailHelper::sendBookingConfirmation($hoadon, $tour, $departure);
+                        
+                        if ($emailSent) {
+                            error_log("Booking confirmation email sent successfully to: {$email}");
+                        } else {
+                            error_log("Failed to send booking confirmation email to: {$email}");
+                        }
+                    }
+                } catch (Exception $e) {
+                    // Không chặn redirect nếu gửi email lỗi
+                    error_log("Error sending booking confirmation email: " . $e->getMessage());
+                }
+                
                 // Redirect đến trang xác nhận
                 header('Location: ' . BASE_URL . '?act=booking-confirm&id=' . $hoadonId);
                 exit;

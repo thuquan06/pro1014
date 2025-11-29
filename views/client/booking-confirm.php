@@ -198,21 +198,39 @@ function getStatusColor($status) {
             </div>
         </div>
 
+        <!-- Email Confirmation Notice -->
+        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-6 mb-6 border-l-4 border-green-500">
+            <div class="flex items-start">
+                <i class="fas fa-envelope-circle-check text-green-600 dark:text-green-400 text-2xl mr-3 mt-1"></i>
+                <div>
+                    <h3 class="text-xl font-bold mb-2 text-green-800 dark:text-green-200">Email xác nhận đã được gửi!</h3>
+                    <p class="text-green-700 dark:text-green-300 mb-2">
+                        Chúng tôi đã gửi email xác nhận đến địa chỉ <strong><?= e($hoadon['email_nguoidung'] ?? '') ?></strong>.
+                        Vui lòng kiểm tra hộp thư đến (và cả thư mục Spam) để xem chi tiết đơn đặt tour của bạn.
+                    </p>
+                    <p class="text-sm text-green-600 dark:text-green-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Nếu không nhận được email trong vòng vài phút, vui lòng liên hệ với chúng tôi qua hotline.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Next Steps -->
         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 mb-6">
             <h3 class="text-xl font-bold mb-4">Hướng dẫn tiếp theo</h3>
             <ul class="space-y-2 text-text-muted-light dark:text-text-muted-dark">
                 <li class="flex items-start">
                     <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mr-2 mt-1"></i>
-                    <span>Chúng tôi sẽ gửi email xác nhận đến địa chỉ email của bạn trong vòng 24 giờ.</span>
-                </li>
-                <li class="flex items-start">
-                    <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mr-2 mt-1"></i>
-                    <span>Nhân viên của chúng tôi sẽ liên hệ với bạn để xác nhận thông tin và hướng dẫn thanh toán.</span>
+                    <span>Nhân viên của chúng tôi sẽ liên hệ với bạn trong vòng <strong>24 giờ</strong> để xác nhận thông tin và hướng dẫn thanh toán.</span>
                 </li>
                 <li class="flex items-start">
                     <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mr-2 mt-1"></i>
                     <span>Vui lòng kiểm tra email thường xuyên để nhận thông tin cập nhật về tour của bạn.</span>
+                </li>
+                <li class="flex items-start">
+                    <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mr-2 mt-1"></i>
+                    <span>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua email hoặc hotline.</span>
                 </li>
             </ul>
         </div>

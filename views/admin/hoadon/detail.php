@@ -33,6 +33,7 @@ $ngaydat = $hoadon['ngaydat'] ?? '';
 $trangthai = $hoadon['trangthai'] ?? 0;
 $huy = $hoadon['huy'] ?? 0;
 $ngaycapnhat = $hoadon['ngaycapnhat'] ?? '';
+$ly_do_huy = $hoadon['ly_do_huy'] ?? '';
 
 $giagoi = $hoadon['giagoi'] ?? 0;
 $giatreem = $hoadon['giatreem'] ?? 0;
@@ -225,21 +226,25 @@ if ($huy == 1) {
       Chỉnh sửa
     </a>
     <?php if ($huy != 1): ?>
-    <button onclick="if(confirm('Bạn có chắc chắn muốn hủy hóa đơn này?')) { 
-      var form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '<?php echo BASE_URL; ?>?act=hoadon-cancel';
-      var input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'id';
-      input.value = '<?php echo $id; ?>';
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
-    }" class="btn" style="background: #ef4444; color: white;">
-      <i class="fas fa-ban"></i>
-      Hủy hóa đơn
-    </button>
+      <?php if ($trangthai == 0): // Chờ xác nhận ?>
+      <button onclick="if(confirm('Bạn có chắc chắn muốn xác nhận hóa đơn này?')) { 
+        window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-confirm&id=<?php echo $id; ?>';
+      }" class="btn" style="background: #3b82f6; color: white;">
+        <i class="fas fa-check"></i>
+        Xác nhận
+      </button>
+      <?php elseif ($trangthai == 1): // Đã xác nhận ?>
+      <button onclick="if(confirm('Bạn có chắc chắn muốn đánh dấu hóa đơn này là hoàn thành?')) { 
+        window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-complete&id=<?php echo $id; ?>';
+      }" class="btn" style="background: #10b981; color: white;">
+        <i class="fas fa-check-circle"></i>
+        Hoàn thành
+      </button>
+      <?php endif; ?>
+      <button onclick="showCancelModal()" class="btn" style="background: #ef4444; color: white;">
+        <i class="fas fa-ban"></i>
+        Hủy hóa đơn
+      </button>
     <?php endif; ?>
   </div>
 </div>
@@ -373,3 +378,72 @@ if ($huy == 1) {
   </div>
 </div>
 <?php endif; ?>
+
+<!-- Lý do hủy -->
+<?php if ($huy == 1 && $ly_do_huy): ?>
+<div class="detail-card">
+  <h3 class="card-title">
+    <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+    Lý do hủy
+  </h3>
+  
+  <div class="note-box" style="background: #fee2e2; border-left-color: #ef4444;">
+    <div class="note-content" style="color: #991b1b;">
+      <?php echo nl2br(safe_html($ly_do_huy)); ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- Modal hủy hóa đơn -->
+<div id="cancelModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">
+      <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+      Hủy hóa đơn
+    </h3>
+    <p style="color: #6b7280; margin-bottom: 20px;">
+      Vui lòng nhập lý do hủy hóa đơn này:
+    </p>
+    <form method="POST" action="<?php echo BASE_URL; ?>?act=hoadon-cancel">
+      <input type="hidden" name="id" value="<?php echo $id; ?>">
+      <textarea 
+        name="ly_do_huy" 
+        required 
+        rows="5" 
+        style="width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;"
+        placeholder="Nhập lý do hủy hóa đơn..."></textarea>
+      <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+        <button 
+          type="button" 
+          onclick="closeCancelModal()" 
+          style="padding: 10px 20px; background: #f3f4f6; color: #1f2937; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+          Hủy
+        </button>
+        <button 
+          type="submit" 
+          style="padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+          <i class="fas fa-ban"></i>
+          Xác nhận hủy
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function showCancelModal() {
+  document.getElementById('cancelModal').style.display = 'flex';
+}
+
+function closeCancelModal() {
+  document.getElementById('cancelModal').style.display = 'none';
+}
+
+// Đóng modal khi click bên ngoài
+document.getElementById('cancelModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeCancelModal();
+  }
+});
+</script>

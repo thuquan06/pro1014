@@ -369,10 +369,17 @@ function getTrangThaiText($status) {
               <i class="fas fa-edit"></i>
             </a>
             <?php if ($huy != 1): ?>
-            <button onclick="updateStatus(<?php echo $id; ?>)" 
-                    class="btn-action refresh" title="Cập nhật trạng thái">
-              <i class="fas fa-sync"></i>
-            </button>
+              <?php if ($trangthai == 0): // Chờ xác nhận ?>
+              <button onclick="if(confirm('Xác nhận hóa đơn #<?php echo $id; ?>?')) { window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-confirm&id=<?php echo $id; ?>'; }" 
+                      class="btn-action refresh" title="Xác nhận">
+                <i class="fas fa-check"></i>
+              </button>
+              <?php elseif ($trangthai == 1): // Đã xác nhận ?>
+              <button onclick="if(confirm('Đánh dấu hoàn thành hóa đơn #<?php echo $id; ?>?')) { window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-complete&id=<?php echo $id; ?>'; }" 
+                      class="btn-action refresh" title="Hoàn thành" style="background: #10b981; color: white;">
+                <i class="fas fa-check-circle"></i>
+              </button>
+              <?php endif; ?>
             <?php endif; ?>
             <a href="<?php echo BASE_URL; ?>?act=hoadon-delete&id=<?php echo $id; ?>" 
                class="btn-action delete"
@@ -427,7 +434,7 @@ $(document).ready(function() {
   });
 });
 
-// Hàm cập nhật trạng thái
+// Hàm cập nhật trạng thái (giữ lại để tương thích nếu cần)
 function updateStatus(id) {
   var newStatus = prompt("Nhập trạng thái mới:\n0 = Chờ xác nhận\n1 = Đã xác nhận\n2 = Hoàn thành");
   
