@@ -69,6 +69,12 @@ class HoadonModel extends BaseModel
     public function createHoadon(array $data)
     {
         try {
+            // Validate required fields
+            if (empty($data['email_nguoidung'])) {
+                error_log("Lỗi createHoadon: email_nguoidung is required");
+                return false;
+            }
+
             $sql = "INSERT INTO hoadon (
                         id_goi, id_ks, email_nguoidung, nguoilon, treem, trenho, embe,
                         phongdon, ngayvao, ngayra, sophong, ghichu, trangthai, ngaydat
@@ -78,7 +84,8 @@ class HoadonModel extends BaseModel
                     )";
 
             $stmt = $this->conn->prepare($sql);
-            $result = $stmt->execute([
+            
+            $params = [
                 ':id_goi'           => $data['id_goi'] ?? null,
                 ':id_ks'            => $data['id_ks'] ?? null,
                 ':email_nguoidung'  => $data['email_nguoidung'],
@@ -92,11 +99,37 @@ class HoadonModel extends BaseModel
                 ':sophong'          => $data['sophong'] ?? 1,
                 ':ghichu'           => $data['ghichu'] ?? '',
                 ':trangthai'        => $data['trangthai'] ?? 0,
-            ]);
+            ];
 
-            return $result ? $this->conn->lastInsertId() : false;
+            $result = $stmt->execute($params);
+
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("Lỗi createHoadon execute failed: " . print_r($errorInfo, true));
+                error_log("SQL: " . $sql);
+                error_log("Params: " . print_r($params, true));
+                return false;
+            }
+
+            $lastInsertId = $this->conn->lastInsertId();
+            if (!$lastInsertId) {
+                error_log("Lỗi createHoadon: lastInsertId is empty");
+                return false;
+            }
+
+            return $lastInsertId;
         } catch (PDOException $e) {
-            error_log("Lỗi createHoadon: " . $e->getMessage());
+            $errorMsg = "Lỗi createHoadon PDOException: " . $e->getMessage();
+            $errorMsg .= " | Code: " . $e->getCode();
+            $errorMsg .= " | File: " . $e->getFile() . ":" . $e->getLine();
+            error_log($errorMsg);
+            error_log("Data: " . print_r($data, true));
+            return false;
+        } catch (Exception $e) {
+            $errorMsg = "Lỗi createHoadon Exception: " . $e->getMessage();
+            $errorMsg .= " | File: " . $e->getFile() . ":" . $e->getLine();
+            error_log($errorMsg);
+            error_log("Data: " . print_r($data, true));
             return false;
         }
     }

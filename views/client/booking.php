@@ -88,6 +88,8 @@ function e($string) {
                             <i class="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                         </div>
                     </div>
+                    <?php else: ?>
+                    <input type="hidden" name="departure_id" value="">
                     <?php endif; ?>
 
                     <!-- Thông tin khách hàng -->
@@ -421,10 +423,66 @@ function calculateTotal() {
     }
 }
 
-// Form submit loading state
+// Form submit validation and loading state
 document.getElementById('bookingForm').addEventListener('submit', function(e) {
+    // Validate required fields
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const nguoilon = parseInt(document.getElementById('nguoilon').value) || 0;
+    
+    // Check if departure_id is required and selected
+    const departureSelect = document.getElementById('departure_id');
+    if (departureSelect && departureSelect.hasAttribute('required')) {
+        if (!departureSelect.value) {
+            e.preventDefault();
+            alert('Vui lòng chọn lịch khởi hành!');
+            departureSelect.focus();
+            return false;
+        }
+    }
+    
+    if (!name) {
+        e.preventDefault();
+        alert('Vui lòng nhập họ và tên!');
+        document.getElementById('name').focus();
+        return false;
+    }
+    
+    if (!email) {
+        e.preventDefault();
+        alert('Vui lòng nhập email!');
+        document.getElementById('email').focus();
+        return false;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        e.preventDefault();
+        alert('Email không hợp lệ!');
+        document.getElementById('email').focus();
+        return false;
+    }
+    
+    if (!phone) {
+        e.preventDefault();
+        alert('Vui lòng nhập số điện thoại!');
+        document.getElementById('phone').focus();
+        return false;
+    }
+    
+    if (nguoilon < 1) {
+        e.preventDefault();
+        alert('Số lượng người lớn phải ít nhất là 1!');
+        document.getElementById('nguoilon').focus();
+        return false;
+    }
+    
+    // If validation passes, show loading state
     const submitBtn = this.querySelector('button[type="submit"]');
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang xử lý...';
     submitBtn.disabled = true;
+    
+    // Prevent double submission
+    this.submitting = true;
 });
 </script>

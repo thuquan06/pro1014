@@ -486,76 +486,114 @@ class ProductController
             exit;
         }
         
-        // Load HoadonModel
-        require_once './models/HoadonModel.php';
-        $hoadonModel = new HoadonModel();
-        
-        // Validate và lấy dữ liệu
-        $tourId = $_POST['tour_id'] ?? null;
-        $email = $_POST['email'] ?? '';
-        $phone = $_POST['phone'] ?? '';
-        $name = $_POST['name'] ?? '';
-        $nguoilon = intval($_POST['nguoilon'] ?? 1);
-        $treem = intval($_POST['treem'] ?? 0);
-        $trenho = intval($_POST['trenho'] ?? 0);
-        $embe = intval($_POST['embe'] ?? 0);
-        $sophong = intval($_POST['sophong'] ?? 1);
-        $phongdon = isset($_POST['phongdon']) ? 1 : 0;
-        $ghichu = $_POST['ghichu'] ?? '';
-        $departureId = $_POST['departure_id'] ?? null;
-        
-        // Validate
-        if (empty($tourId) || empty($email) || empty($phone) || empty($name)) {
-            echo "<script>alert('Vui lòng điền đầy đủ thông tin bắt buộc!'); window.history.back();</script>";
-            exit;
-        }
-        
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo "<script>alert('Email không hợp lệ!'); window.history.back();</script>";
-            exit;
-        }
-        
-        // Tính ngày vào và ngày ra từ lịch khởi hành nếu có
-        $ngayvao = null;
-        $ngayra = null;
-        if ($departureId) {
-            $departure = $this->departurePlanModel->getDeparturePlanByID($departureId);
-            if ($departure && !empty($departure['ngay_khoi_hanh'])) {
-                $ngayvao = $departure['ngay_khoi_hanh'];
-                // Tính ngày ra dựa trên số ngày tour
-                $tour = $this->tourModel->getTourByID($tourId);
-                if ($tour && !empty($tour['songay'])) {
-                    $days = intval($tour['songay']);
-                    $ngayra = date('Y-m-d', strtotime($ngayvao . ' + ' . $days . ' days'));
+        try {
+            // Load HoadonModel
+            require_once './models/HoadonModel.php';
+            $hoadonModel = new HoadonModel();
+            
+            // Validate và lấy dữ liệu
+            $tourId = $_POST['tour_id'] ?? null;
+            $email = trim($_POST['email'] ?? '');
+            $phone = trim($_POST['phone'] ?? '');
+            $name = trim($_POST['name'] ?? '');
+            $nguoilon = intval($_POST['nguoilon'] ?? 1);
+            $treem = intval($_POST['treem'] ?? 0);
+            $trenho = intval($_POST['trenho'] ?? 0);
+            $embe = intval($_POST['embe'] ?? 0);
+            $sophong = intval($_POST['sophong'] ?? 1);
+            $phongdon = isset($_POST['phongdon']) ? 1 : 0;
+            $ghichu = trim($_POST['ghichu'] ?? '');
+            $departureId = !empty($_POST['departure_id']) ? $_POST['departure_id'] : null;
+            
+            // Validate
+            if (empty($tourId)) {
+                echo "<script>alert('Lỗi: Không tìm thấy thông tin tour!'); window.history.back();</script>";
+                exit;
+            }
+            
+            if (empty($email) || empty($phone) || empty($name)) {
+                echo "<script>alert('Vui lòng điền đầy đủ thông tin bắt buộc (Họ tên, Email, Số điện thoại)!'); window.history.back();</script>";
+                exit;
+            }
+            
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                echo "<script>alert('Email không hợp lệ!'); window.history.back();</script>";
+                exit;
+            }
+            
+            // Validate số lượng người
+            if ($nguoilon < 1) {
+                echo "<script>alert('Số lượng người lớn phải ít nhất là 1!'); window.history.back();</script>";
+                exit;
+            }
+            
+            // Kiểm tra tour có tồn tại không
+            $tour = $this->tourModel->getTourByID($tourId);
+            if (!$tour) {
+                echo "<script>alert('Tour không tồn tại!'); window.location.href = '" . BASE_URL . "?act=tours';</script>";
+                exit;
+            }
+            
+            // Tính ngày vào và ngày ra từ lịch khởi hành nếu có
+            $ngayvao = null;
+            $ngayra = null;
+            if ($departureId) {
+                $departure = $this->departurePlanModel->getDeparturePlanByID($departureId);
+                if ($departure && !empty($departure['ngay_khoi_hanh'])) {
+                    $ngayvao = $departure['ngay_khoi_hanh'];
+                    // Tính ngày ra dựa trên số ngày tour
+                    if ($tour && !empty($tour['songay'])) {
+                        $days = intval($tour['songay']);
+                        $ngayra = date('Y-m-d', strtotime($ngayvao . ' + ' . $days . ' days'));
+                    }
                 }
             }
-        }
-        
-        // Tạo hóa đơn
-        $bookingData = [
-            'id_goi' => $tourId,
-            'id_ks' => null,
-            'email_nguoidung' => $email,
-            'nguoilon' => $nguoilon,
-            'treem' => $treem,
-            'trenho' => $trenho,
-            'embe' => $embe,
-            'phongdon' => $phongdon,
-            'ngayvao' => $ngayvao,
-            'ngayra' => $ngayra,
-            'sophong' => $sophong,
-            'ghichu' => $ghichu . "\nTên khách hàng: " . $name . "\nSố điện thoại: " . $phone,
-            'trangthai' => 0 // Chờ xác nhận
-        ];
-        
-        $hoadonId = $hoadonModel->createHoadon($bookingData);
-        
-        if ($hoadonId) {
-            // Redirect đến trang xác nhận
-            header('Location: ' . BASE_URL . '?act=booking-confirm&id=' . $hoadonId);
-            exit;
-        } else {
-            echo "<script>alert('Đặt tour thất bại! Vui lòng thử lại.'); window.history.back();</script>";
+            
+            // Tạo hóa đơn
+            $bookingData = [
+                'id_goi' => $tourId,
+                'id_ks' => null,
+                'email_nguoidung' => $email,
+                'nguoilon' => $nguoilon,
+                'treem' => $treem,
+                'trenho' => $trenho,
+                'embe' => $embe,
+                'phongdon' => $phongdon,
+                'ngayvao' => $ngayvao,
+                'ngayra' => $ngayra,
+                'sophong' => $sophong,
+                'ghichu' => $ghichu . "\nTên khách hàng: " . $name . "\nSố điện thoại: " . $phone,
+                'trangthai' => 0 // Chờ xác nhận
+            ];
+            
+            // Log booking data for debugging
+            error_log("Attempting to create booking. Tour ID: $tourId, Email: $email, Data: " . print_r($bookingData, true));
+            
+            $hoadonId = $hoadonModel->createHoadon($bookingData);
+            
+            if ($hoadonId) {
+                error_log("Booking created successfully. Hoadon ID: $hoadonId");
+                // Redirect đến trang xác nhận
+                header('Location: ' . BASE_URL . '?act=booking-confirm&id=' . $hoadonId);
+                exit;
+            } else {
+                error_log("Booking failed - createHoadon returned false. Tour ID: $tourId, Email: $email");
+                error_log("Booking data was: " . print_r($bookingData, true));
+                
+                // In development mode, show more details
+                $isDevelopment = !defined('IS_PRODUCTION') || !IS_PRODUCTION;
+                $errorMessage = 'Đặt tour thất bại! Vui lòng thử lại hoặc liên hệ hotline để được hỗ trợ.';
+                
+                if ($isDevelopment) {
+                    $errorMessage .= '\n\nLỗi chi tiết đã được ghi vào log. Vui lòng kiểm tra PHP error log.';
+                }
+                
+                echo "<script>alert('" . addslashes($errorMessage) . "'); window.history.back();</script>";
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log("Booking error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+            echo "<script>alert('Đã có lỗi xảy ra khi đặt tour. Vui lòng thử lại hoặc liên hệ hotline để được hỗ trợ.'); window.history.back();</script>";
             exit;
         }
     }
