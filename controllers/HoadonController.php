@@ -134,17 +134,64 @@ class HoadonController extends BaseController
     }
 
     /**
-     * Hủy hóa đơn
+     * Xác nhận hóa đơn (chuyển từ chờ xác nhận sang đã xác nhận)
+     */
+    public function confirm()
+    {
+        $id = $_GET['id'] ?? $_POST['id'] ?? null;
+
+        if ($id) {
+            $result = $this->hoadonModel->confirmHoadon($id);
+            
+            if ($result) {
+                echo "<script>alert('Xác nhận hóa đơn thành công!'); window.location='?act=hoadon-detail&id={$id}';</script>";
+            } else {
+                echo "<script>alert('Xác nhận hóa đơn thất bại!'); window.history.back();</script>";
+            }
+        } else {
+            echo "<script>alert('ID hóa đơn không hợp lệ!'); window.history.back();</script>";
+        }
+    }
+
+    /**
+     * Hoàn thành hóa đơn (chuyển từ đã xác nhận sang hoàn thành)
+     */
+    public function complete()
+    {
+        $id = $_GET['id'] ?? $_POST['id'] ?? null;
+
+        if ($id) {
+            $result = $this->hoadonModel->completeHoadon($id);
+            
+            if ($result) {
+                echo "<script>alert('Đánh dấu hoàn thành hóa đơn thành công!'); window.location='?act=hoadon-detail&id={$id}';</script>";
+            } else {
+                echo "<script>alert('Đánh dấu hoàn thành hóa đơn thất bại!'); window.history.back();</script>";
+            }
+        } else {
+            echo "<script>alert('ID hóa đơn không hợp lệ!'); window.history.back();</script>";
+        }
+    }
+
+    /**
+     * Hủy hóa đơn (yêu cầu lý do hủy)
      */
     public function cancel()
     {
         $id = $_POST['id'] ?? null;
+        $lyDoHuy = trim($_POST['ly_do_huy'] ?? '');
 
         if ($id) {
-            $result = $this->hoadonModel->cancelHoadon($id);
+            // Kiểm tra lý do hủy
+            if (empty($lyDoHuy)) {
+                echo "<script>alert('Vui lòng nhập lý do hủy!'); window.history.back();</script>";
+                return;
+            }
+
+            $result = $this->hoadonModel->cancelHoadon($id, $lyDoHuy);
             
             if ($result) {
-                echo "<script>alert('Hủy hóa đơn thành công!'); window.location='?act=hoadon-list';</script>";
+                echo "<script>alert('Hủy hóa đơn thành công!'); window.location='?act=hoadon-detail&id={$id}';</script>";
             } else {
                 echo "<script>alert('Hủy hóa đơn thất bại!'); window.history.back();</script>";
             }

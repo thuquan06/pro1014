@@ -201,14 +201,47 @@ class HoadonModel extends BaseModel
     /**
      * Hủy hóa đơn
      */
-    public function cancelHoadon($id)
+    public function cancelHoadon($id, $lyDoHuy = null)
     {
         try {
-            $sql = "UPDATE hoadon SET huy = 1, ngaycapnhat = NOW() WHERE id_hoadon = :id";
+            $sql = "UPDATE hoadon SET huy = 1, ly_do_huy = :ly_do_huy, ngaycapnhat = NOW() WHERE id_hoadon = :id";
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute([
+                ':id' => $id,
+                ':ly_do_huy' => $lyDoHuy
+            ]);
+        } catch (PDOException $e) {
+            error_log("Lỗi cancelHoadon: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Xác nhận hóa đơn (chuyển từ chờ xác nhận sang đã xác nhận)
+     */
+    public function confirmHoadon($id)
+    {
+        try {
+            $sql = "UPDATE hoadon SET trangthai = 1, ngaycapnhat = NOW() WHERE id_hoadon = :id AND huy = 0";
             $stmt = $this->conn->prepare($sql);
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
-            error_log("Lỗi cancelHoadon: " . $e->getMessage());
+            error_log("Lỗi confirmHoadon: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Hoàn thành hóa đơn (chuyển từ đã xác nhận sang hoàn thành)
+     */
+    public function completeHoadon($id)
+    {
+        try {
+            $sql = "UPDATE hoadon SET trangthai = 2, ngaycapnhat = NOW() WHERE id_hoadon = :id AND huy = 0";
+            $stmt = $this->conn->prepare($sql);
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Lỗi completeHoadon: " . $e->getMessage());
             return false;
         }
     }
