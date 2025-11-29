@@ -94,6 +94,15 @@ try {
             (new ProductController())->listTours();
             break;
 
+        case 'tour-detail':
+            require_once './models/BaseModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourChiTietModel.php';
+            require_once './controllers/ProductController.php';
+            (new ProductController())->detailTour();
+            break;
+
         // ===== AUTH ROUTES =====
         case 'login':
             (new AdminController())->login();
