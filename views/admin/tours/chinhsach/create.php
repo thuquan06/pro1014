@@ -189,16 +189,16 @@ ob_start();
       <i class="fas fa-plus-circle" style="color: var(--primary);"></i>
       Thêm Chính sách mới
     </h1>
-    <p class="policy-form-subtitle">Tour ID: <?= $idGoi ?></p>
+    <p class="policy-form-subtitle">Tour ID: <?= htmlspecialchars($idGoi) ?></p>
   </div>
-  <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $idGoi ?>" class="btn btn-secondary">
+  <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= htmlspecialchars($idGoi) ?>" class="btn btn-secondary">
     <i class="fas fa-arrow-left"></i>
     Quay lại
   </a>
 </div>
 
 <!-- Thông báo lỗi -->
-<?php if (isset($_SESSION['errors']) && !empty($_SESSION['errors'])): ?>
+<?php if (!empty($_SESSION['errors'])): ?>
   <div class="alert alert-error" style="margin-bottom: 20px;">
     <strong><i class="fas fa-exclamation-circle"></i> Có lỗi xảy ra:</strong>
     <ul style="margin: 10px 0 0 20px;">
@@ -213,15 +213,15 @@ ob_start();
 <?php if (isset($_SESSION['error'])): ?>
   <div class="alert alert-error" style="margin-bottom: 20px;">
     <i class="fas fa-exclamation-circle"></i>
-    <?= $_SESSION['error'] ?>
+    <?= htmlspecialchars($_SESSION['error']) ?>
   </div>
   <?php unset($_SESSION['error']); ?>
 <?php endif; ?>
 
 <!-- Form -->
 <form method="POST" action="">
-  <input type="hidden" name="id_goi" value="<?= $idGoi ?>">
-
+  <input type="hidden" name="id_goi" value="<?= htmlspecialchars($idGoi) ?>">
+  
   <div class="form-card">
     <!-- Loại chính sách -->
     <div class="form-group">
@@ -325,7 +325,7 @@ ob_start();
 
     <!-- Buttons -->
     <div class="form-actions">
-      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $idGoi ?>" class="btn-cancel">
+      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= htmlspecialchars($idGoi) ?>" class="btn-cancel">
         <i class="fas fa-times"></i>
         Hủy bỏ
       </a>
@@ -343,22 +343,19 @@ ob_start();
   CKEDITOR.replace('noidung', {
     height: 300
   });
-</script>
 
-<!-- JavaScript -->
-<script>
-function toggleFields() {
-  var loai = document.getElementById('loai_chinhsach').value;
-  var huyDoiFields = document.getElementById('huy_doi_fields');
-  
-  if (loai === 'huy_doi') {
-    huyDoiFields.style.display = 'block';
-  } else {
-    huyDoiFields.style.display = 'none';
-    document.getElementById('so_ngay_truoc').value = '';
-    document.getElementById('phantram_hoantien').value = '';
+  function toggleFields() {
+    var loai = document.getElementById('loai_chinhsach').value;
+    var huyDoiFields = document.getElementById('huy_doi_fields');
+    
+    if (loai === 'huy_doi') {
+      huyDoiFields.style.display = 'block';
+    } else {
+      huyDoiFields.style.display = 'none';
+      document.getElementById('so_ngay_truoc').value = '';
+      document.getElementById('phantram_hoantien').value = '';
+    }
   }
-}
 </script>
 
 <?php

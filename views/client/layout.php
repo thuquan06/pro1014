@@ -11,10 +11,10 @@ $featuredTours = $featuredTours ?? [
 ];
 
 $locations = $locations ?? [
-    ['name'=>'Hà Nội','image'=>'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&q=80'],
-    ['name'=>'Đà Nẵng','image'=>'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&q=80'],
-    ['name'=>'Hồ Chí Minh','image'=>'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=300&q=80'],
-    ['name'=>'Nha Trang','image'=>'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&q=80'],
+    ['name'=>'Hà Nội','image'=>'1700123112-justfly-pho-di-bo-ho-guom-hanoi11.webp'],
+    ['name'=>'Đà Nẵng','image'=>'dragon-bridge-and-firework-pháo-hoa-trên-cầu-rồng-Danang-Discovery-4-famous-bridge-in-danang-Restaurant-near-me-dragon-bridge-history-a-new-iconic-image-of-danang.jpg'],
+    ['name'=>'Hồ Chí Minh','image'=>'Landmark81TPHCM-1570389119-5915-1570389287.webp'],
+    ['name'=>'Nha Trang','image'=>'gia-ve-vinpearl-nha-trang.webp'],
 ];
 
 $totalTours = $totalTours ?? 120;
@@ -125,10 +125,10 @@ body {
 
 <!-- Hero Section -->
 <section class="relative h-screen bg-gradient-to-r from-primary to-accent flex items-center justify-center text-center text-white overflow-hidden">
-    <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920" class="absolute w-full h-full object-cover opacity-40">
+    <img src="1700123112-justfly-pho-di-bo-ho-guom-hanoi11.webp" class="absolute w-full h-full object-cover opacity-40">
     <div class="relative z-10 max-w-3xl px-6 py-4">
         <h1 class="text-5xl md:text-7xl font-extrabold mb-6 animate-fade-in">Khám Phá Thế Giới Cùng StarVel</h1>
-        <p class="mb-6 text-lg md:text-2xl animate-fade-in">Tour trong nước & quốc tế, trải nghiệm đáng nhớ</p>
+        <p class="mb-6 text-lg md:text-2xl animate-fade-in">Tour trong nước cùng Starvel cùng trải nghiệm đáng nhớ</p>
         <a href="<?= BASE_URL ?>?act=tours" class="bg-secondary text-white px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition transform">Đặt tour ngay</a>
     </div>
 </section>
@@ -159,7 +159,7 @@ body {
 
 <!-- Locations Section -->
 <section class="py-20 bg-gradient-to-r from-accent to-primary text-white">
-    <h2 class="text-4xl font-bold text-center mb-12">Khám Phá Địa Điểm</h2>
+    <h2 class="text-4xl font-bold text-center mb-12">Khám Phá Địa Điểm Du Lịch cho Khách Hàng</h2>
     <div class="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
         <?php foreach($locations as $loc): ?>
         <div class="relative rounded-xl overflow-hidden shadow-lg hover:scale-105 transform transition animate-slide-up card-hover">
@@ -200,7 +200,7 @@ body {
         <div>
             <h3 class="text-white font-bold mb-4 text-lg">Liên hệ</h3>
             <p>Email: info@starvel.com</p>
-            <p>Hotline: 1900 xxxx</p>
+            <p>Hotline: 1900 8886</p>
         </div>
         <div>
             <h3 class="text-white font-bold mb-4 text-lg">Mạng xã hội</h3>
