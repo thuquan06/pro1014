@@ -1,304 +1,213 @@
 <?php
-// Đảm bảo BASE_URL được định nghĩa
 if (!defined('BASE_URL')) {
     define('BASE_URL', 'http://localhost/pro1014/');
 }
+
+$featuredTours = $featuredTours ?? [
+    ['id'=>1,'name'=>'Hà Nội - Hạ Long','price'=>2500000,'image'=>'https://images.unsplash.com/photo-1601758123927-9aaefbdb2e57?w=400','duration'=>'3 ngày 2 đêm','rating'=>4.5],
+    ['id'=>2,'name'=>'Đà Nẵng - Hội An','price'=>3000000,'image'=>'https://images.unsplash.com/photo-1582878925120-071f598d1d1e?w=400','duration'=>'4 ngày 3 đêm','rating'=>4.8],
+    ['id'=>3,'name'=>'Sài Gòn - Cần Thơ','price'=>2800000,'image'=>'https://images.unsplash.com/photo-1552346154-1e29f9f02d5f?w=400','duration'=>'2 ngày 1 đêm','rating'=>4.2],
+    ['id'=>4,'name'=>'Nha Trang - Đà Lạt','price'=>3500000,'image'=>'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400','duration'=>'5 ngày 4 đêm','rating'=>4.9],
+];
+
+$locations = $locations ?? [
+    ['name'=>'Hà Nội','image'=>'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&q=80'],
+    ['name'=>'Đà Nẵng','image'=>'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&q=80'],
+    ['name'=>'Hồ Chí Minh','image'=>'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=300&q=80'],
+    ['name'=>'Nha Trang','image'=>'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&q=80'],
+];
+
+$totalTours = $totalTours ?? 120;
+$totalCustomers = $totalCustomers ?? 80000;
+$totalTrips = $totalTrips ?? 250;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?? 'StarVel Travel - Du lịch trong nước & quốc tế' ?></title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="<?= $pageDescription ?? 'StarVel Travel - Chuyên cung cấp các tour du lịch trong nước và quốc tế chất lượng cao với giá cả hợp lý' ?>">
-    <meta name="keywords" content="<?= $pageKeywords ?? 'du lịch, tour, du lịch Việt Nam, tour quốc tế, StarVel' ?>">
-    <meta property="og:title" content="<?= $pageTitle ?? 'StarVel Travel - Du lịch trong nước & quốc tế' ?>">
-    <meta property="og:description" content="<?= $pageDescription ?? 'StarVel Travel - Chuyên cung cấp các tour du lịch trong nước và quốc tế chất lượng cao' ?>">
-    <meta property="og:image" content="<?= $pageImage ?? BASE_URL . 'assets/images/og-image.jpg' ?>">
-    <meta property="og:url" content="<?= $pageUrl ?? BASE_URL ?>">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><?= $pageTitle ?? 'StarVel Travel' ?></title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Splide Carousel -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.3/dist/css/splide.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.3/dist/js/splide.min.js"></script>
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {primary:'#FF6363',secondary:'#3A0CA3',accent:'#4361EE',bgLight:'#F0F0F5'},
+      animation: {'fade-in':'fadeIn 1s ease-in-out','slide-up':'slideUp 0.7s ease-out'},
+      keyframes:{fadeIn:{'0%':{opacity:0},'100%':{opacity:1}},slideUp:{'0%':{opacity:0, transform:'translateY(20px)'},'100%':{opacity:1, transform:'translateY(0)'}}}
+    }
+  }
+};
+</script>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              primary: "#14697F",
-              "background-light": "#F8FEFD",
-              "background-dark": "#121A19",
-              "surface-light": "#FFFFFF",
-              "surface-dark": "#1F2928",
-              "text-light": "#101010",
-              "text-dark": "#E0E0E0",
-              "text-muted-light": "#6B7280",
-              "text-muted-dark": "#9CA3AF",
-            },
-            fontFamily: {
-              display: ["Roboto", "sans-serif"],
-            },
-            borderRadius: {
-              DEFAULT: "0.75rem",
-            },
-          },
-        },
-      };
-    </script>
-
-    <!-- Client CSS -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/client-style.css">
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --secondary: #10b981;
-            --danger: #ef4444;
-            --text-dark: #1f2937;
-            --text-light: #6b7280;
-            --border: #e5e7eb;
-            --bg-light: #f9fafb;
-            --white: #ffffff;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            color: var(--text-dark);
-            line-height: 1.6;
-        }
-
-        /* Custom page styles */
-    </style>
+<style>
+body{font-family:"Inter",sans-serif;}
+.card-hover:hover .overlay{opacity:1;transform:translateY(0);}
+.tooltip {position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; opacity:0; pointer-events:none; transition: opacity 0.3s;}
+.card-hover:hover .tooltip {opacity:1;}
+.counter {font-weight:700; font-size:2rem;}
+</style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
-    <!-- Header Top Bar -->
-    <div class="header-top">
-        <div class="container">
-            <div class="header-top-container">
-                <div class="header-contact">
-                    <a href="tel:1900xxxx">
-                        <i class="fas fa-phone"></i>
-                        <span>1900 xxxx</span>
-                    </a>
-                    <a href="mailto:info@starvel.com">
-                        <i class="fas fa-envelope"></i>
-                        <span>info@starvel.com</span>
-                    </a>
-                </div>
-                <div class="header-contact">
-                    <a href="<?= BASE_URL ?>?act=order-tracking">
-                        <i class="fas fa-search"></i>
-                        <span>Tra cứu đơn hàng</span>
-                    </a>
-                </div>
+<body class="bg-bgLight">
+
+<!-- Header -->
+<header class="fixed top-0 w-full z-50 bg-white/60 backdrop-blur-md shadow-md">
+  <div class="max-w-7xl mx-auto flex justify-between items-center p-4">
+    <a href="<?= BASE_URL ?>?act=home" class="text-2xl font-extrabold text-primary flex items-center gap-2"><i class="fas fa-compass"></i>StarVel</a>
+    <nav class="hidden md:flex gap-6 font-semibold text-gray-700">
+      <a href="<?= BASE_URL ?>?act=home" class="hover:text-primary transition">Trang chủ</a>
+      <a href="<?= BASE_URL ?>?act=tours" class="hover:text-primary transition">Tour</a>
+      <a href="<?= BASE_URL ?>?act=about" class="hover:text-primary transition">Giới thiệu</a>
+      <a href="<?= BASE_URL ?>?act=blog" class="hover:text-primary transition">Tin tức</a>
+      <a href="<?= BASE_URL ?>?act=contact" class="hover:text-primary transition">Liên hệ</a>
+    </nav>
+    <button class="md:hidden text-2xl" onclick="document.getElementById('mobileMenu').classList.toggle('hidden')">
+      <i class="fas fa-bars"></i>
+    </button>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden bg-white shadow-lg flex flex-col px-6 py-4 space-y-2">
+    <a href="<?= BASE_URL ?>?act=home">Trang chủ</a>
+    <a href="<?= BASE_URL ?>?act=tours">Tour</a>
+    <a href="<?= BASE_URL ?>?act=about">Giới thiệu</a>
+    <a href="<?= BASE_URL ?>?act=blog">Tin tức</a>
+    <a href="<?= BASE_URL ?>?act=contact">Liên hệ</a>
+  </div>
+</header>
+
+<!-- Hero Section -->
+<section class="relative h-screen bg-gradient-to-r from-primary to-accent flex items-center justify-center text-center text-white overflow-hidden">
+  <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920" class="absolute w-full h-full object-cover opacity-40">
+  <div class="relative z-10 max-w-3xl">
+    <h1 class="text-5xl md:text-7xl font-extrabold mb-6 animate-fade-in">Khám Phá Thế Giới Cùng StarVel</h1>
+    <p class="mb-6 text-lg md:text-2xl animate-fade-in">Tour trong nước & quốc tế, trải nghiệm đáng nhớ</p>
+    <a href="<?= BASE_URL ?>?act=tours" class="bg-secondary text-white px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition transform">Đặt tour ngay</a>
+  </div>
+</section>
+
+<!-- Featured Tours Carousel -->
+<section class="max-w-7xl mx-auto py-20 px-6">
+  <h2 class="text-4xl font-bold text-center mb-12 text-gray-800">Tour Nổi Bật</h2>
+  <div id="tour-carousel" class="splide">
+    <div class="splide__track">
+      <ul class="splide__list">
+        <?php foreach($featuredTours as $tour):
+          $tourUrl = BASE_URL.'?act=tour-detail&id='.($tour['id']??0);
+        ?>
+        <li class="splide__slide relative card-hover rounded-2xl overflow-hidden shadow-lg">
+          <img src="<?= $tour['image'] ?>" alt="<?= $tour['name'] ?>" class="w-full h-60 object-cover">
+          <div class="absolute inset-0 bg-black/40 overlay opacity-0 transition duration-300 flex flex-col justify-center items-center text-white p-4 -translate-y-4">
+            <h3 class="font-bold text-xl mb-2"><?= $tour['name'] ?></h3>
+            <p class="mb-1 font-semibold"><?= number_format($tour['price']) ?> VNĐ</p>
+            <p class="mb-2">Thời gian: <?= $tour['duration'] ?></p>
+            <div class="mb-2">
+              <?php for($i=1;$i<=5;$i++): ?>
+                <i class="fa-star <?= $i <= floor($tour['rating']) ? 'fas text-yellow-400' : 'far text-yellow-300' ?>"></i>
+              <?php endfor; ?>
             </div>
-        </div>
+            <a href="<?= $tourUrl ?>" class="bg-accent px-6 py-2 rounded-full font-bold hover:scale-105 transition transform">Xem chi tiết</a>
+          </div>
+          <div class="tooltip"><?= $tour['duration'] ?> - Rating: <?= $tour['rating'] ?></div>
+        </li>
+        <?php endforeach; ?>
+      </ul>
     </div>
+  </div>
+</section>
 
-    <!-- Header Main -->
-    <header class="header">
-        <div class="header-main">
-            <div class="container">
-                <div class="header-container">
-                    <a href="<?= BASE_URL ?>?act=home" class="logo">
-                        <i class="fas fa-plane-departure"></i>
-                        <span>StarVel</span>
-                    </a>
-
-                    <!-- Search Bar -->
-                    <div class="header-search">
-                        <form onsubmit="handleSearch(event)">
-                            <input type="text" placeholder="Tìm kiếm tour, điểm đến...">
-                            <button type="submit">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </form>
-                    </div>
-
-                    <nav>
-                        <ul class="nav-menu" id="navMenu">
-                            <li><a href="<?= BASE_URL ?>?act=home">Trang chủ</a></li>
-                            <li><a href="<?= BASE_URL ?>?act=tours">Tour</a></li>
-                            <li><a href="<?= BASE_URL ?>?act=about">Giới thiệu</a></li>
-                            <li><a href="<?= BASE_URL ?>?act=blog">Tin tức</a></li>
-                            <li><a href="<?= BASE_URL ?>?act=contact">Liên hệ</a></li>
-                            <li><a href="<?= BASE_URL ?>?act=tours" class="btn-book">Đặt tour</a></li>
-                        </ul>
-                    </nav>
-
-                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
-            </div>
+<!-- Locations Section -->
+<section class="py-20 bg-gradient-to-r from-accent to-primary text-white">
+  <h2 class="text-4xl font-bold text-center mb-12">Khám Phá Địa Điểm</h2>
+  <div class="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+    <?php foreach($locations as $loc): ?>
+      <div class="relative rounded-xl overflow-hidden shadow-lg hover:scale-105 transform transition animate-slide-up card-hover">
+        <img src="<?= $loc['image'] ?>" alt="<?= $loc['name'] ?>" class="w-full h-40 object-cover">
+        <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+          <h3 class="text-white font-bold text-lg"><?= $loc['name'] ?></h3>
         </div>
-    </header>
-    
-    <!-- Breadcrumb (if exists) -->
-    <?php if (isset($breadcrumb) && !empty($breadcrumb)): ?>
-    <div class="breadcrumb">
-        <div class="container">
-            <div class="breadcrumb-container">
-                <a href="<?= BASE_URL ?>?act=home">
-                    <i class="fas fa-home"></i> Trang chủ
-                </a>
-                <?php foreach ($breadcrumb as $item): ?>
-                    <i class="fas fa-chevron-right"></i>
-                    <?php if (isset($item['url'])): ?>
-                        <a href="<?= $item['url'] ?>"><?= $item['title'] ?></a>
-                    <?php else: ?>
-                        <span><?= $item['title'] ?></span>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
+        <div class="tooltip">Khám phá <?= $loc['name'] ?></div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</section>
+
+<!-- Statistics -->
+<section class="py-20 text-center">
+  <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div>
+      <p class="counter" data-count="<?= $totalTours ?>">0</p>
+      <p class="mt-2 font-semibold">Tour đã thực hiện</p>
     </div>
-    <?php endif; ?>
-
-    <!-- Banner/Hero Section (only on homepage) -->
-    <?php if (isset($showBanner) && $showBanner): ?>
-    <section class="relative h-[500px] text-white">
-        <img alt="Thuyền truyền thống trên vùng nước yên bình vào lúc hoàng hôn với những ngọn núi đá vôi phía sau" 
-             class="w-full h-full object-cover" 
-             src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1920&q=80"/>
-        <div class="absolute inset-0 bg-black bg-opacity-30"></div>
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-5xl px-4">
-            <div class="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-sm p-4 rounded-lg shadow-lg flex items-center space-x-4">
-                <div class="flex-grow flex items-center bg-surface-light dark:bg-surface-dark rounded border border-gray-300 dark:border-gray-600 px-3">
-                    <span class="material-icons text-text-muted-light dark:text-text-muted-dark">search</span>
-                    <input class="w-full bg-transparent border-0 focus:ring-0 text-text-light dark:text-text-dark placeholder-text-muted-light dark:placeholder-text-muted-dark" 
-                           placeholder="Bạn muốn đi đâu?" type="text"/>
-                </div>
-                <div class="flex items-center bg-surface-light dark:bg-surface-dark rounded border border-gray-300 dark:border-gray-600 px-3 py-2">
-                    <span class="material-icons text-text-muted-light dark:text-text-muted-dark">calendar_today</span>
-                    <span class="ml-2 text-text-light dark:text-text-dark whitespace-nowrap">Ngày đi</span>
-                </div>
-                <div class="flex items-center bg-surface-light dark:bg-surface-dark rounded border border-gray-300 dark:border-gray-600 px-3 py-2">
-                    <span class="material-icons text-text-muted-light dark:text-text-muted-dark">calendar_today</span>
-                    <span class="ml-2 text-text-light dark:text-text-dark whitespace-nowrap">Ngày về</span>
-                </div>
-                <div class="flex items-center bg-surface-light dark:bg-surface-dark rounded border border-gray-300 dark:border-gray-600 px-3 py-2">
-                    <span class="material-icons text-text-muted-light dark:text-text-muted-dark">group</span>
-                    <span class="ml-2 text-text-light dark:text-text-dark">Số khách</span>
-                    <span class="material-icons text-text-muted-light dark:text-text-muted-dark">arrow_drop_down</span>
-                </div>
-                <button class="bg-primary text-white font-bold py-2 px-6 rounded whitespace-nowrap">Tìm kiếm Tour</button>
-            </div>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <?= $content ?? '' ?>
-    </main>
-
-    <!-- Hotline Sticky -->
-    <div class="hotline-sticky">
-        <a href="tel:1900xxxx" class="hotline-btn" title="Hotline">
-            <i class="fas fa-phone-alt"></i>
-        </a>
-        <a href="https://zalo.me/1900xxxx" target="_blank" class="hotline-btn zalo" title="Chat Zalo">
-            <i class="fab fa-facebook-messenger"></i>
-        </a>
-        <a href="https://m.me/starvel" target="_blank" class="hotline-btn messenger" title="Chat Facebook">
-            <i class="fab fa-facebook-messenger"></i>
-        </a>
+    <div>
+      <p class="counter" data-count="<?= $totalCustomers ?>">0</p>
+      <p class="mt-2 font-semibold">Khách hàng</p>
     </div>
-    
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-grid">
-                <div class="footer-section">
-                    <h3>
-                        <i class="fas fa-plane-departure"></i>
-                        StarVel Travel
-                    </h3>
-                    <p>Chuyên cung cấp các tour du lịch trong nước và quốc tế chất lượng cao với giá cả hợp lý. Hơn 10 năm kinh nghiệm phục vụ khách hàng.</p>
-                    <div class="social-links">
-                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
-                        <a href="#" title="TikTok"><i class="fab fa-tiktok"></i></a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Danh mục</h3>
-                    <ul>
-                        <li><a href="<?= BASE_URL ?>?act=tours&type=domestic">Tour trong nước</a></li>
-                        <li><a href="<?= BASE_URL ?>?act=tours&type=international">Tour quốc tế</a></li>
-                        <li><a href="<?= BASE_URL ?>?act=tours&promo=1">Tour khuyến mãi</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Hỗ trợ</h3>
-                    <ul>
-                        <li><a href="<?= BASE_URL ?>?act=contact">Liên hệ</a></li>
-                        <li><a href="#">Câu hỏi thường gặp</a></li>
-                        <li><a href="#">Chính sách hủy tour</a></li>
-                        <li><a href="#">Điều khoản sử dụng</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Liên hệ</h3>
-                    <ul>
-                        <li>
-                            <i class="fas fa-phone"></i>
-                            <strong>Hotline:</strong> <a href="tel:1900xxxx" style="color: #f59e0b;">1900 xxxx</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-envelope"></i>
-                            <strong>Email:</strong> <a href="mailto:info@starvel.com">info@starvel.com</a>
-                        </li>
-                        <li>
-                            <i class="fas fa-map-marker-alt"></i>
-                            <strong>Địa chỉ:</strong> 123 Đường ABC, Quận X, Hà Nội
-                        </li>
-                        <li>
-                            <i class="fas fa-clock"></i>
-                            <strong>Giờ làm việc:</strong> 8:00 - 20:00 (T2-CN)
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; <?= date('Y') ?> StarVel Travel. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-    
-    <!-- Client JavaScript -->
-    <script>
-        // Define BASE_URL for JavaScript
-        const BASE_URL = '<?= BASE_URL ?>';
-    </script>
-    <script src="<?= BASE_URL ?>assets/js/client-main.js"></script>
+    <div>
+      <p class="counter" data-count="<?= $totalTrips ?>">0</p>
+      <p class="mt-2 font-semibold">Chuyến đi thành công</p>
+    </div>
+  </div>
+</section>
 
-    <!-- Page-specific scripts -->
-    <?php if (isset($pageScripts)): ?>
-        <?= $pageScripts ?>
-    <?php endif; ?>
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-300 py-12">
+  <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-6">
+    <div>
+      <h3 class="text-white font-bold mb-4 text-lg">StarVel Travel</h3>
+      <p>Khám phá thế giới với trải nghiệm du lịch tuyệt vời cùng chúng tôi.</p>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-4 text-lg">Liên hệ</h3>
+      <p>Email: info@starvel.com</p>
+      <p>Hotline: 1900 xxxx</p>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-4 text-lg">Mạng xã hội</h3>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-accent"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="hover:text-accent"><i class="fab fa-twitter"></i></a>
+        <a href="#" class="hover:text-accent"><i class="fab fa-instagram"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Initialize Carousel
+document.addEventListener('DOMContentLoaded', function () {
+  new Splide('#tour-carousel', {
+    type   : 'loop',
+    perPage: 3,
+    autoplay:true,
+    gap: '1rem',
+    breakpoints: {
+      1024: { perPage: 2 },
+      640: { perPage: 1 }
+    }
+  }).mount();
+
+  // Counter Animation
+  const counters = document.querySelectorAll('.counter');
+  counters.forEach(counter => {
+    let updateCount = () => {
+      const target = +counter.getAttribute('data-count');
+      const count = +counter.innerText;
+      const increment = target / 200;
+      if(count < target){
+        counter.innerText = Math.ceil(count + increment);
+        setTimeout(updateCount, 10);
+      } else {
+        counter.innerText = target;
+      }
+    }
+    updateCount();
+  });
+});
+</script>
 </body>
 </html>
