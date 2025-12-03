@@ -220,15 +220,80 @@ function getError($field) {
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .btn-submit,
   .btn-reset {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Discounted Price Display - Inline */
+.price-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-input-wrapper input {
+  flex: 1;
+}
+
+.price-preview {
+  display: none;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 6px;
+  white-space: nowrap;
+  animation: slideIn 0.3s ease;
+  min-width: 160px;
+}
+
+.price-preview.active {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.price-preview-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.price-original {
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+}
+
+.price-discounted {
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.discount-badge {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 </style>
@@ -297,6 +362,69 @@ function getError($field) {
         <div class="radio-option">
           <input type="radio" value="0" name="khuyenmai" id="km_khong" <?= (!isset($oldData['khuyenmai']) || $oldData['khuyenmai'] == '0' || $oldData['khuyenmai'] == 0) ? 'checked' : '' ?>>
           <label for="km_khong">❌ Không</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chi tiết khuyến mãi (hiện khi chọn Có khuyến mãi) -->
+    <div id="promotion_details" style="display: none;">
+      <div class="form-row">
+        <div class="form-group-modern">
+          <label for="khuyenmai_phantram">Phần trăm giảm giá (%) <span class="required">*</span></label>
+          <input type="number"
+                 name="khuyenmai_phantram"
+                 id="khuyenmai_phantram"
+                 value="<?= old('khuyenmai_phantram', '0') ?>"
+                 class="<?= hasError('khuyenmai_phantram') ? 'error-field' : '' ?>"
+                 min="0"
+                 max="100"
+                 placeholder="Ví dụ: 20">
+          <?php if (hasError('khuyenmai_phantram')): ?>
+            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_phantram') ?></span>
+          <?php else: ?>
+            <small style="color: var(--text-light); font-size: 12px; margin-top: 4px; display: block;">
+              <i class="fas fa-info-circle"></i> Nhập từ 0-100%
+            </small>
+          <?php endif; ?>
+        </div>
+
+        <div class="form-group-modern">
+          <label for="khuyenmai_mota">Mô tả khuyến mãi</label>
+          <input type="text"
+                 name="khuyenmai_mota"
+                 id="khuyenmai_mota"
+                 value="<?= old('khuyenmai_mota') ?>"
+                 class="<?= hasError('khuyenmai_mota') ? 'error-field' : '' ?>"
+                 placeholder="Ví dụ: Ưu đãi mùa hè, Flash Sale...">
+          <?php if (hasError('khuyenmai_mota')): ?>
+            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_mota') ?></span>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group-modern">
+          <label for="khuyenmai_tungay">Ngày bắt đầu khuyến mãi <span class="required">*</span></label>
+          <input type="date"
+                 name="khuyenmai_tungay"
+                 id="khuyenmai_tungay"
+                 value="<?= old('khuyenmai_tungay') ?>"
+                 class="<?= hasError('khuyenmai_tungay') ? 'error-field' : '' ?>">
+          <?php if (hasError('khuyenmai_tungay')): ?>
+            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_tungay') ?></span>
+          <?php endif; ?>
+        </div>
+
+        <div class="form-group-modern">
+          <label for="khuyenmai_denngay">Ngày kết thúc khuyến mãi <span class="required">*</span></label>
+          <input type="date"
+                 name="khuyenmai_denngay"
+                 id="khuyenmai_denngay"
+                 value="<?= old('khuyenmai_denngay') ?>"
+                 class="<?= hasError('khuyenmai_denngay') ? 'error-field' : '' ?>">
+          <?php if (hasError('khuyenmai_denngay')): ?>
+            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_denngay') ?></span>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -425,13 +553,22 @@ function getError($field) {
     <div class="form-row">
       <div class="form-group-modern">
         <label for="giagoi">Giá người lớn (VNĐ) <span class="required">*</span></label>
-        <input type="text" 
-               name="giagoi" 
-               id="giagoi" 
-               value="<?= old('giagoi') ?>"
-               class="<?= hasError('giagoi') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: 5000000">
+        <div class="price-input-wrapper">
+          <input type="text"
+                 name="giagoi"
+                 id="giagoi"
+                 value="<?= old('giagoi') ?>"
+                 class="<?= hasError('giagoi') ? 'error-field' : '' ?>"
+                 required
+                 placeholder="Ví dụ: 5000000">
+          <div id="preview_giagoi" class="price-preview">
+            <div class="price-preview-text">
+              <div class="price-original" id="original_giagoi"></div>
+              <div class="price-discounted" id="discounted_giagoi"></div>
+            </div>
+            <div class="discount-badge" id="badge_giagoi"></div>
+          </div>
+        </div>
         <?php if (hasError('giagoi')): ?>
           <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('giagoi') ?></span>
         <?php endif; ?>
@@ -439,13 +576,22 @@ function getError($field) {
 
       <div class="form-group-modern">
         <label for="giatreem">Giá trẻ em (VNĐ) <span class="required">*</span></label>
-        <input type="text" 
-               name="giatreem" 
-               id="giatreem" 
-               value="<?= old('giatreem') ?>"
-               class="<?= hasError('giatreem') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: 3000000">
+        <div class="price-input-wrapper">
+          <input type="text"
+                 name="giatreem"
+                 id="giatreem"
+                 value="<?= old('giatreem') ?>"
+                 class="<?= hasError('giatreem') ? 'error-field' : '' ?>"
+                 required
+                 placeholder="Ví dụ: 3000000">
+          <div id="preview_giatreem" class="price-preview">
+            <div class="price-preview-text">
+              <div class="price-original" id="original_giatreem"></div>
+              <div class="price-discounted" id="discounted_giatreem"></div>
+            </div>
+            <div class="discount-badge" id="badge_giatreem"></div>
+          </div>
+        </div>
         <?php if (hasError('giatreem')): ?>
           <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('giatreem') ?></span>
         <?php endif; ?>
@@ -453,13 +599,22 @@ function getError($field) {
 
       <div class="form-group-modern">
         <label for="giatrenho">Giá trẻ nhỏ (VNĐ) <span class="required">*</span></label>
-        <input type="text" 
-               name="giatrenho" 
-               id="giatrenho" 
-               value="<?= old('giatrenho') ?>"
-               class="<?= hasError('giatrenho') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: 1000000">
+        <div class="price-input-wrapper">
+          <input type="text"
+                 name="giatrenho"
+                 id="giatrenho"
+                 value="<?= old('giatrenho') ?>"
+                 class="<?= hasError('giatrenho') ? 'error-field' : '' ?>"
+                 required
+                 placeholder="Ví dụ: 1000000">
+          <div id="preview_giatrenho" class="price-preview">
+            <div class="price-preview-text">
+              <div class="price-original" id="original_giatrenho"></div>
+              <div class="price-discounted" id="discounted_giatrenho"></div>
+            </div>
+            <div class="discount-badge" id="badge_giatrenho"></div>
+          </div>
+        </div>
         <?php if (hasError('giatrenho')): ?>
           <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('giatrenho') ?></span>
         <?php endif; ?>
@@ -742,7 +897,96 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleFields();
     radioTrongNuoc.addEventListener('change', toggleFields);
     radioQuocTe.addEventListener('change', toggleFields);
-    
+
+    // Toggle promotion details
+    var radioKmCo = document.getElementById('km_co');
+    var radioKmKhong = document.getElementById('km_khong');
+    var promotionDetails = document.getElementById('promotion_details');
+    var promotionInputs = promotionDetails.querySelectorAll('input');
+
+    function togglePromotionDetails() {
+        if (radioKmCo.checked) {
+            promotionDetails.style.display = 'block';
+            // Bật required cho các trường bắt buộc
+            document.getElementById('khuyenmai_phantram').required = true;
+            document.getElementById('khuyenmai_tungay').required = true;
+            document.getElementById('khuyenmai_denngay').required = true;
+        } else {
+            promotionDetails.style.display = 'none';
+            // Tắt required khi không có khuyến mãi
+            promotionInputs.forEach(function(input) {
+                input.required = false;
+            });
+        }
+    }
+
+    togglePromotionDetails();
+    radioKmCo.addEventListener('change', togglePromotionDetails);
+    radioKmKhong.addEventListener('change', togglePromotionDetails);
+
+    // Price discount calculator
+    var inputGiaNguoiLon = document.getElementById('giagoi');
+    var inputGiaTreEm = document.getElementById('giatreem');
+    var inputGiaTreNho = document.getElementById('giatrenho');
+    var inputPhanTram = document.getElementById('khuyenmai_phantram');
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(value);
+    }
+
+    function calculateDiscountedPrice(original, percent) {
+        var discount = (original * percent) / 100;
+        return original - discount;
+    }
+
+    function updatePricePreview(inputId, previewId, originalId, discountedId, badgeId) {
+        var input = document.getElementById(inputId);
+        var preview = document.getElementById(previewId);
+        var originalSpan = document.getElementById(originalId);
+        var discountedSpan = document.getElementById(discountedId);
+        var badge = document.getElementById(badgeId);
+
+        if (!input || !preview) return;
+
+        var originalPrice = parseFloat(input.value) || 0;
+        var percent = parseFloat(inputPhanTram?.value) || 0;
+
+        // Kiểm tra có khuyến mãi không
+        if (radioKmCo.checked && percent > 0 && originalPrice > 0) {
+            var discountedPrice = calculateDiscountedPrice(originalPrice, percent);
+
+            originalSpan.textContent = formatCurrency(originalPrice);
+            discountedSpan.textContent = formatCurrency(discountedPrice);
+            badge.textContent = '🔥 Giảm ' + percent + '%';
+
+            preview.classList.add('active');
+        } else {
+            preview.classList.remove('active');
+        }
+    }
+
+    function updateAllPrices() {
+        updatePricePreview('giagoi', 'preview_giagoi', 'original_giagoi', 'discounted_giagoi', 'badge_giagoi');
+        updatePricePreview('giatreem', 'preview_giatreem', 'original_giatreem', 'discounted_giatreem', 'badge_giatreem');
+        updatePricePreview('giatrenho', 'preview_giatrenho', 'original_giatrenho', 'discounted_giatrenho', 'badge_giatrenho');
+    }
+
+    // Event listeners cho các input giá
+    inputGiaNguoiLon?.addEventListener('input', updateAllPrices);
+    inputGiaTreEm?.addEventListener('input', updateAllPrices);
+    inputGiaTreNho?.addEventListener('input', updateAllPrices);
+    inputPhanTram?.addEventListener('input', updateAllPrices);
+
+    // Cập nhật khi toggle khuyến mãi
+    radioKmCo?.addEventListener('change', updateAllPrices);
+    radioKmKhong?.addEventListener('change', updateAllPrices);
+
+    // Tính lần đầu nếu có dữ liệu cũ
+    updateAllPrices();
+
     // Scroll đến trường bị lỗi đầu tiên nếu có
     <?php if (!empty($errors)): ?>
     var firstError = document.querySelector('.error-field');

@@ -30,12 +30,14 @@ class TourModel extends BaseModel
             }
 
             $sql = "INSERT INTO goidulich (
-                        khuyenmai, nuocngoai, quocgia, ten_tinh, mato, tengoi,
+                        khuyenmai, khuyenmai_phantram, khuyenmai_tungay, khuyenmai_denngay, khuyenmai_mota,
+                        nuocngoai, quocgia, ten_tinh, mato, tengoi,
                         noixuatphat, vitri, tuyendiem, giagoi, giatreem, giatrenho,
                         chitietgoi, chuongtrinh, luuy,
                         songay, giodi, ngayxuatphat, ngayve, phuongtien, socho, hinhanh, ngaydang
                     ) VALUES (
-                        :khuyenmai, :nuocngoai, :quocgia, :ten_tinh, :mato, :tengoi,
+                        :khuyenmai, :khuyenmai_phantram, :khuyenmai_tungay, :khuyenmai_denngay, :khuyenmai_mota,
+                        :nuocngoai, :quocgia, :ten_tinh, :mato, :tengoi,
                         :noixuatphat, :vitri, :tuyendiem, :giagoi, :giatreem, :giatrenho,
                         :chitietgoi, :chuongtrinh, :luuy,
                         :songay, :giodi, :ngayxuatphat, :ngayve, :phuongtien, :socho, :hinhanh, NOW()
@@ -43,7 +45,11 @@ class TourModel extends BaseModel
 
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
-                ':khuyenmai'    => $data['khuyenmai']  ?? 0,
+                ':khuyenmai'          => $data['khuyenmai']  ?? 0,
+                ':khuyenmai_phantram' => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_phantram'] ?? 0) : 0,
+                ':khuyenmai_tungay'   => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_tungay'] ?? null) : null,
+                ':khuyenmai_denngay'  => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_denngay'] ?? null) : null,
+                ':khuyenmai_mota'     => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_mota'] ?? null) : null,
                 ':nuocngoai'    => $data['nuocngoai']  ?? 0,
                 ':quocgia'      => $data['quocgia']    ?? 'Việt Nam',
                 ':ten_tinh'     => $data['ten_tinh']   ?? null,
@@ -93,7 +99,11 @@ class TourModel extends BaseModel
     {
         try {
             $sql = "UPDATE goidulich SET
-                        khuyenmai    = :khuyenmai,
+                        khuyenmai           = :khuyenmai,
+                        khuyenmai_phantram  = :khuyenmai_phantram,
+                        khuyenmai_tungay    = :khuyenmai_tungay,
+                        khuyenmai_denngay   = :khuyenmai_denngay,
+                        khuyenmai_mota      = :khuyenmai_mota,
                         nuocngoai    = :nuocngoai,
                         quocgia      = :quocgia,
                         ten_tinh     = :ten_tinh,
@@ -118,7 +128,11 @@ class TourModel extends BaseModel
 
             $stmt = $this->conn->prepare($sql);
             return $stmt->execute([
-                ':khuyenmai'    => $data['khuyenmai']  ?? 0,
+                ':khuyenmai'          => $data['khuyenmai']  ?? 0,
+                ':khuyenmai_phantram' => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_phantram'] ?? 0) : 0,
+                ':khuyenmai_tungay'   => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_tungay'] ?? null) : null,
+                ':khuyenmai_denngay'  => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_denngay'] ?? null) : null,
+                ':khuyenmai_mota'     => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_mota'] ?? null) : null,
                 ':nuocngoai'    => $data['nuocngoai']  ?? 0,
                 ':quocgia'      => $data['quocgia']    ?? 'Việt Nam',
                 ':ten_tinh'     => $data['ten_tinh']   ?? null,

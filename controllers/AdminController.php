@@ -715,17 +715,13 @@ class AdminController extends BaseController {
         if (!empty($data['chitietgoi'])) {
             $validator->maxLength('chitietgoi', 5000, 'Chi tiết gói không được quá 5000 ký tự');
         }
-        
-        // Chương trình
-        if (!empty($data['chuongtrinh'])) {
-            $validator->maxLength('chuongtrinh', 5000, 'Chương trình không được quá 5000 ký tự');
-        }
-        
-        // Lưu ý
-        if (!empty($data['luuy'])) {
-            $validator->maxLength('luuy', 2000, 'Lưu ý không được quá 2000 ký tự');
-        }
-        
+
+        // Chương trình - BỎ GIỚI HẠN
+        // Không giới hạn ký tự cho chương trình
+
+        // Lưu ý - BỎ GIỚI HẠN
+        // Không giới hạn ký tự cho lưu ý
+
         // Quốc gia
         if (!empty($data['quocgia'])) {
             $validator->maxLength('quocgia', 100, 'Quốc gia không được quá 100 ký tự');
