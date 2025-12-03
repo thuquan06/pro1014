@@ -246,10 +246,13 @@ function safe_html($value) {
               // giodi có thể là TIME format (HH:MM:SS) hoặc string
               $gioXuatPhatFormatted = substr($tour['giodi'], 0, 5); // Lấy HH:MM
             }
+            // Lấy phương tiện từ tour
+            $phuongTien = !empty($tour['phuongtien']) ? htmlspecialchars($tour['phuongtien'], ENT_QUOTES, 'UTF-8') : '';
           ?>
             <option value="<?= $tour['id_goi'] ?>" 
                     data-ngay-xuat-phat="<?= $ngayXuatPhatFormatted ?>"
                     data-gio-xuat-phat="<?= $gioXuatPhatFormatted ?>"
+                    data-phuong-tien="<?= $phuongTien ?>"
                     <?= ($selectedTourId && $selectedTourId == $tour['id_goi']) ? 'selected' : '' ?>>
               <?= safe_html($tour['tengoi']) ?> 
               <?php if (!empty($tour['ngayxuatphat'])): ?>
@@ -342,6 +345,36 @@ function safe_html($value) {
                required>
         <span class="help-text">Số lượng chỗ còn trống</span>
       </div>
+
+      <div class="form-group-modern">
+        <label>
+          Phương tiện <span class="required">*</span>
+        </label>
+        <input type="text" 
+               name="phuong_tien" 
+               id="phuong_tien"
+               value="<?= safe_html($_POST['phuong_tien'] ?? ($selectedTour && !empty($selectedTour['phuongtien']) ? $selectedTour['phuongtien'] : '')) ?>" 
+               placeholder="Ví dụ: Xe khách, Máy bay"
+               required>
+        <span class="help-text">Phương tiện di chuyển (sẽ tự động điền từ tour nếu có)</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label>
+          Ưu đãi giảm giá (%)
+        </label>
+        <input type="number" 
+               name="uu_dai_giam_gia" 
+               id="uu_dai_giam_gia"
+               value="<?= safe_html($_POST['uu_dai_giam_gia'] ?? '') ?>" 
+               placeholder="Ví dụ: 10"
+               min="0"
+               max="100"
+               step="0.01">
+        <span class="help-text">Phần trăm giảm giá cho lịch khởi hành này (ví dụ: 10 = 10%)</span>
+      </div>
     </div>
 
     <div class="form-row">
@@ -374,6 +407,7 @@ function loadTourDepartureDate() {
   const tourSelect = document.getElementById('id_tour');
   const ngayKhoiHanhInput = document.getElementById('ngay_khoi_hanh');
   const gioKhoiHanhInput = document.getElementById('gio_khoi_hanh');
+  const phuongTienInput = document.getElementById('phuong_tien');
   
   if (!tourSelect || !ngayKhoiHanhInput) {
     return;
@@ -382,6 +416,7 @@ function loadTourDepartureDate() {
   const selectedOption = tourSelect.options[tourSelect.selectedIndex];
   const ngayXuatPhat = selectedOption.getAttribute('data-ngay-xuat-phat');
   const gioXuatPhat = selectedOption.getAttribute('data-gio-xuat-phat');
+  const phuongTien = selectedOption.getAttribute('data-phuong-tien');
   
   // Xử lý ngày khởi hành
   if (ngayXuatPhat && ngayXuatPhat.trim() !== '') {
@@ -450,6 +485,43 @@ function loadTourDepartureDate() {
         setTimeout(() => {
           helpTextGio.textContent = 'Chọn giờ khởi hành';
           helpTextGio.style.color = '';
+        }, 3000);
+      }
+    }
+  }
+  
+  // Xử lý phương tiện
+  if (phuongTienInput) {
+    if (phuongTien && phuongTien.trim() !== '') {
+      // Tự động điền phương tiện từ tour
+      phuongTienInput.value = phuongTien;
+      
+      // Cập nhật help text để thông báo đã tự động điền
+      const helpTextPhuongTien = phuongTienInput.nextElementSibling;
+      if (helpTextPhuongTien && helpTextPhuongTien.classList.contains('help-text')) {
+        const originalText = helpTextPhuongTien.textContent || 'Phương tiện di chuyển';
+        helpTextPhuongTien.textContent = 'Đã tự động điền từ phương tiện của tour';
+        helpTextPhuongTien.style.color = '#10b981';
+        
+        // Reset về text gốc sau 3 giây
+        setTimeout(() => {
+          helpTextPhuongTien.textContent = originalText;
+          helpTextPhuongTien.style.color = '';
+        }, 3000);
+      }
+    } else {
+      // Nếu tour không có phương tiện, xóa giá trị
+      phuongTienInput.value = '';
+      
+      // Cập nhật help text để cảnh báo
+      const helpTextPhuongTien = phuongTienInput.nextElementSibling;
+      if (helpTextPhuongTien && helpTextPhuongTien.classList.contains('help-text')) {
+        helpTextPhuongTien.textContent = 'Tour này chưa có phương tiện. Vui lòng nhập thủ công.';
+        helpTextPhuongTien.style.color = '#ef4444';
+        
+        setTimeout(() => {
+          helpTextPhuongTien.textContent = 'Phương tiện di chuyển (sẽ tự động điền từ tour nếu có)';
+          helpTextPhuongTien.style.color = '';
         }, 3000);
       }
     }
