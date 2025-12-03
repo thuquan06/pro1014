@@ -33,17 +33,6 @@ require_once './commons/Validation.php';
 // 4. LẤY ACTION
 $act = $_GET['act'] ?? 'home';
 
-// Normalize action: convert Vietnamese to English for consistency
-if ($act === 'về' || $act === 've') {
-    $act = 'about';
-}
-if ($act === 'liên hệ' || $act === 'lien-he') {
-    $act = 'contact';
-}
-if ($act === 'đặt chỗ' || $act === 'dat-cho') {
-    $act = 'booking';
-}
-
 // Validate action (allow Vietnamese characters and common URL-safe characters)
 if (!preg_match('/^[a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\-]+$/i', $act)) {
     http_response_code(400);
@@ -87,130 +76,12 @@ try {
 
     // 6. ROUTING
     switch ($act) {
-        // ===== PUBLIC ROUTES =====
+        // ===== DEFAULT HOME =====
         case 'home':
         case '':
-            require_once './models/BaseModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->Home();
-            break;
-
-        case 'tours':
-            require_once './models/BaseModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->listTours();
-            break;
-
-        case 'tour-detail':
-            require_once './models/BaseModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/TourChiTietModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->detailTour();
-            break;
-
-        case 'about':
-        case 'về':
-            require_once './models/BaseModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->about();
-            break;
-
-        case 'contact':
-        case 'liên hệ':
-            require_once './models/BaseModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->contact();
-            break;
-
-        case 'blog':
-        case 'tin-tức':
-            require_once './models/BaseModel.php';
-            require_once './models/BlogModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->listBlogs();
-            break;
-
-        case 'blog-detail':
-            require_once './models/BaseModel.php';
-            require_once './models/BlogModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->detailBlog();
-            break;
-
-        case 'booking':
-        case 'đặt chỗ':
-        case 'dat-cho':
-            require_once './models/BaseModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->booking();
-            break;
-
-        case 'booking-submit':
-            require_once './models/BaseModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->submitBooking();
-            break;
-
-        case 'booking-confirm':
-            require_once './models/BaseModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './controllers/ProductController.php';
-            (new ProductController())->bookingConfirm();
-            break;
-
-        // ===== PAYMENT ROUTES =====
-        case 'payment-create':
-            // Đảm bảo không có output trước khi xử lý
-            ob_start();
-            require_once './controllers/BaseController.php';
-            require_once './models/BaseModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './commons/MoMoPaymentHelper.php';
-            require_once './controllers/PaymentController.php';
-            (new PaymentController())->createPayment();
-            break;
-
-        case 'payment-callback':
-            require_once './controllers/BaseController.php';
-            require_once './models/BaseModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './commons/MoMoPaymentHelper.php';
-            require_once './controllers/PaymentController.php';
-            (new PaymentController())->handleCallback();
-            break;
-
-        case 'payment-return':
-            require_once './controllers/BaseController.php';
-            require_once './models/BaseModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './commons/MoMoPaymentHelper.php';
-            require_once './controllers/PaymentController.php';
-            (new PaymentController())->handleReturn();
-            break;
-
-        case 'payment-qrcode':
-            // Đảm bảo không có output trước khi xử lý
-            ob_start();
-            require_once './controllers/BaseController.php';
-            require_once './models/BaseModel.php';
-            require_once './models/HoadonModel.php';
-            require_once './commons/MoMoPaymentHelper.php';
-            require_once './controllers/PaymentController.php';
-            (new PaymentController())->getQRCode();
+            $title = "Trang chủ";
+            $thoiTiet = "Hôm nay trời đẹp";
+            require_once './views/trangchu.php';
             break;
 
         // ===== AUTH ROUTES =====
