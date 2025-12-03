@@ -265,7 +265,7 @@ $blog = $stats['blog'] ?? 0;     // Blog
       <div class="stat-change">↗ Tổng số tour</div>
     </a>
 
-    <a href="#" class="stat-card" data-type="invoice">
+    <a href="<?= BASE_URL ?>?act=hoadon-list" class="stat-card" data-type="invoice">
       <div class="stat-header">
         <div class="stat-icon">
           <i class="fas fa-file-invoice-dollar"></i>
@@ -276,7 +276,7 @@ $blog = $stats['blog'] ?? 0;     // Blog
       <div class="stat-change">↗ Tổng số hóa đơn</div>
     </a>
 
-    <a href="#" class="stat-card" data-type="blog">
+    <a href="<?= BASE_URL ?>?act=blog-list" class="stat-card" data-type="blog">
       <div class="stat-header">
         <div class="stat-icon">
           <i class="fas fa-newspaper"></i>
@@ -287,7 +287,7 @@ $blog = $stats['blog'] ?? 0;     // Blog
       <div class="stat-change">↗ Tổng số bài viết</div>
     </a>
 
-    <a href="#" class="stat-card" data-type="feedback">
+    <a href="<?= BASE_URL ?>?act=admin" class="stat-card" data-type="feedback">
       <div class="stat-header">
         <div class="stat-icon">
           <i class="fas fa-comments"></i>
@@ -298,7 +298,7 @@ $blog = $stats['blog'] ?? 0;     // Blog
       <div class="stat-change">↗ Tổng số góp ý</div>
     </a>
 
-    <a href="#" class="stat-card" data-type="support">
+    <a href="<?= BASE_URL ?>?act=admin" class="stat-card" data-type="support">
       <div class="stat-header">
         <div class="stat-icon">
           <i class="fas fa-life-ring"></i>
