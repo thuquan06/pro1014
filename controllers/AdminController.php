@@ -1046,6 +1046,11 @@ class AdminController extends BaseController {
                   ->min('so_cho_con_trong', 0, 'Số chỗ còn trống phải lớn hơn hoặc bằng 0')
                   ->max('so_cho_con_trong', 1000, 'Số chỗ còn trống không được quá 1000');
         
+        // Phương tiện
+        $validator->required('phuong_tien', 'Phương tiện là bắt buộc')
+                  ->minLength('phuong_tien', 2, 'Phương tiện phải có ít nhất 2 ký tự')
+                  ->maxLength('phuong_tien', 255, 'Phương tiện không được quá 255 ký tự');
+        
         // Ghi chú vận hành (nếu có)
         if (!empty($data['ghi_chu_van_hanh'])) {
             $validator->maxLength('ghi_chu_van_hanh', 2000, 'Ghi chú vận hành không được quá 2000 ký tự');
@@ -1110,7 +1115,13 @@ class AdminController extends BaseController {
                 }
                 $this->redirect($redirectUrl);
             } else {
-                $error = 'Không thể tạo lịch khởi hành. Vui lòng kiểm tra lại dữ liệu.';
+                // Kiểm tra lỗi database cụ thể
+                $dbError = $this->departurePlanModel->getLastError();
+                if ($dbError) {
+                    $error = 'Không thể tạo lịch khởi hành: ' . $dbError;
+                } else {
+                    $error = 'Không thể tạo lịch khởi hành. Vui lòng kiểm tra lại dữ liệu và đảm bảo đã chạy migration để thêm cột phuong_tien vào bảng lich_khoi_hanh.';
+                }
                 $this->loadView('admin/departure-plans/create', compact('tours', 'error', 'tourId'), 'admin/layout');
             }
         } else {
