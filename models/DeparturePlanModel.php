@@ -43,6 +43,7 @@ class DeparturePlanModel extends BaseModel
                     `diem_tap_trung` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Điểm tập trung',
                     `so_cho_con_trong` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống',
                     `phuong_tien` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Phương tiện di chuyển',
+                    `uu_dai_giam_gia` DECIMAL(5,2) NULL DEFAULT NULL COMMENT 'Ưu đãi giảm giá (%)',
                     `ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành',
                     `trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng, 1=Mở bán, 2=Hết chỗ',
                     `ngay_tao` DATETIME NULL DEFAULT NULL COMMENT 'Ngày tạo',
@@ -145,7 +146,8 @@ class DeparturePlanModel extends BaseModel
                 'diem_tap_trung' => "`diem_tap_trung` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Điểm tập trung' AFTER `gio_tap_trung`",
                 'so_cho_con_trong' => "`so_cho_con_trong` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống' AFTER `diem_tap_trung`",
                 'phuong_tien' => "`phuong_tien` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Phương tiện di chuyển' AFTER `so_cho_con_trong`",
-                'ghi_chu_van_hanh' => "`ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành' AFTER `phuong_tien`",
+                'uu_dai_giam_gia' => "`uu_dai_giam_gia` DECIMAL(5,2) NULL DEFAULT NULL COMMENT 'Ưu đãi giảm giá (%)' AFTER `phuong_tien`",
+                'ghi_chu_van_hanh' => "`ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành' AFTER `uu_dai_giam_gia`",
                 'trang_thai' => "`trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng, 1=Mở bán, 2=Hết chỗ' AFTER `ghi_chu_van_hanh`",
                 'ngay_tao' => "`ngay_tao` DATETIME NULL DEFAULT NULL COMMENT 'Ngày tạo' AFTER `trang_thai`",
                 'ngay_cap_nhat' => "`ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật' AFTER `ngay_tao`"
@@ -153,7 +155,7 @@ class DeparturePlanModel extends BaseModel
             
             // Thứ tự các cột theo thứ tự mong muốn
             $columnOrder = ['id', 'id_tour', 'ngay_khoi_hanh', 'gio_khoi_hanh', 'gio_tap_trung', 
-                          'diem_tap_trung', 'so_cho_con_trong', 'phuong_tien', 'ghi_chu_van_hanh', 
+                          'diem_tap_trung', 'so_cho_con_trong', 'phuong_tien', 'uu_dai_giam_gia', 'ghi_chu_van_hanh', 
                           'trang_thai', 'ngay_tao', 'ngay_cap_nhat'];
             
             // Kiểm tra và tạo các cột còn thiếu
@@ -264,11 +266,11 @@ class DeparturePlanModel extends BaseModel
         try {
             $sql = "INSERT INTO lich_khoi_hanh (
                         id_tour, ngay_khoi_hanh, gio_khoi_hanh, gio_tap_trung,
-                        diem_tap_trung, so_cho_con_trong, phuong_tien, ghi_chu_van_hanh, 
+                        diem_tap_trung, so_cho_con_trong, phuong_tien, uu_dai_giam_gia, ghi_chu_van_hanh, 
                         trang_thai, ngay_tao, ngay_cap_nhat
                     ) VALUES (
                         :id_tour, :ngay_khoi_hanh, :gio_khoi_hanh, :gio_tap_trung,
-                        :diem_tap_trung, :so_cho_con_trong, :phuong_tien, :ghi_chu_van_hanh,
+                        :diem_tap_trung, :so_cho_con_trong, :phuong_tien, :uu_dai_giam_gia, :ghi_chu_van_hanh,
                         :trang_thai, NOW(), NOW()
                     )";
 
@@ -281,6 +283,7 @@ class DeparturePlanModel extends BaseModel
                 ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
                 ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
                 ':phuong_tien' => $data['phuong_tien'] ?? null,
+                ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
@@ -311,6 +314,7 @@ class DeparturePlanModel extends BaseModel
                         ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
                         ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
                         ':phuong_tien' => $data['phuong_tien'] ?? null,
+                        ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                         ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                         ':trang_thai' => $data['trang_thai'] ?? 1,
                     ]);
@@ -341,6 +345,7 @@ class DeparturePlanModel extends BaseModel
                         diem_tap_trung = :diem_tap_trung,
                         so_cho_con_trong = :so_cho_con_trong,
                         phuong_tien = :phuong_tien,
+                        uu_dai_giam_gia = :uu_dai_giam_gia,
                         ghi_chu_van_hanh = :ghi_chu_van_hanh,
                         trang_thai = :trang_thai,
                         ngay_cap_nhat = NOW()
@@ -356,6 +361,7 @@ class DeparturePlanModel extends BaseModel
                 ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
                 ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
                 ':phuong_tien' => $data['phuong_tien'] ?? null,
+                ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
@@ -374,6 +380,7 @@ class DeparturePlanModel extends BaseModel
                         ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
                         ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
                         ':phuong_tien' => $data['phuong_tien'] ?? null,
+                        ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                         ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                         ':trang_thai' => $data['trang_thai'] ?? 1,
                     ]);

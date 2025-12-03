@@ -323,6 +323,22 @@ function safe_html($value) {
       </div>
 
       <div class="form-row">
+        <div class="form-group-modern">
+          <label>
+            Ưu đãi giảm giá (%)
+          </label>
+          <input type="number" 
+                 name="uu_dai_giam_gia" 
+                 value="<?= safe_html($departurePlan['uu_dai_giam_gia'] ?? '') ?>" 
+                 placeholder="Ví dụ: 10"
+                 min="0"
+                 max="100"
+                 step="0.01">
+          <span class="help-text">Phần trăm giảm giá cho lịch khởi hành này (ví dụ: 10 = 10%)</span>
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-group-modern full-width">
           <label>
             Ghi chú vận hành
