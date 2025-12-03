@@ -308,6 +308,18 @@ function safe_html($value) {
                  required>
           <span class="help-text">Số lượng chỗ còn trống</span>
         </div>
+
+        <div class="form-group-modern">
+          <label>
+            Phương tiện <span class="required">*</span>
+          </label>
+          <input type="text" 
+                 name="phuong_tien" 
+                 value="<?= safe_html($departurePlan['phuong_tien'] ?? '') ?>" 
+                 placeholder="Ví dụ: Xe khách, Máy bay"
+                 required>
+          <span class="help-text">Phương tiện di chuyển</span>
+        </div>
       </div>
 
       <div class="form-row">
