@@ -215,14 +215,17 @@ function safe_html($value) {
 }
 
 .promotion-badge-small {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   color: white;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  margin-bottom: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 9px;
+  font-weight: 700;
+  margin-bottom: 6px;
   display: inline-block;
+  box-shadow: 0 2px 4px rgba(238, 90, 111, 0.3);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
 .status-badge {
@@ -419,7 +422,6 @@ function safe_html($value) {
             <th>Địa điểm</th>
             <th>Số ngày</th>
             <th>Giá (VNĐ)</th>
-            <th>Ngày đi</th>
             <th>Trạng thái</th>
             <th>Hoạt động</th>
           </tr>
@@ -439,7 +441,6 @@ function safe_html($value) {
             $giagoi = $tour['giagoi'] ?? 0;
             $giatreem = $tour['giatreem'] ?? 0;
             $giatrenho = $tour['giatrenho'] ?? 0;
-            $ngayxuatphat = $tour['ngayxuatphat'] ?? '';
             $trangthai = $tour['trangthai'] ?? 0;
 
             // Tính giá sau khuyến mãi
@@ -447,6 +448,13 @@ function safe_html($value) {
             $giaNguoiLonSauKM = calculatePromotionPrice($giagoi, $tour);
             $giaTreEmSauKM = calculatePromotionPrice($giatreem, $tour);
             $giaTreNhoSauKM = calculatePromotionPrice($giatrenho, $tour);
+
+            // Kiểm tra xem có thực sự giảm giá không
+            $coGiamGia = $coKhuyenMai && (
+              $giaNguoiLonSauKM < $giagoi ||
+              $giaTreEmSauKM < $giatreem ||
+              $giaTreNhoSauKM < $giatrenho
+            );
           ?>
             <tr>
               <td><?= $cnt ?></td>
@@ -463,18 +471,17 @@ function safe_html($value) {
                 <strong><?= safe_html($songay) ?></strong> ngày
               </td>
               <td class="price-cell">
-                <?php if ($coKhuyenMai): ?>
-                  <span class="promotion-badge-small">🔥 -<?= (int)($tour['khuyenmai_phantram'] ?? 0) ?>%</span>
+                <?php if ($coGiamGia): ?>
+                  <span class="promotion-badge-small">-<?= (int)($tour['khuyenmai_phantram'] ?? 0) ?>% off</span>
                 <?php endif; ?>
                 <div class="price-breakdown">
                   <div class="price-row">
                     <span class="price-label">Người lớn:</span>
                     <span>
                       <?php if ($coKhuyenMai && $giaNguoiLonSauKM < $giagoi): ?>
-                        <div class="price-original-struck"><?= number_format($giagoi, 0, ',', '.') ?></div>
-                        <div class="price-discounted"><?= number_format($giaNguoiLonSauKM, 0, ',', '.') ?></div>
+                        <span class="price-value price-discounted"><?= number_format($giaNguoiLonSauKM, 0, ',', '.') ?></span>
                       <?php else: ?>
-                        <span class="price-value price-main"><?= number_format($giagoi, 0, ',', '.') ?></span>
+                        <span class="price-value"><?= number_format($giagoi, 0, ',', '.') ?></span>
                       <?php endif; ?>
                     </span>
                   </div>
@@ -482,8 +489,7 @@ function safe_html($value) {
                     <span class="price-label">Trẻ em:</span>
                     <span>
                       <?php if ($coKhuyenMai && $giaTreEmSauKM < $giatreem): ?>
-                        <div class="price-original-struck"><?= number_format($giatreem, 0, ',', '.') ?></div>
-                        <div class="price-discounted"><?= number_format($giaTreEmSauKM, 0, ',', '.') ?></div>
+                        <span class="price-value price-discounted"><?= number_format($giaTreEmSauKM, 0, ',', '.') ?></span>
                       <?php else: ?>
                         <span class="price-value"><?= number_format($giatreem, 0, ',', '.') ?></span>
                       <?php endif; ?>
@@ -493,17 +499,13 @@ function safe_html($value) {
                     <span class="price-label">Trẻ nhỏ:</span>
                     <span>
                       <?php if ($coKhuyenMai && $giaTreNhoSauKM < $giatrenho): ?>
-                        <div class="price-original-struck"><?= number_format($giatrenho, 0, ',', '.') ?></div>
-                        <div class="price-discounted"><?= number_format($giaTreNhoSauKM, 0, ',', '.') ?></div>
+                        <span class="price-value price-discounted"><?= number_format($giaTreNhoSauKM, 0, ',', '.') ?></span>
                       <?php else: ?>
                         <span class="price-value"><?= number_format($giatrenho, 0, ',', '.') ?></span>
                       <?php endif; ?>
                     </span>
                   </div>
                 </div>
-              </td>
-              <td>
-                <?= $ngayxuatphat ? date('d/m/Y', strtotime($ngayxuatphat)) : '-' ?>
               </td>
               <td>
                 <a href="<?= BASE_URL ?>?act=admin-tour-toggle&id=<?= $id_goi ?>" 

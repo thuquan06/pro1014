@@ -28,17 +28,3 @@ define('SMTP_AUTH', true);                      // Có cần xác thực không
 // 1. Bật "Less secure app access" HOẶC
 // 2. Tạo "App Password" tại: https://myaccount.google.com/apppasswords
 // 3. Sử dụng App Password thay vì mật khẩu thường
-
-// ==================== MOMO PAYMENT CONFIGURATION ====================
-// Cấu hình MoMo Payment API
-// Đăng ký tại: https://business.momo.vn/
-define('MOMO_PRODUCTION', false); // true cho production, false cho sandbox
-define('MOMO_PARTNER_CODE', ''); // Partner Code từ MoMo
-define('MOMO_ACCESS_KEY', ''); // Access Key từ MoMo
-define('MOMO_SECRET_KEY', ''); // Secret Key từ MoMo
-
-// Lưu ý: 
-// 1. Đăng ký tài khoản MoMo Doanh Nghiệp tại https://business.momo.vn/
-// 2. Lấy Partner Code, Access Key, Secret Key từ dashboard MoMo
-// 3. Cấu hình IPN URL và Return URL trong dashboard MoMo
-// 4. Test với sandbox trước khi chuyển sang production

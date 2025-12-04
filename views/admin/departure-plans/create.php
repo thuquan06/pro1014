@@ -248,11 +248,31 @@ function safe_html($value) {
             }
             // Lấy phương tiện từ tour
             $phuongTien = !empty($tour['phuongtien']) ? htmlspecialchars($tour['phuongtien'], ENT_QUOTES, 'UTF-8') : '';
+            // Lấy số ngày, số chỗ, giá từ tour
+            $soNgay = !empty($tour['songay']) ? (int)$tour['songay'] : '';
+            $soCho = !empty($tour['socho']) ? (int)$tour['socho'] : '';
+            $giaNguoiLon = !empty($tour['giagoi']) ? (float)$tour['giagoi'] : '';
+            $giaTreEm = !empty($tour['giatreem']) ? (float)$tour['giatreem'] : '';
+            $giaTreNho = !empty($tour['giatrenho']) ? (float)$tour['giatrenho'] : '';
+            // Ngày kết thúc (nếu có ngayve)
+            $ngayKetThucFormatted = '';
+            if (!empty($tour['ngayve'])) {
+              $timestamp = strtotime($tour['ngayve']);
+              if ($timestamp) {
+                $ngayKetThucFormatted = date('Y-m-d', $timestamp);
+              }
+            }
           ?>
             <option value="<?= $tour['id_goi'] ?>" 
                     data-ngay-xuat-phat="<?= $ngayXuatPhatFormatted ?>"
+                    data-ngay-ket-thuc="<?= $ngayKetThucFormatted ?>"
+                    data-so-ngay="<?= $soNgay ?>"
                     data-gio-xuat-phat="<?= $gioXuatPhatFormatted ?>"
                     data-phuong-tien="<?= $phuongTien ?>"
+                    data-so-cho="<?= $soCho ?>"
+                    data-gia-nguoi-lon="<?= $giaNguoiLon ?>"
+                    data-gia-tre-em="<?= $giaTreEm ?>"
+                    data-gia-tre-nho="<?= $giaTreNho ?>"
                     <?= ($selectedTourId && $selectedTourId == $tour['id_goi']) ? 'selected' : '' ?>>
               <?= safe_html($tour['tengoi']) ?> 
               <?php if (!empty($tour['ngayxuatphat'])): ?>
@@ -277,6 +297,9 @@ function safe_html($value) {
           <option value="2" <?= (isset($_POST['trang_thai']) && $_POST['trang_thai'] == '2') ? 'selected' : '' ?>>
             Hết chỗ
           </option>
+          <option value="3" <?= (isset($_POST['trang_thai']) && $_POST['trang_thai'] == '3') ? 'selected' : '' ?>>
+            Gần đầy
+          </option>
         </select>
       </div>
     </div>
@@ -294,6 +317,19 @@ function safe_html($value) {
         <span class="help-text">Chọn ngày khởi hành (sẽ tự động điền từ ngày xuất phát của tour)</span>
       </div>
 
+      <div class="form-group-modern">
+        <label>
+          Ngày kết thúc
+        </label>
+        <input type="date" 
+               name="ngay_ket_thuc" 
+               id="ngay_ket_thuc"
+               value="<?= safe_html($_POST['ngay_ket_thuc'] ?? ($selectedTour && !empty($selectedTour['ngayve']) ? date('Y-m-d', strtotime($selectedTour['ngayve'])) : '')) ?>">
+        <span class="help-text">Ngày kết thúc tour (sẽ tự động tính nếu có số ngày)</span>
+      </div>
+    </div>
+
+    <div class="form-row">
       <div class="form-group-modern">
         <label>
           Giờ khởi hành <span class="required">*</span>
@@ -335,15 +371,47 @@ function safe_html($value) {
     <div class="form-row">
       <div class="form-group-modern">
         <label>
-          Số chỗ còn trống <span class="required">*</span>
+          Số chỗ tối đa <span class="required">*</span>
         </label>
         <input type="number" 
-               name="so_cho_con_trong" 
-               value="<?= safe_html($_POST['so_cho_con_trong'] ?? '') ?>" 
-               placeholder="Ví dụ: 25"
+               name="so_cho" 
+               id="so_cho"
+               value="<?= safe_html($_POST['so_cho'] ?? ($selectedTour && !empty($selectedTour['socho']) ? $selectedTour['socho'] : '')) ?>" 
+               placeholder="Ví dụ: 30"
+               min="1"
+               required
+               onchange="calculateRemainingSeats()">
+        <span class="help-text">Tổng số chỗ tối đa cho lịch khởi hành này</span>
+      </div>
+
+      <div class="form-group-modern">
+        <label>
+          Số chỗ đã đặt
+        </label>
+        <input type="number" 
+               name="so_cho_da_dat" 
+               id="so_cho_da_dat"
+               value="<?= safe_html($_POST['so_cho_da_dat'] ?? '0') ?>" 
+               placeholder="0"
                min="0"
-               required>
-        <span class="help-text">Số lượng chỗ còn trống</span>
+               onchange="calculateRemainingSeats()">
+        <span class="help-text">Số chỗ đã có người đặt</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label>
+          Số chỗ còn lại
+        </label>
+        <input type="number" 
+               name="so_cho_con_lai" 
+               id="so_cho_con_lai"
+               value="<?= safe_html($_POST['so_cho_con_lai'] ?? '') ?>" 
+               placeholder="Tự động tính"
+               min="0"
+               readonly>
+        <span class="help-text">Số chỗ còn trống (tự động = Số chỗ tối đa - Số chỗ đã đặt)</span>
       </div>
 
       <div class="form-group-modern">
@@ -363,17 +431,57 @@ function safe_html($value) {
     <div class="form-row">
       <div class="form-group-modern">
         <label>
-          Ưu đãi giảm giá (%)
+          Giá người lớn
         </label>
         <input type="number" 
-               name="uu_dai_giam_gia" 
-               id="uu_dai_giam_gia"
-               value="<?= safe_html($_POST['uu_dai_giam_gia'] ?? '') ?>" 
-               placeholder="Ví dụ: 10"
+               name="gia_nguoi_lon" 
+               id="gia_nguoi_lon"
+               value="<?= safe_html($_POST['gia_nguoi_lon'] ?? ($selectedTour && !empty($selectedTour['giagoi']) ? $selectedTour['giagoi'] : '')) ?>" 
+               placeholder="Ví dụ: 2000000"
                min="0"
-               max="100"
-               step="0.01">
-        <span class="help-text">Phần trăm giảm giá cho lịch khởi hành này (ví dụ: 10 = 10%)</span>
+               step="1000">
+        <span class="help-text">Giá cho người lớn (sẽ tự động điền từ tour nếu có)</span>
+      </div>
+
+      <div class="form-group-modern">
+        <label>
+          Giá trẻ em
+        </label>
+        <input type="number" 
+               name="gia_tre_em" 
+               id="gia_tre_em"
+               value="<?= safe_html($_POST['gia_tre_em'] ?? ($selectedTour && !empty($selectedTour['giatreem']) ? $selectedTour['giatreem'] : '')) ?>" 
+               placeholder="Ví dụ: 1500000"
+               min="0"
+               step="1000">
+        <span class="help-text">Giá cho trẻ em (sẽ tự động điền từ tour nếu có)</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label>
+          Giá trẻ nhỏ
+        </label>
+        <input type="number" 
+               name="gia_tre_nho" 
+               id="gia_tre_nho"
+               value="<?= safe_html($_POST['gia_tre_nho'] ?? ($selectedTour && !empty($selectedTour['giatrenho']) ? $selectedTour['giatrenho'] : '')) ?>" 
+               placeholder="Ví dụ: 1000000"
+               min="0"
+               step="1000">
+        <span class="help-text">Giá cho trẻ nhỏ (sẽ tự động điền từ tour nếu có)</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group-modern full-width">
+        <label>
+          Ghi chú nội bộ
+        </label>
+        <textarea name="ghi_chu" 
+                  placeholder="Nhập các ghi chú nội bộ..."><?= safe_html($_POST['ghi_chu'] ?? '') ?></textarea>
+        <span class="help-text">Ghi chú nội bộ cho nhân viên</span>
       </div>
     </div>
 
@@ -406,8 +514,13 @@ function safe_html($value) {
 function loadTourDepartureDate() {
   const tourSelect = document.getElementById('id_tour');
   const ngayKhoiHanhInput = document.getElementById('ngay_khoi_hanh');
+  const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
   const gioKhoiHanhInput = document.getElementById('gio_khoi_hanh');
   const phuongTienInput = document.getElementById('phuong_tien');
+  const soChoInput = document.getElementById('so_cho');
+  const giaNguoiLonInput = document.getElementById('gia_nguoi_lon');
+  const giaTreEmInput = document.getElementById('gia_tre_em');
+  const giaTreNhoInput = document.getElementById('gia_tre_nho');
   
   if (!tourSelect || !ngayKhoiHanhInput) {
     return;
@@ -415,8 +528,14 @@ function loadTourDepartureDate() {
   
   const selectedOption = tourSelect.options[tourSelect.selectedIndex];
   const ngayXuatPhat = selectedOption.getAttribute('data-ngay-xuat-phat');
+  const ngayKetThuc = selectedOption.getAttribute('data-ngay-ket-thuc');
+  const soNgay = selectedOption.getAttribute('data-so-ngay');
   const gioXuatPhat = selectedOption.getAttribute('data-gio-xuat-phat');
   const phuongTien = selectedOption.getAttribute('data-phuong-tien');
+  const soCho = selectedOption.getAttribute('data-so-cho');
+  const giaNguoiLon = selectedOption.getAttribute('data-gia-nguoi-lon');
+  const giaTreEm = selectedOption.getAttribute('data-gia-tre-em');
+  const giaTreNho = selectedOption.getAttribute('data-gia-tre-nho');
   
   // Xử lý ngày khởi hành
   if (ngayXuatPhat && ngayXuatPhat.trim() !== '') {
@@ -526,6 +645,57 @@ function loadTourDepartureDate() {
       }
     }
   }
+
+  // Xử lý ngày kết thúc
+  if (ngayKetThucInput) {
+    if (ngayKetThuc && ngayKetThuc.trim() !== '') {
+      ngayKetThucInput.value = ngayKetThuc;
+    } else if (ngayXuatPhat && ngayXuatPhat.trim() !== '' && soNgay && parseInt(soNgay) > 0) {
+      // Tính ngày kết thúc từ ngày khởi hành + số ngày
+      const startDate = new Date(ngayXuatPhat);
+      startDate.setDate(startDate.getDate() + parseInt(soNgay) - 1);
+      const endDateStr = startDate.toISOString().split('T')[0];
+      ngayKetThucInput.value = endDateStr;
+    }
+  }
+
+  // Xử lý số chỗ
+  if (soChoInput && soCho && soCho !== '') {
+    soChoInput.value = soCho;
+    calculateRemainingSeats();
+  }
+
+  // Xử lý giá người lớn
+  if (giaNguoiLonInput && giaNguoiLon && giaNguoiLon !== '') {
+    giaNguoiLonInput.value = giaNguoiLon;
+  }
+
+  // Xử lý giá trẻ em
+  if (giaTreEmInput && giaTreEm && giaTreEm !== '') {
+    giaTreEmInput.value = giaTreEm;
+  }
+
+  // Xử lý giá trẻ nhỏ
+  if (giaTreNhoInput && giaTreNho && giaTreNho !== '') {
+    giaTreNhoInput.value = giaTreNho;
+  }
+}
+
+// Tính số chỗ còn lại
+function calculateRemainingSeats() {
+  const soChoInput = document.getElementById('so_cho');
+  const soChoDaDatInput = document.getElementById('so_cho_da_dat');
+  const soChoConLaiInput = document.getElementById('so_cho_con_lai');
+  
+  if (!soChoInput || !soChoDaDatInput || !soChoConLaiInput) {
+    return;
+  }
+  
+  const soCho = parseInt(soChoInput.value) || 0;
+  const soChoDaDat = parseInt(soChoDaDatInput.value) || 0;
+  const soChoConLai = Math.max(0, soCho - soChoDaDat);
+  
+  soChoConLaiInput.value = soChoConLai > 0 ? soChoConLai : '';
 }
 
 // Tự động load ngày xuất phát khi trang được tải (nếu đã có tour được chọn)
@@ -533,6 +703,29 @@ document.addEventListener('DOMContentLoaded', function() {
   const tourSelect = document.getElementById('id_tour');
   if (tourSelect && tourSelect.value) {
     loadTourDepartureDate();
+  }
+  
+  // Lắng nghe sự kiện thay đổi ngày khởi hành để tự động tính ngày kết thúc
+  const ngayKhoiHanhInput = document.getElementById('ngay_khoi_hanh');
+  if (ngayKhoiHanhInput) {
+    ngayKhoiHanhInput.addEventListener('change', function() {
+      const tourSelect = document.getElementById('id_tour');
+      const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
+      if (tourSelect && tourSelect.value && ngayKetThucInput) {
+        const selectedOption = tourSelect.options[tourSelect.selectedIndex];
+        const soNgay = selectedOption.getAttribute('data-so-ngay');
+        const ngayKhoiHanh = this.value;
+        
+        if (soNgay && parseInt(soNgay) > 0 && ngayKhoiHanh) {
+          const startDate = new Date(ngayKhoiHanh);
+          startDate.setDate(startDate.getDate() + parseInt(soNgay) - 1);
+          const endDateStr = startDate.toISOString().split('T')[0];
+          if (!ngayKetThucInput.value || ngayKetThucInput.value === '') {
+            ngayKetThucInput.value = endDateStr;
+          }
+        }
+      }
+    });
   }
 });
 </script>

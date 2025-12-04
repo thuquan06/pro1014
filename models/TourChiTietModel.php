@@ -274,6 +274,35 @@ class TourChiTietModel extends BaseModel
         ]);
     }
     
+    /**
+     * Tạo loại tour mới
+     */
+    public function taoLoaiTour($tenLoai, $mota = null) {
+        $slug = $this->taoSlug($tenLoai);
+        $sql = "INSERT INTO loaitour (ten_loai, mota, slug) VALUES (:ten_loai, :mota, :slug)";
+        $stmt = $this->conn->prepare($sql);
+        
+        if ($stmt->execute([':ten_loai' => $tenLoai, ':mota' => $mota, ':slug' => $slug])) {
+            return $this->conn->lastInsertId();
+        }
+        return false;
+    }
+    
+    /**
+     * Xóa loại tour khỏi database (xóa cả mapping)
+     */
+    public function xoaLoaiTourKhoiDB($idLoai) {
+        // Xóa mapping trước
+        $sql1 = "DELETE FROM tour_loai_map WHERE id_loai = :id_loai";
+        $stmt1 = $this->conn->prepare($sql1);
+        $stmt1->execute([':id_loai' => $idLoai]);
+        
+        // Xóa loại tour
+        $sql2 = "DELETE FROM loaitour WHERE id = :id";
+        $stmt2 = $this->conn->prepare($sql2);
+        return $stmt2->execute([':id' => $idLoai]);
+    }
+    
     // ==================== TAGS ====================
     
     /**
@@ -337,6 +366,21 @@ class TourChiTietModel extends BaseModel
             return $this->conn->lastInsertId();
         }
         return false;
+    }
+    
+    /**
+     * Xóa tag khỏi database (xóa cả mapping)
+     */
+    public function xoaTagKhoiDB($idTag) {
+        // Xóa mapping trước
+        $sql1 = "DELETE FROM tour_tag_map WHERE id_tag = :id_tag";
+        $stmt1 = $this->conn->prepare($sql1);
+        $stmt1->execute([':id_tag' => $idTag]);
+        
+        // Xóa tag
+        $sql2 = "DELETE FROM tour_tags WHERE id = :id";
+        $stmt2 = $this->conn->prepare($sql2);
+        return $stmt2->execute([':id' => $idTag]);
     }
     
     // ==================== HELPER ====================

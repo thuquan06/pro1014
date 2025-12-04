@@ -377,50 +377,6 @@ ob_start();
           </button>
         <?php endif; ?>
       </form>
-
-      <!-- Thêm loại tour mới -->
-      <div class="divider">
-        <h4 class="divider-title">
-          <i class="fas fa-plus-circle"></i>
-          Tạo Loại Tour Mới
-        </h4>
-        
-        <form action="<?= BASE_URL ?>?act=tour-tao-loai" method="POST">
-          <input type="hidden" name="id_goi" value="<?= $idGoi ?>">
-          
-          <div class="form-group">
-            <label class="form-label" for="ten_loai">
-              Tên Loại Tour
-            </label>
-            <input 
-              type="text" 
-              id="ten_loai" 
-              name="ten_loai" 
-              class="form-input" 
-              placeholder="VD: Tour miền Bắc, Tour Châu Âu..."
-              required
-            >
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="mota_loai">
-              Mô tả (tùy chọn)
-            </label>
-            <textarea 
-              id="mota_loai" 
-              name="mota_loai" 
-              class="form-textarea" 
-              rows="2"
-              placeholder="Mô tả ngắn về loại tour này..."
-            ></textarea>
-          </div>
-          
-          <button type="submit" class="btn-block info">
-            <i class="fas fa-plus"></i>
-            Tạo Loại Tour & Gán
-          </button>
-        </form>
-      </div>
     </div>
   </div>
 
@@ -466,44 +422,6 @@ ob_start();
           </button>
         <?php endif; ?>
       </form>
-
-      <!-- Thêm tag mới -->
-      <div class="divider">
-        <h4 class="divider-title">
-          <i class="fas fa-plus-circle"></i>
-          Tạo Tag Mới
-        </h4>
-        
-        <form action="<?= BASE_URL ?>?act=tour-tao-tag" method="POST">
-          <input type="hidden" name="id_goi" value="<?= $idGoi ?>">
-          
-          <div class="form-group">
-            <label class="form-label" for="ten_tag">
-              Tên Tag
-            </label>
-            <div class="input-group">
-              <span class="input-group-addon">#</span>
-              <input 
-                type="text" 
-                id="ten_tag" 
-                name="ten_tag" 
-                class="form-input" 
-                placeholder="VD: Du lịch biển, Phượt, Gia đình..."
-                required
-              >
-            </div>
-            <small class="form-hint">
-              <i class="fas fa-info-circle"></i>
-              Tag giúp khách hàng tìm kiếm tour dễ dàng hơn
-            </small>
-          </div>
-          
-          <button type="submit" class="btn-block info">
-            <i class="fas fa-plus"></i>
-            Tạo Tag & Gán
-          </button>
-        </form>
-      </div>
     </div>
   </div>
 </div>
@@ -517,7 +435,7 @@ ob_start();
   <ul>
     <li><strong>Loại Tour:</strong> Phân loại tour theo khu vực hoặc đặc điểm (VD: Tour trong nước, Tour nước ngoài, Tour nghỉ dưỡng...)</li>
     <li><strong>Tags:</strong> Thêm các từ khóa ngắn gọn để dễ tìm kiếm (VD: #Biển, #Núi, #Phượt, #GiaDinh...)</li>
-    <li><strong>Tạo Mới:</strong> Nếu chưa có loại tour hoặc tag phù hợp, hãy tạo mới và nó sẽ tự động được gán cho tour này</li>
+    <li><strong>Tạo mới:</strong> Để tạo loại tour hoặc tag mới, vui lòng vào trang <a href="<?= BASE_URL ?>?act=admin-categories-tags" style="color: var(--primary); font-weight: 600;">Danh sách Phân loại & Tags</a></li>
   </ul>
 </div>
 

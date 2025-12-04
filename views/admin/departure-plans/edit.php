@@ -242,6 +242,9 @@ function safe_html($value) {
             <option value="2" <?= ($departurePlan['trang_thai'] == 2) ? 'selected' : '' ?>>
               Hết chỗ
             </option>
+            <option value="3" <?= ($departurePlan['trang_thai'] == 3) ? 'selected' : '' ?>>
+              Gần đầy
+            </option>
           </select>
         </div>
       </div>
@@ -258,6 +261,18 @@ function safe_html($value) {
           <span class="help-text">Chọn ngày khởi hành</span>
         </div>
 
+        <div class="form-group-modern">
+          <label>
+            Ngày kết thúc
+          </label>
+          <input type="date" 
+                 name="ngay_ket_thuc" 
+                 value="<?= safe_html($departurePlan['ngay_ket_thuc'] ?? '') ?>">
+          <span class="help-text">Ngày kết thúc tour</span>
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-group-modern">
           <label>
             Giờ khởi hành <span class="required">*</span>
@@ -298,15 +313,47 @@ function safe_html($value) {
       <div class="form-row">
         <div class="form-group-modern">
           <label>
-            Số chỗ còn trống <span class="required">*</span>
+            Số chỗ tối đa <span class="required">*</span>
           </label>
           <input type="number" 
-                 name="so_cho_con_trong" 
-                 value="<?= safe_html($departurePlan['so_cho_con_trong'] ?? '') ?>" 
-                 placeholder="Ví dụ: 25"
+                 name="so_cho" 
+                 id="so_cho"
+                 value="<?= safe_html($departurePlan['so_cho'] ?? ($departurePlan['so_cho_con_trong'] ?? '')) ?>" 
+                 placeholder="Ví dụ: 30"
+                 min="1"
+                 required
+                 onchange="calculateRemainingSeats()">
+          <span class="help-text">Tổng số chỗ tối đa cho lịch khởi hành này</span>
+        </div>
+
+        <div class="form-group-modern">
+          <label>
+            Số chỗ đã đặt
+          </label>
+          <input type="number" 
+                 name="so_cho_da_dat" 
+                 id="so_cho_da_dat"
+                 value="<?= safe_html($departurePlan['so_cho_da_dat'] ?? '0') ?>" 
+                 placeholder="0"
                  min="0"
-                 required>
-          <span class="help-text">Số lượng chỗ còn trống</span>
+                 onchange="calculateRemainingSeats()">
+          <span class="help-text">Số chỗ đã có người đặt</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group-modern">
+          <label>
+            Số chỗ còn lại
+          </label>
+          <input type="number" 
+                 name="so_cho_con_lai" 
+                 id="so_cho_con_lai"
+                 value="<?= safe_html($departurePlan['so_cho_con_lai'] ?? ($departurePlan['so_cho_con_trong'] ?? '')) ?>" 
+                 placeholder="Tự động tính"
+                 min="0"
+                 readonly>
+          <span class="help-text">Số chỗ còn trống (tự động = Số chỗ tối đa - Số chỗ đã đặt)</span>
         </div>
 
         <div class="form-group-modern">
@@ -325,16 +372,54 @@ function safe_html($value) {
       <div class="form-row">
         <div class="form-group-modern">
           <label>
-            Ưu đãi giảm giá (%)
+            Giá người lớn
           </label>
           <input type="number" 
-                 name="uu_dai_giam_gia" 
-                 value="<?= safe_html($departurePlan['uu_dai_giam_gia'] ?? '') ?>" 
-                 placeholder="Ví dụ: 10"
+                 name="gia_nguoi_lon" 
+                 value="<?= safe_html($departurePlan['gia_nguoi_lon'] ?? '') ?>" 
+                 placeholder="Ví dụ: 2000000"
                  min="0"
-                 max="100"
-                 step="0.01">
-          <span class="help-text">Phần trăm giảm giá cho lịch khởi hành này (ví dụ: 10 = 10%)</span>
+                 step="1000">
+          <span class="help-text">Giá cho người lớn</span>
+        </div>
+
+        <div class="form-group-modern">
+          <label>
+            Giá trẻ em
+          </label>
+          <input type="number" 
+                 name="gia_tre_em" 
+                 value="<?= safe_html($departurePlan['gia_tre_em'] ?? '') ?>" 
+                 placeholder="Ví dụ: 1500000"
+                 min="0"
+                 step="1000">
+          <span class="help-text">Giá cho trẻ em</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group-modern">
+          <label>
+            Giá trẻ nhỏ
+          </label>
+          <input type="number" 
+                 name="gia_tre_nho" 
+                 value="<?= safe_html($departurePlan['gia_tre_nho'] ?? '') ?>" 
+                 placeholder="Ví dụ: 1000000"
+                 min="0"
+                 step="1000">
+          <span class="help-text">Giá cho trẻ nhỏ</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group-modern full-width">
+          <label>
+            Ghi chú nội bộ
+          </label>
+          <textarea name="ghi_chu" 
+                    placeholder="Nhập các ghi chú nội bộ..."><?= safe_html($departurePlan['ghi_chu'] ?? '') ?></textarea>
+          <span class="help-text">Ghi chú nội bộ cho nhân viên</span>
         </div>
       </div>
 
@@ -363,4 +448,28 @@ function safe_html($value) {
     </div>
   </form>
 <?php endif; ?>
+
+<script>
+// Tính số chỗ còn lại
+function calculateRemainingSeats() {
+  const soChoInput = document.getElementById('so_cho');
+  const soChoDaDatInput = document.getElementById('so_cho_da_dat');
+  const soChoConLaiInput = document.getElementById('so_cho_con_lai');
+  
+  if (!soChoInput || !soChoDaDatInput || !soChoConLaiInput) {
+    return;
+  }
+  
+  const soCho = parseInt(soChoInput.value) || 0;
+  const soChoDaDat = parseInt(soChoDaDatInput.value) || 0;
+  const soChoConLai = Math.max(0, soCho - soChoDaDat);
+  
+  soChoConLaiInput.value = soChoConLai > 0 ? soChoConLai : '';
+}
+
+// Tính số chỗ còn lại khi trang được tải
+document.addEventListener('DOMContentLoaded', function() {
+  calculateRemainingSeats();
+});
+</script>
 

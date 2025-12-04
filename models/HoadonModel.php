@@ -278,67 +278,6 @@ class HoadonModel extends BaseModel
         return $total;
     }
 
-    /**
-     * Cập nhật thông tin thanh toán
-     */
-    public function updatePaymentInfo($id, array $data)
-    {
-        try {
-            $sql = "UPDATE hoadon SET ";
-            $params = [];
-            $setParts = [];
-            
-            if (isset($data['phuong_thuc_thanh_toan'])) {
-                $setParts[] = "phuong_thuc_thanh_toan = :phuong_thuc_thanh_toan";
-                $params[':phuong_thuc_thanh_toan'] = $data['phuong_thuc_thanh_toan'];
-            }
-            
-            if (isset($data['trang_thai_thanh_toan'])) {
-                $setParts[] = "trang_thai_thanh_toan = :trang_thai_thanh_toan";
-                $params[':trang_thai_thanh_toan'] = $data['trang_thai_thanh_toan'];
-            }
-            
-            if (isset($data['ma_giao_dich_momo'])) {
-                $setParts[] = "ma_giao_dich_momo = :ma_giao_dich_momo";
-                $params[':ma_giao_dich_momo'] = $data['ma_giao_dich_momo'];
-            }
-            
-            if (isset($data['so_tien_thanh_toan'])) {
-                $setParts[] = "so_tien_thanh_toan = :so_tien_thanh_toan";
-                $params[':so_tien_thanh_toan'] = $data['so_tien_thanh_toan'];
-            }
-            
-            if (isset($data['ngay_thanh_toan'])) {
-                $setParts[] = "ngay_thanh_toan = :ngay_thanh_toan";
-                $params[':ngay_thanh_toan'] = $data['ngay_thanh_toan'];
-            }
-            
-            if (isset($data['qr_code_url'])) {
-                $setParts[] = "qr_code_url = :qr_code_url";
-                $params[':qr_code_url'] = $data['qr_code_url'];
-            }
-            
-            if (isset($data['payment_link'])) {
-                $setParts[] = "payment_link = :payment_link";
-                $params[':payment_link'] = $data['payment_link'];
-            }
-            
-            if (empty($setParts)) {
-                return false;
-            }
-            
-            $sql .= implode(', ', $setParts);
-            $sql .= ", ngaycapnhat = NOW() WHERE id_hoadon = :id";
-            $params[':id'] = $id;
-            
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute($params);
-            
-        } catch (PDOException $e) {
-            error_log("Lỗi updatePaymentInfo: " . $e->getMessage());
-            return false;
-        }
-    }
 
     /**
      * Thống kê hóa đơn

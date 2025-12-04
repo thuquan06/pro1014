@@ -21,13 +21,12 @@ $mato=safe_value($tour['mato']??'');
 $tengoi=safe_value($tour['tengoi']??'');
 $noixuatphat=safe_value($tour['noixuatphat']??'');
 $vitri=safe_value($tour['vitri']??'');
-$tuyendiem=safe_value($tour['tuyendiem']??'');
 $giagoi=safe_value($tour['giagoi']??'');
 $giatreem=safe_value($tour['giatreem']??'');
 $giatrenho=safe_value($tour['giatrenho']??'');
-$chitietgoi=safe_value($tour['chitietgoi']??'');
-$chuongtrinh=safe_value($tour['chuongtrinh']??'');
-$luuy=safe_value($tour['luuy']??'');
+// Không mã hóa HTML cho các trường dùng CKEditor
+$chuongtrinh=html_entity_decode($tour['chuongtrinh']??'', ENT_QUOTES, 'UTF-8');
+$luuy=html_entity_decode($tour['luuy']??'', ENT_QUOTES, 'UTF-8');
 $songay=safe_value($tour['songay']??'');
 $giodi=safe_value($tour['giodi']??'');
 $ngayxuatphat=safe_value($tour['ngayxuatphat']??'');
@@ -374,8 +373,9 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
 
 <?php if($tour): ?>
 
-<form method="post" action="<?=BASE_URL?>?act=admin-tour-update" class="form-container">
+<form method="post" action="<?=BASE_URL?>?act=admin-tour-update" class="form-container" onsubmit="return updateCKEditorBeforeSubmit()">
   <input type="hidden" name="id_goi" value="<?=$id_goi?>">
+  <input type="hidden" name="chitietgoi" value="">
 
   <!-- Card 1: Cấu hình Tour -->
   <div class="form-card">
@@ -507,9 +507,11 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
       </div>
     </div>
 
-    <div class="form-group-modern">
-      <label for="tuyendiem">Tuyến điểm <span class="required">*</span></label>
-      <input type="text" name="tuyendiem" id="tuyendiem" value="<?=$tuyendiem?>" required placeholder="Ví dụ: Hà Nội - Hạ Long - Cát Bà">
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label for="songay">Số ngày <span class="required">*</span></label>
+        <input type="text" name="songay" id="songay" value="<?=$songay?>" required placeholder="Ví dụ: 3 ngày 2 đêm">
+      </div>
     </div>
   </div>
 
@@ -565,80 +567,153 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
     </div>
   </div>
 
-  <!-- Card 4: Nội dung tour -->
+  <!-- Card 4: Dịch vụ -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-concierge-bell"></i>
+      <h3>Dịch vụ (Tùy chọn)</h3>
+    </div>
+    <div class="form-group-modern">
+      <label>Chọn dịch vụ cho tour</label>
+      <p style="font-size: 13px; color: var(--text-light); margin-bottom: 16px;">
+        Chọn các dịch vụ sẽ được sử dụng trong tour này. Có thể chọn nhiều dịch vụ.
+      </p>
+      
+      <?php if (!empty($serviceTypes)): ?>
+        <?php foreach ($serviceTypes as $typeKey => $typeName): ?>
+          <?php 
+          $servicesByType = array_filter($services ?? [], function($s) use ($typeKey) {
+            return ($s['loai_dich_vu'] ?? '') === $typeKey;
+          });
+          ?>
+          <?php if (!empty($servicesByType)): ?>
+            <div style="margin-bottom: 24px;">
+              <h4 style="font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+                <i class="fas fa-tag"></i> <?= htmlspecialchars($typeName) ?>
+              </h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
+                <?php foreach ($servicesByType as $service): ?>
+                  <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--bg-light); border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent;" 
+                         onmouseover="this.style.borderColor='var(--primary)'; this.style.background='#f0f7ff';" 
+                         onmouseout="this.style.borderColor='transparent'; this.style.background='var(--bg-light)';">
+                    <input type="checkbox" 
+                           name="dich_vu[]" 
+                           value="<?= $service['id'] ?>" 
+                           style="width: 18px; height: 18px; cursor: pointer;"
+                           <?= (isset($selectedServiceIds) && in_array($service['id'], $selectedServiceIds)) ? 'checked' : '' ?>>
+                    <div style="flex: 1;">
+                      <div style="font-weight: 600; font-size: 14px; color: var(--text-dark);">
+                        <?= htmlspecialchars($service['ten_dich_vu'] ?? '') ?>
+                      </div>
+                      <?php if (!empty($service['nha_cung_cap'])): ?>
+                        <div style="font-size: 12px; color: var(--text-light); margin-top: 2px;">
+                          <i class="fas fa-building"></i> <?= htmlspecialchars($service['nha_cung_cap']) ?>
+                        </div>
+                      <?php endif; ?>
+                      <?php if (!empty($service['gia'])): ?>
+                        <div style="font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px;">
+                          <?= number_format($service['gia'], 0, ',', '.') ?> đ
+                          <?php if (!empty($service['don_vi'])): ?>
+                            / <?= htmlspecialchars($service['don_vi']) ?>
+                          <?php endif; ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <div style="padding: 20px; text-align: center; color: var(--text-light); background: var(--bg-light); border-radius: 8px;">
+          <i class="fas fa-info-circle" style="font-size: 24px; margin-bottom: 8px;"></i>
+          <p>Chưa có dịch vụ nào. <a href="<?= BASE_URL ?>?act=admin-service-create" style="color: var(--primary);">Tạo dịch vụ mới</a></p>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- Card 5: Nội dung tour -->
   <div class="form-card">
     <div class="card-header">
       <i class="fas fa-file-alt"></i>
       <h3>Nội dung tour</h3>
     </div>
 
-    <div class="form-group-modern" style="margin-bottom: 24px;">
-      <label for="packagedetails">Chi tiết tour <span class="required">*</span></label>
-      <textarea class="form-control" name="chitietgoi" id="packagedetails" required><?=$chitietgoi?></textarea>
-    </div>
 
     <div class="form-group-modern" style="margin-bottom: 24px;">
-      <label for="packagedetails1">Chương trình tour <span class="required">*</span></label>
-      <textarea class="form-control" name="chuongtrinh" id="packagedetails1" required><?=$chuongtrinh?></textarea>
+      <label>Lịch trình tour <span class="required">*</span></label>
+      
+      <!-- Day Builder Interface -->
+      <div id="itinerary-builder" style="margin-bottom: 16px;">
+        <div style="margin-bottom: 16px;">
+          <button type="button" id="add-day-btn" class="btn btn-primary" style="padding: 10px 20px;">
+            <i class="fas fa-plus"></i> Thêm ngày
+          </button>
+        </div>
+        <div id="days-container">
+          <!-- Days will be added here -->
+        </div>
+      </div>
+      
+      <!-- Hidden textarea để lưu HTML cuối cùng -->
+      <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display: none;"></textarea>
     </div>
 
     <div class="form-group-modern">
       <label for="packagedetails2">Lưu ý <span class="required">*</span></label>
-      <textarea class="form-control" name="luuy" id="packagedetails2" required><?=$luuy?></textarea>
+      <textarea class="form-control" name="luuy" id="packagedetails2" required><?= str_replace('</textarea>', '&lt;/textarea&gt;', $luuy) ?></textarea>
     </div>
   </div>
 
-  <!-- Card 5: Thời gian & Lịch trình -->
+  <!-- Card 6: Phân loại & Tags -->
   <div class="form-card">
     <div class="card-header">
-      <i class="fas fa-calendar-alt"></i>
-      <h3>Thời gian & Lịch trình</h3>
+      <i class="fas fa-tags"></i>
+      <h3>Phân loại & Tags</h3>
     </div>
 
     <div class="form-row">
       <div class="form-group-modern">
-        <label for="songay">Số ngày <span class="required">*</span></label>
-        <input type="number" name="songay" id="songay" value="<?=$songay?>" required placeholder="Ví dụ: 3">
+        <label>Loại tour</label>
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-light);">
+          <?php if (!empty($categories)): ?>
+            <?php foreach ($categories as $cat): ?>
+              <label style="display: block; padding: 8px; margin: 4px 0; background: white; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                <input type="checkbox" name="loai_ids[]" value="<?= $cat['id'] ?>" 
+                       <?= in_array($cat['id'], $selectedCategoryIds) ? 'checked' : '' ?>
+                       style="margin-right: 8px;">
+                <i class="fas fa-folder"></i> <?= htmlspecialchars($cat['ten_loai']) ?>
+              </label>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p style="color: var(--text-light); text-align: center; padding: 20px;">Chưa có loại tour nào</p>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div class="form-group-modern">
-        <label for="phuongtien">Phương tiện <span class="required">*</span></label>
-        <input type="text" name="phuongtien" id="phuongtien" value="<?=$phuongtien?>" required placeholder="Ví dụ: Xe khách, Máy bay">
+        <label>Tags</label>
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-light);">
+          <?php if (!empty($tags)): ?>
+            <?php foreach ($tags as $tag): ?>
+              <label style="display: block; padding: 8px; margin: 4px 0; background: white; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                <input type="checkbox" name="tag_ids[]" value="<?= $tag['id'] ?>"
+                       <?= in_array($tag['id'], $selectedTagIds) ? 'checked' : '' ?>
+                       style="margin-right: 8px;">
+                <i class="fas fa-hashtag"></i><?= htmlspecialchars($tag['ten_tag']) ?>
+              </label>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p style="color: var(--text-light); text-align: center; padding: 20px;">Chưa có tag nào</p>
+          <?php endif; ?>
+        </div>
       </div>
-
-      <div class="form-group-modern">
-        <label for="socho">Số chỗ <span class="required">*</span></label>
-        <input type="number" name="socho" id="socho" value="<?=$socho?>" required min="1" placeholder="Ví dụ: 30">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group-modern">
-        <label for="ngayxuatphat">Ngày xuất phát <span class="required">*</span></label>
-        <input type="date" name="ngayxuatphat" id="ngayxuatphat" value="<?=$ngayxuatphat?>" required>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="giodi">Giờ xuất phát <span class="required">*</span></label>
-        <input type="time" name="giodi" id="giodi" value="<?=$giodi?>" required>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="ngayve">Ngày về <span class="required">*</span></label>
-        <input type="date" name="ngayve" id="ngayve" value="<?=$ngayve?>" required>
-      </div>
-    </div>
-
-    <div class="form-group-modern">
-      <label for="ngaydang">Ngày đăng</label>
-      <input type="date" name="ngaydang" id="ngaydang" value="<?=date('Y-m-d')?>" readonly style="background: var(--bg-light); cursor: not-allowed;">
-      <small style="color: var(--text-light); font-size: 12px; margin-top: 4px; display: block;">
-        <i class="fas fa-info-circle"></i> Ngày đăng tự động là ngày hôm nay
-      </small>
     </div>
   </div>
 
-  <!-- Card 6: Hình ảnh -->
+  <!-- Card 7: Hình ảnh -->
   <div class="form-card">
     <div class="card-header">
       <i class="fas fa-image"></i>
@@ -702,19 +777,256 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
 <script src="assets/ckeditor/ckeditor.js"></script>
 
 <script>
-// Initialize CKEditor
-const editorIDs = ['packagedetails', 'packagedetails1', 'packagedetails2'];
+// Initialize CKEditor Config
+const ckConfig = {
+    height: 350,
+    filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
+    filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
+    filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
+    filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
+};
 
-editorIDs.forEach(id => {
-    CKEDITOR.replace(id, {
-        height: 350,
-        filebrowserBrowseUrl: 'ckfinder/ckfinder.html',
-        filebrowserImageBrowseUrl: 'ckfinder/ckfinder.html?type=Images',
-        filebrowserFlashBrowseUrl: 'ckfinder/ckfinder.html?type=Flash',
-        filebrowserUploadUrl: 'ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
-        filebrowserImageUploadUrl: 'ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
+const dayEditorConfig = {
+    height: 300,
+    filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
+    filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
+    filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
+    filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
+};
+
+// Itinerary Day Builder
+let dayCounter = 0;
+let dayEditors = {};
+
+// Hàm thêm ngày mới
+function addDay(dayTitle = '', dayContent = '') {
+    dayCounter++;
+    const dayId = 'day_' + dayCounter;
+    const editorId = 'day_editor_' + dayCounter;
+    
+    const dayHtml = `
+        <div class="day-item" id="${dayId}" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--border); border-radius: 8px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: var(--primary); font-size: 16px;">
+                    <i class="fas fa-calendar-day"></i> Ngày ${dayCounter}
+                </h4>
+                <button type="button" onclick="removeDay(${dayCounter})" class="btn btn-sm" style="background: #ef4444; color: white; padding: 6px 12px;">
+                    <i class="fas fa-times"></i> Xóa
+                </button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Tiêu đề ngày (tùy chọn)</label>
+                <input type="text" class="day-title-input" data-day="${dayCounter}" placeholder="Ví dụ: Khởi hành, Tham quan thành phố..." 
+                       value="${dayTitle.replace(/"/g, '&quot;')}"
+                       style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Nội dung</label>
+                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;">${dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('days-container').insertAdjacentHTML('beforeend', dayHtml);
+    
+    // Khởi tạo CKEditor cho ngày này
+    setTimeout(() => {
+        dayEditors[dayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
+        if (dayContent) {
+            dayEditors[dayCounter].on('instanceReady', function() {
+                this.setData(dayContent);
+            });
+        }
+    }, 200);
+}
+
+// Hàm xóa ngày
+function removeDay(dayNum) {
+    if (confirm('Bạn có chắc chắn muốn xóa ngày này?')) {
+        const dayId = 'day_' + dayNum;
+        const dayElement = document.getElementById(dayId);
+        
+        if (dayElement) {
+            // Xóa CKEditor instance
+            if (dayEditors[dayNum]) {
+                dayEditors[dayNum].destroy();
+                delete dayEditors[dayNum];
+            }
+            
+            dayElement.remove();
+            updateDayNumbers();
+        }
+    }
+}
+
+// Cập nhật số ngày sau khi xóa
+function updateDayNumbers() {
+    const dayItems = document.querySelectorAll('.day-item');
+    dayItems.forEach((item, index) => {
+        const newDayNum = index + 1;
+        const dayNumAttr = item.getAttribute('id').replace('day_', '');
+        const titleInput = item.querySelector('.day-title-input');
+        const contentTextarea = item.querySelector('.day-content-editor');
+        const header = item.querySelector('h4');
+        
+        if (header) {
+            header.innerHTML = `<i class="fas fa-calendar-day"></i> Ngày ${newDayNum}`;
+        }
+        
+        if (titleInput) {
+            titleInput.dataset.day = newDayNum;
+        }
+        
+        if (contentTextarea) {
+            contentTextarea.dataset.day = newDayNum;
+        }
+        
+        // Cập nhật onclick của nút xóa
+        const removeBtn = item.querySelector('button');
+        if (removeBtn) {
+            removeBtn.setAttribute('onclick', `removeDay(${newDayNum})`);
+        }
     });
-});
+    dayCounter = dayItems.length;
+}
+
+// Hàm build HTML từ các ngày
+function buildItineraryHTML() {
+    let html = '';
+    const dayItems = document.querySelectorAll('.day-item');
+    
+    dayItems.forEach((item, index) => {
+        const dayNum = index + 1;
+        const titleInput = item.querySelector('.day-title-input');
+        const contentTextarea = item.querySelector('.day-content-editor');
+        const dayNumAttr = contentTextarea ? parseInt(contentTextarea.dataset.day) : dayNum;
+        
+        const title = titleInput ? titleInput.value.trim() : '';
+        let content = '';
+        
+        // Lấy nội dung từ CKEditor
+        if (dayEditors[dayNumAttr]) {
+            content = dayEditors[dayNumAttr].getData();
+        } else if (contentTextarea) {
+            content = contentTextarea.value;
+        }
+        
+        if (content.trim()) {
+            let dayHeader = '';
+            if (title) {
+                dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
+            } else {
+                dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
+            }
+            
+            html += dayHeader + content;
+        }
+    });
+    
+    return html;
+}
+
+// Khởi tạo CKEditor cho "Lưu ý"
+CKEDITOR.replace('packagedetails2', ckConfig);
+
+// Hàm parse và load itinerary cũ
+function parseAndLoadExistingItinerary(html) {
+    if (!html || !html.trim()) return;
+    
+    // Tìm tất cả các marker "NGÀY X"
+    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
+    const daySections = [];
+    let match;
+    let lastIndex = 0;
+    
+    while ((match = regex.exec(html)) !== null) {
+        const dayNum = parseInt(match[1]);
+        const title = match[2] ? match[2].trim() : '';
+        const startPos = match.index;
+        
+        // Lấy nội dung của ngày này (từ sau heading đến heading tiếp theo)
+        const nextMatch = html.substring(startPos + match[0].length).match(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*\d+/i);
+        const endPos = nextMatch ? startPos + match[0].length + nextMatch.index : html.length;
+        const content = html.substring(startPos + match[0].length, endPos).trim();
+        
+        daySections.push({
+            day: dayNum,
+            title: title,
+            content: content
+        });
+        
+        lastIndex = endPos;
+    }
+    
+    // Nếu không tìm thấy marker, thử tìm trong text thuần
+    if (daySections.length === 0) {
+        const textRegex = /(?:NGÀY|Day|Ngày)\s*(\d+)(?::\s*([^\n<]+))?/gi;
+        let textMatch;
+        while ((textMatch = textRegex.exec(html)) !== null) {
+            const dayNum = parseInt(textMatch[1]);
+            const title = textMatch[2] ? textMatch[2].trim() : '';
+            const startPos = textMatch.index;
+            
+            const nextTextMatch = html.substring(startPos + textMatch[0].length).match(/(?:NGÀY|Day|Ngày)\s*\d+/i);
+            const endPos = nextTextMatch ? startPos + textMatch[0].length + nextTextMatch.index : html.length;
+            const content = html.substring(startPos + textMatch[0].length, endPos).trim();
+            
+            daySections.push({
+                day: dayNum,
+                title: title,
+                content: content
+            });
+        }
+    }
+    
+    // Nếu vẫn không tìm thấy, thêm toàn bộ nội dung vào ngày 1
+    if (daySections.length === 0) {
+        daySections.push({
+            day: 1,
+            title: '',
+            content: html
+        });
+    }
+    
+    // Sắp xếp và load các ngày
+    daySections.sort((a, b) => a.day - b.day);
+    
+    setTimeout(() => {
+        daySections.forEach(section => {
+            addDay(section.title, section.content);
+        });
+    }, 500);
+}
+
+// Xử lý khi submit form
+function updateCKEditorBeforeSubmit() {
+    try {
+        // Cập nhật tất cả editor instances
+        for (var instance in CKEDITOR.instances) {
+            CKEDITOR.instances[instance].updateElement();
+        }
+        
+        // Build itinerary HTML từ các ngày
+        const itineraryHTML = buildItineraryHTML();
+        const hiddenField = document.getElementById('chuongtrinh-hidden');
+        
+        if (hiddenField) {
+            hiddenField.value = itineraryHTML || '';
+        }
+        
+        // Kiểm tra nếu không có nội dung
+        if (!itineraryHTML || itineraryHTML.trim() === '') {
+            alert('Vui lòng nhập lịch trình tour (ít nhất 1 ngày)');
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error in updateCKEditorBeforeSubmit:', error);
+        alert('Có lỗi xảy ra khi chuẩn bị dữ liệu. Vui lòng thử lại.');
+        return false;
+    }
+}
 
 // Toggle between domestic and international tour fields
 document.addEventListener('DOMContentLoaded', function() {
@@ -765,6 +1077,32 @@ document.addEventListener('DOMContentLoaded', function() {
     togglePromotionDetails();
     radioKmCo.addEventListener('change', togglePromotionDetails);
     radioKmKhong.addEventListener('change', togglePromotionDetails);
+    
+    // Form submit handler - không cần event listener vì đã có onsubmit trên form tag
+    
+    // Itinerary Builder - Thêm ngày
+    const addDayBtn = document.getElementById('add-day-btn');
+    if (addDayBtn) {
+        addDayBtn.addEventListener('click', function() {
+            addDay();
+        });
+    }
+    
+    // Load dữ liệu cũ khi edit tour
+    <?php if (!empty($chuongtrinh)): ?>
+    const existingItinerary = <?= json_encode($chuongtrinh, JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
+    if (existingItinerary && existingItinerary.trim()) {
+        setTimeout(() => {
+            parseAndLoadExistingItinerary(existingItinerary);
+        }, 800);
+    }
+    <?php else: ?>
+    // Nếu không có dữ liệu cũ, thêm 1 ngày mặc định
+    const daysContainer = document.getElementById('days-container');
+    if (daysContainer && daysContainer.children.length === 0) {
+        addDay();
+    }
+    <?php endif; ?>
 
     // Price discount calculator
     var inputGiaNguoiLon = document.getElementById('giagoi');

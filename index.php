@@ -146,14 +146,9 @@ try {
         case 'admin-tour-toggle':
             (new AdminController())->toggleTourStatus();
             break;
+
         case 'admin-tour-detail':
             (new AdminController())->viewTourDetail();
-            break;
-
-        case 'admin-tours-lichtrinh':
-            require_once './models/TourChiTietModel.php';
-            require_once './controllers/TourChiTietController.php';
-            (new TourChiTietController())->danhSachLichTrinh();
             break;
 
         // --- Departure Plan Management ---
@@ -280,55 +275,7 @@ try {
             (new AdminController())->toggleServiceStatus();
             break;
 
-        // ==================== SERVICE ASSIGNMENT MANAGEMENT ====================
-        case 'admin-service-assignments':
-            require_once './models/ServiceAssignmentModel.php';
-            (new AdminController())->listServiceAssignments();
-            break;
-
-        case 'admin-service-assignment-create':
-            require_once './models/ServiceAssignmentModel.php';
-            (new AdminController())->createServiceAssignment();
-            break;
-
-        case 'admin-service-assignment-edit':
-            require_once './models/ServiceAssignmentModel.php';
-            (new AdminController())->editServiceAssignment();
-            break;
-
-        case 'admin-service-assignment-confirm':
-            require_once './models/ServiceAssignmentModel.php';
-            (new AdminController())->confirmServiceAssignment();
-            break;
-
-        case 'admin-service-assignment-cancel':
-            require_once './models/ServiceAssignmentModel.php';
-            (new AdminController())->cancelServiceAssignment();
-            break;
-
-        case 'admin-service-assignment-delete':
-            require_once './models/ServiceAssignmentModel.php';
-            (new AdminController())->deleteServiceAssignment();
-            break;
-
         // ==================== CHI TIẾT TOUR (MỚI) ====================
-
-        // LỊCH TRÌNH
-        case 'tour-lichtrinh':
-            (new TourChiTietController())->danhSachLichTrinh();
-            break;
-
-        case 'tour-lichtrinh-them':
-            (new TourChiTietController())->themLichTrinh();
-            break;
-
-        case 'tour-lichtrinh-sua':
-            (new TourChiTietController())->suaLichTrinh();
-            break;
-
-        case 'tour-lichtrinh-xoa':
-            (new TourChiTietController())->xoaLichTrinh();
-            break;
 
         // GALLERY
         case 'tour-gallery':
@@ -365,37 +312,33 @@ try {
             break;
 
         // PHÂN LOẠI
+        case 'admin-categories-tags':
+            require_once './models/TourChiTietModel.php';
+            (new AdminController())->listCategoriesTags();
+            break;
+
+        case 'admin-categories-tags-create':
+            require_once './models/TourChiTietModel.php';
+            (new AdminController())->createCategoryOrTag();
+            break;
+
+        case 'admin-categories-tags-delete':
+            require_once './models/TourChiTietModel.php';
+            (new AdminController())->deleteCategoryOrTag();
+            break;
+
         case 'tour-phanloai':
             (new TourChiTietController())->quanLyPhanLoai();
             break;
 
         case 'tour-phanloai-loai':
+        case 'tour-capnhat-loai':
             (new TourChiTietController())->capNhatLoaiTour();
             break;
 
         case 'tour-phanloai-tags':
+        case 'tour-capnhat-tags':
             (new TourChiTietController())->capNhatTags();
-            break;
-
-        // ==================== TOUR PUBLISH ROUTES ====================
-        case 'tour-publish':
-            // TOUR PUBLISH
-            require_once './controllers/TourPublishController.php';
-            (new TourPublishController())->trangPublish();
-            break;
-
-        case 'tour-publish-change':
-            require_once './controllers/TourPublishController.php';
-            (new TourPublishController())->doiTrangThaiPublish();
-            break;
-
-        case 'tour-publish-dashboard':
-            require_once './controllers/TourPublishController.php';
-            (new TourPublishController())->dashboard();
-            break;
-        case 'tour-publish-list':
-            require_once './controllers/TourPublishController.php';
-            (new TourPublishController())->danhSachTheoTrangThai();
             break;
 
         // ========== BLOG ADMIN ROUTES ==========

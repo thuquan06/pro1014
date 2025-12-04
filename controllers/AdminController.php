@@ -22,7 +22,6 @@ class AdminController extends BaseController {
     private $guideModel;
     private $assignmentModel;
     private $serviceModel;
-    private $serviceAssignmentModel;
     private $userModel;
 
     public function __construct() {
@@ -35,7 +34,6 @@ class AdminController extends BaseController {
         $this->guideModel = new GuideModel();
         $this->assignmentModel = new AssignmentModel();
         $this->serviceModel = new ServiceModel();
-        $this->serviceAssignmentModel = new ServiceAssignmentModel();
         $this->userModel = new UserModel();
     }
 
@@ -600,20 +598,47 @@ class AdminController extends BaseController {
         $this->checkLogin();
 
         $provinces = $this->provinceModel->getAll();
+        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
+        $serviceTypes = ServiceModel::getServiceTypes();
+        
+        // Lấy danh sách categories và tags
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        $categories = $tourChiTietModel->layTatCaLoaiTour();
+        $tags = $tourChiTietModel->layTatCaTags();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $file   = $_FILES['packageimage'] ?? null;
             $result = $this->tourModel->createTour($_POST, $file);
 
             if ($result) { 
+                // Lưu dịch vụ được chọn
+                if (!empty($_POST['dich_vu']) && is_array($_POST['dich_vu'])) {
+                    $this->tourModel->saveTourServices($result, $_POST['dich_vu']);
+                }
+                
+                // Lưu phân loại (categories) được chọn
+                if (!empty($_POST['loai_ids']) && is_array($_POST['loai_ids'])) {
+                    foreach ($_POST['loai_ids'] as $loaiId) {
+                        $tourChiTietModel->ganLoaiTour($result, $loaiId);
+                    }
+                }
+                
+                // Lưu tags được chọn
+                if (!empty($_POST['tag_ids']) && is_array($_POST['tag_ids'])) {
+                    foreach ($_POST['tag_ids'] as $tagId) {
+                        $tourChiTietModel->ganTag($result, $tagId);
+                    }
+                }
+                
                 $msg = "Thêm tour thành công!"; 
             } else { 
                 $error = "Không thể thêm tour. Vui lòng kiểm tra lại dữ liệu."; 
             }
 
-            $this->loadView('admin/tours/create', compact('provinces','msg','error'), 'admin/layout');
+            $this->loadView('admin/tours/create', compact('provinces', 'services', 'serviceTypes', 'categories', 'tags', 'msg','error'), 'admin/layout');
         } else {
-            $this->loadView('admin/tours/create', compact('provinces'), 'admin/layout');
+            $this->loadView('admin/tours/create', compact('provinces', 'services', 'serviceTypes', 'categories', 'tags'), 'admin/layout');
         }
     }
 
@@ -645,11 +670,6 @@ class AdminController extends BaseController {
                   ->minLength('vitri', 3, 'Vị trí phải có ít nhất 3 ký tự')
                   ->maxLength('vitri', 255, 'Vị trí không được quá 255 ký tự');
         
-        // Tuyến điểm
-        $validator->required('tuyendiem', 'Tuyến điểm là bắt buộc')
-                  ->minLength('tuyendiem', 3, 'Tuyến điểm phải có ít nhất 3 ký tự')
-                  ->maxLength('tuyendiem', 255, 'Tuyến điểm không được quá 255 ký tự');
-        
         // Giá gói
         $validator->required('giagoi', 'Giá gói là bắt buộc')
                   ->numeric('giagoi', 'Giá gói phải là số')
@@ -673,43 +693,10 @@ class AdminController extends BaseController {
                       }, 'Giá trẻ nhỏ không được lớn hơn giá gói');
         }
         
-        // Số ngày
+        // Số ngày (text format)
         $validator->required('songay', 'Số ngày là bắt buộc')
-                  ->integer('songay', 'Số ngày phải là số nguyên')
-                  ->min('songay', 1, 'Số ngày phải lớn hơn 0')
-                  ->max('songay', 365, 'Số ngày không được quá 365 ngày');
-        
-        // Số chỗ
-        $validator->required('socho', 'Số chỗ là bắt buộc')
-                  ->integer('socho', 'Số chỗ phải là số nguyên')
-                  ->min('socho', 1, 'Số chỗ phải lớn hơn 0')
-                  ->max('socho', 1000, 'Số chỗ không được quá 1000');
-        
-        // Giờ đi
-        if (!empty($data['giodi'])) {
-            $validator->pattern('giodi', '/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/', 'Giờ đi không hợp lệ (định dạng: HH:mm)');
-        }
-        
-        // Ngày xuất phát
-        if (!empty($data['ngayxuatphat'])) {
-            $validator->date('ngayxuatphat', 'Y-m-d', 'Ngày xuất phát không hợp lệ (định dạng: YYYY-MM-DD)');
-        }
-        
-        // Ngày về
-        if (!empty($data['ngayve'])) {
-            $validator->date('ngayve', 'Y-m-d', 'Ngày về không hợp lệ (định dạng: YYYY-MM-DD)')
-                      ->custom('ngayve', function($value) use ($data) {
-                          if (empty($data['ngayxuatphat'])) return true;
-                          $ngayVe = DateTime::createFromFormat('Y-m-d', $value);
-                          $ngayXuatPhat = DateTime::createFromFormat('Y-m-d', $data['ngayxuatphat']);
-                          return $ngayVe && $ngayXuatPhat && $ngayVe >= $ngayXuatPhat;
-                      }, 'Ngày về phải sau hoặc bằng ngày xuất phát');
-        }
-        
-        // Phương tiện
-        if (!empty($data['phuongtien'])) {
-            $validator->maxLength('phuongtien', 100, 'Phương tiện không được quá 100 ký tự');
-        }
+                  ->minLength('songay', 1, 'Số ngày không được để trống')
+                  ->maxLength('songay', 50, 'Số ngày không được quá 50 ký tự');
         
         // Chi tiết gói
         if (!empty($data['chitietgoi'])) {
@@ -813,8 +800,22 @@ class AdminController extends BaseController {
 
         $tour = $this->tourModel->getTourByID($id);
         $provinces = $this->provinceModel->getAll();
+        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
+        $serviceTypes = ServiceModel::getServiceTypes();
+        $tourServices = $this->tourModel->getTourServices($id);
+        $selectedServiceIds = array_column($tourServices, 'id_dich_vu');
         
-        $this->loadView('admin/tours/edit', compact('tour', 'provinces'), 'admin/layout');
+        // Lấy categories và tags
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        $categories = $tourChiTietModel->layTatCaLoaiTour();
+        $tags = $tourChiTietModel->layTatCaTags();
+        $selectedCategories = $tourChiTietModel->layLoaiTourCuaTour($id);
+        $selectedTags = $tourChiTietModel->layTagsCuaTour($id);
+        $selectedCategoryIds = array_column($selectedCategories, 'id');
+        $selectedTagIds = array_column($selectedTags, 'id');
+        
+        $this->loadView('admin/tours/edit', compact('tour', 'provinces', 'services', 'serviceTypes', 'selectedServiceIds', 'categories', 'tags', 'selectedCategoryIds', 'selectedTagIds'), 'admin/layout');
     }
 
     /**
@@ -847,6 +848,43 @@ class AdminController extends BaseController {
             $validated['nuocngoai'] = isset($_POST['nuocngoai']) ? 1 : 0;
             
             $this->tourModel->updateTour($id, $validated);
+            
+            // Lưu dịch vụ được chọn
+            if (!empty($_POST['dich_vu']) && is_array($_POST['dich_vu'])) {
+                $this->tourModel->saveTourServices($id, $_POST['dich_vu']);
+            } else {
+                // Nếu không chọn dịch vụ nào, xóa tất cả
+                $this->tourModel->deleteTourServices($id);
+            }
+            
+            // Cập nhật phân loại (categories)
+            require_once './models/TourChiTietModel.php';
+            $tourChiTietModel = new TourChiTietModel();
+            
+            // Xóa categories cũ
+            $oldCategories = $tourChiTietModel->layLoaiTourCuaTour($id);
+            foreach ($oldCategories as $cat) {
+                $tourChiTietModel->xoaLoaiTour($id, $cat['id']);
+            }
+            // Thêm categories mới
+            if (!empty($_POST['loai_ids']) && is_array($_POST['loai_ids'])) {
+                foreach ($_POST['loai_ids'] as $loaiId) {
+                    $tourChiTietModel->ganLoaiTour($id, $loaiId);
+                }
+            }
+            
+            // Cập nhật tags
+            $oldTags = $tourChiTietModel->layTagsCuaTour($id);
+            foreach ($oldTags as $tag) {
+                $tourChiTietModel->xoaTag($id, $tag['id']);
+            }
+            // Thêm tags mới
+            if (!empty($_POST['tag_ids']) && is_array($_POST['tag_ids'])) {
+                foreach ($_POST['tag_ids'] as $tagId) {
+                    $tourChiTietModel->ganTag($id, $tagId);
+                }
+            }
+            
             $_SESSION['success'] = 'Cập nhật tour thành công!';
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
@@ -938,9 +976,8 @@ class AdminController extends BaseController {
         exit();
     }
 
-    
     /**
-     * Xem chi tiết tour đầy đủ
+     * Xem chi tiết tour
      * Route: ?act=admin-tour-detail&id=X
      */
     public function viewTourDetail() {
@@ -952,23 +989,23 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
         
-        // Lấy thông tin tour
         $tour = $this->tourModel->getTourByID($id);
         if (!$tour) {
             $_SESSION['error'] = 'Không tìm thấy tour';
             $this->redirect(BASE_URL . '?act=admin-tours');
         }
         
-        // Lấy danh sách lịch khởi hành của tour
         $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($id);
+        $tourServices = $this->tourModel->getTourServices($id);
+        $serviceTypes = ServiceModel::getServiceTypes();
         
-        // Render view
-        // Load view
-        ob_start();
-        require_once './views/admin/tours/detail.php';
-        $content = ob_get_clean();
+        // Lấy categories và tags của tour
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        $tourCategories = $tourChiTietModel->layLoaiTourCuaTour($id);
+        $tourTags = $tourChiTietModel->layTagsCuaTour($id);
         
-        require_once './views/admin/layout.php';
+        $this->loadView('admin/tours/detail', compact('tour', 'departurePlans', 'tourServices', 'serviceTypes', 'tourCategories', 'tourTags'), 'admin/layout');
     }
 
     /* ==================== DEPARTURE PLAN MANAGEMENT ==================== */
@@ -1806,167 +1843,117 @@ class AdminController extends BaseController {
         $this->redirect(BASE_URL . '?act=admin-services');
     }
 
-    /* ==================== SERVICE ASSIGNMENT MANAGEMENT ==================== */
+
+    /* ==================== CATEGORIES & TAGS MANAGEMENT ==================== */
 
     /**
-     * Danh sách gán dịch vụ
-     * Route: ?act=admin-service-assignments
+     * Danh sách phân loại & tags
+     * Route: ?act=admin-categories-tags
      */
-    public function listServiceAssignments() {
+    public function listCategoriesTags() {
         $this->checkLogin();
         
-        $filters = [];
-        if (!empty($_GET['id_lich_khoi_hanh'])) {
-            $filters['id_lich_khoi_hanh'] = (int)$_GET['id_lich_khoi_hanh'];
-        }
-        if (!empty($_GET['loai_dich_vu'])) {
-            $filters['loai_dich_vu'] = $_GET['loai_dich_vu'];
-        }
-        if (!empty($_GET['trang_thai'])) {
-            $filters['trang_thai'] = $_GET['trang_thai'];
-        }
-
-        $assignments = $this->serviceAssignmentModel->getAllAssignments($filters);
-        $serviceTypes = ServiceModel::getServiceTypes();
-        $statuses = ServiceAssignmentModel::getStatuses();
-        $this->loadView('admin/service-assignments/list', compact('assignments', 'filters', 'serviceTypes', 'statuses'), 'admin/layout');
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        $categories = $tourChiTietModel->layTatCaLoaiTour();
+        $tags = $tourChiTietModel->layTatCaTags();
+        
+        $this->loadView('admin/categories-tags/list', compact('categories', 'tags'), 'admin/layout');
     }
 
     /**
-     * Form tạo gán dịch vụ
-     * Route: ?act=admin-service-assignment-create
+     * Tạo category hoặc tag mới
+     * Route: ?act=admin-categories-tags-create
      */
-    public function createServiceAssignment() {
+    public function createCategoryOrTag() {
         $this->checkLogin();
-
-        $departurePlanId = $_GET['departure_plan_id'] ?? null;
-        $departurePlan = null;
-        if ($departurePlanId) {
-            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($departurePlanId);
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(BASE_URL . '?act=admin-categories-tags');
         }
-
-        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
-        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
-        $serviceTypes = ServiceModel::getServiceTypes();
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $result = $this->serviceAssignmentModel->createAssignment($_POST);
+        
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        
+        $type = $_POST['type'] ?? '';
+        
+        if ($type === 'category') {
+            $tenLoai = trim($_POST['ten_loai'] ?? '');
+            $mota = trim($_POST['mota'] ?? '');
+            
+            if (empty($tenLoai)) {
+                $_SESSION['error'] = 'Vui lòng nhập tên loại tour';
+                $this->redirect(BASE_URL . '?act=admin-categories-tags');
+            }
+            
+            $result = $tourChiTietModel->taoLoaiTour($tenLoai, $mota ?: null);
+            
             if ($result) {
-                $_SESSION['success'] = 'Gán dịch vụ thành công!';
-                $redirectUrl = BASE_URL . '?act=admin-service-assignments';
-                if ($departurePlanId) {
-                    $redirectUrl .= '&id_lich_khoi_hanh=' . $departurePlanId;
-                }
-                $this->redirect($redirectUrl);
+                $_SESSION['success'] = 'Đã thêm loại tour mới thành công!';
             } else {
-                $error = 'Không thể gán dịch vụ. Vui lòng kiểm tra lại dữ liệu.';
-                $this->loadView('admin/service-assignments/create', compact('services', 'departurePlans', 'departurePlan', 'departurePlanId', 'serviceTypes', 'error'), 'admin/layout');
+                $_SESSION['error'] = 'Có lỗi xảy ra khi thêm loại tour. Có thể tên loại tour đã tồn tại.';
+            }
+        } elseif ($type === 'tag') {
+            $tenTag = trim($_POST['ten_tag'] ?? '');
+            
+            if (empty($tenTag)) {
+                $_SESSION['error'] = 'Vui lòng nhập tên tag';
+                $this->redirect(BASE_URL . '?act=admin-categories-tags');
+            }
+            
+            $result = $tourChiTietModel->taoTag($tenTag);
+            
+            if ($result) {
+                $_SESSION['success'] = 'Đã thêm tag mới thành công!';
+            } else {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi thêm tag. Có thể tên tag đã tồn tại.';
             }
         } else {
-            $this->loadView('admin/service-assignments/create', compact('services', 'departurePlans', 'departurePlan', 'departurePlanId', 'serviceTypes'), 'admin/layout');
+            $_SESSION['error'] = 'Loại không hợp lệ';
         }
+        
+        $this->redirect(BASE_URL . '?act=admin-categories-tags');
     }
 
     /**
-     * Form sửa gán dịch vụ
-     * Route: ?act=admin-service-assignment-edit&id=X
+     * Xóa category hoặc tag
+     * Route: ?act=admin-categories-tags-delete
      */
-    public function editServiceAssignment() {
+    public function deleteCategoryOrTag() {
         $this->checkLogin();
         
-        $id = $_GET['id'] ?? null;
+        $type = $_GET['type'] ?? '';
+        $id = intval($_GET['id'] ?? 0);
+        
         if (!$id) {
-            $this->redirect(BASE_URL . '?act=admin-service-assignments');
+            $_SESSION['error'] = 'ID không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-categories-tags');
         }
-
-        $assignment = $this->serviceAssignmentModel->getAssignmentByID($id);
-        if (!$assignment) {
-            $_SESSION['error'] = 'Không tìm thấy gán dịch vụ';
-            $this->redirect(BASE_URL . '?act=admin-service-assignments');
-        }
-
-        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
-        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
-        $serviceTypes = ServiceModel::getServiceTypes();
-        $statuses = ServiceAssignmentModel::getStatuses();
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $result = $this->serviceAssignmentModel->updateAssignment($id, $_POST);
+        
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        
+        if ($type === 'category') {
+            $result = $tourChiTietModel->xoaLoaiTourKhoiDB($id);
+            
             if ($result) {
-                $_SESSION['success'] = 'Cập nhật gán dịch vụ thành công!';
+                $_SESSION['success'] = 'Đã xóa loại tour thành công!';
             } else {
-                $_SESSION['error'] = 'Không thể cập nhật gán dịch vụ';
+                $_SESSION['error'] = 'Có lỗi xảy ra khi xóa loại tour.';
             }
-            $this->redirect(BASE_URL . '?act=admin-service-assignments');
-        }
-
-        $this->loadView('admin/service-assignments/edit', compact('assignment', 'services', 'departurePlans', 'serviceTypes', 'statuses'), 'admin/layout');
-    }
-
-    /**
-     * Xác nhận dịch vụ
-     * Route: ?act=admin-service-assignment-confirm&id=X
-     */
-    public function confirmServiceAssignment() {
-        $this->checkLogin();
-        
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            $_SESSION['error'] = 'ID không hợp lệ';
-            $this->redirect(BASE_URL . '?act=admin-service-assignments');
-        }
-
-        $result = $this->serviceAssignmentModel->confirmAssignment($id);
-        if ($result) {
-            $_SESSION['success'] = 'Xác nhận dịch vụ thành công!';
+        } elseif ($type === 'tag') {
+            $result = $tourChiTietModel->xoaTagKhoiDB($id);
+            
+            if ($result) {
+                $_SESSION['success'] = 'Đã xóa tag thành công!';
+            } else {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi xóa tag.';
+            }
         } else {
-            $_SESSION['error'] = 'Không thể xác nhận dịch vụ';
+            $_SESSION['error'] = 'Loại không hợp lệ';
         }
-        $this->redirect(BASE_URL . '?act=admin-service-assignments');
-    }
-
-    /**
-     * Hủy gán dịch vụ
-     * Route: ?act=admin-service-assignment-cancel&id=X
-     */
-    public function cancelServiceAssignment() {
-        $this->checkLogin();
         
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            $_SESSION['error'] = 'ID không hợp lệ';
-            $this->redirect(BASE_URL . '?act=admin-service-assignments');
-        }
-
-        $result = $this->serviceAssignmentModel->cancelAssignment($id);
-        if ($result) {
-            $_SESSION['success'] = 'Hủy dịch vụ thành công!';
-        } else {
-            $_SESSION['error'] = 'Không thể hủy dịch vụ';
-        }
-        $this->redirect(BASE_URL . '?act=admin-service-assignments');
-    }
-
-    /**
-     * Xóa gán dịch vụ
-     * Route: ?act=admin-service-assignment-delete&id=X
-     */
-    public function deleteServiceAssignment() {
-        $this->checkLogin();
-        
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            $_SESSION['error'] = 'ID không hợp lệ';
-            $this->redirect(BASE_URL . '?act=admin-service-assignments');
-        }
-
-        $result = $this->serviceAssignmentModel->deleteAssignment($id);
-        if ($result) {
-            $_SESSION['success'] = 'Xóa gán dịch vụ thành công!';
-        } else {
-            $_SESSION['error'] = 'Không thể xóa gán dịch vụ';
-        }
-        $this->redirect(BASE_URL . '?act=admin-service-assignments');
+        $this->redirect(BASE_URL . '?act=admin-categories-tags');
     }
 
     /* ==================== USER MANAGEMENT ==================== */

@@ -1,789 +1,796 @@
 <?php
-/**
- * Tour Detail Page - Trang chi tiết tour
- * Variables: $tour
- */
-
-// Helper function
-function safe_html($value) {
-    return htmlentities($value ?? '', ENT_QUOTES, 'UTF-8');
+// Check for active promotion
+$coKhuyenMai = false;
+$phantram = 0;
+if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
+    $tungay = $tour['khuyenmai_tungay'] ?? null;
+    $denngay = $tour['khuyenmai_denngay'] ?? null;
+    $today = date('Y-m-d');
+    
+    if (($tungay === null || $today >= $tungay) && ($denngay === null || $today <= $denngay)) {
+        $coKhuyenMai = true;
+        $phantram = (float)$tour['khuyenmai_phantram'];
+    }
 }
 ?>
 
 <style>
-.tour-detail-page {
-  max-width: 1200px;
+* { box-sizing: border-box; }
+
+.detail-container {
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 20px;
 }
 
-.page-header {
+.detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.page-title {
-  font-size: 28px;
+.detail-title {
+  font-size: 24px;
   font-weight: 700;
-  color: var(--text-dark);
+  color: #1f2937;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.page-title i {
-  color: var(--primary);
+.card-title i {
+  color: #3b82f6;
 }
 
-.action-buttons {
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #4b5563;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.info-group {
+  margin-bottom: 12px;
+}
+
+.info-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: 15px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.price-section {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.price-row {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.tour-image-section {
-  margin-bottom: 24px;
+.price-row:last-child { border-bottom: none; }
+
+.price-label {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.price-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.price-sale {
+  color: #ef4444;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.price-original {
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-size: 13px;
 }
 
 .tour-image {
   width: 100%;
-  max-width: 800px;
-  height: 400px;
+  height: 350px;
   object-fit: cover;
-  border-radius: 12px;
-  display: block;
-  margin: 0 auto;
+  border-radius: 8px;
 }
 
-.image-placeholder {
-  width: 100%;
-  height: 400px;
-  background: var(--bg-light);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-light);
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.quick-stats {
+.quick-links {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  margin-top: 16px;
 }
 
-.quick-stat {
+.quick-link {
   text-align: center;
   padding: 16px;
-  background: var(--bg-light);
-  border-radius: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+  border: 1px solid #e5e7eb;
 }
 
-.quick-stat-value {
+.quick-link:hover {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.quick-link i {
+  display: block;
   font-size: 24px;
-  font-weight: 700;
-  color: var(--primary);
-  margin: 0;
+  margin-bottom: 8px;
 }
 
-.quick-stat-label {
+.departure-table-wrap {
+  overflow-x: auto;
+}
+
+.departure-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.departure-table th {
+  background: #f9fafb;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.departure-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.status-active {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 12px;
-  color: var(--text-light);
-  margin: 4px 0 0 0;
-  text-transform: uppercase;
   font-weight: 600;
 }
 
-.info-section {
-  margin-bottom: 24px;
+.status-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.info-row {
+.service-grid {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
 }
 
-.info-row:last-child {
-  border-bottom: none;
+.service-item {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
 }
 
-.info-label {
+.service-name {
   font-weight: 600;
-  color: var(--text-dark);
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.service-provider {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.itinerary-day-card {
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.day-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  padding: 12px 16px;
+  color: white;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.info-label i {
-  width: 20px;
-  text-align: center;
-  color: var(--primary);
-}
-
-.info-value {
-  color: var(--text-dark);
-  line-height: 1.6;
-}
-
-.price-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.price-card {
-  background: var(--bg-light);
-  border-radius: 10px;
-  padding: 20px;
-  text-align: center;
-  border: 2px solid var(--border);
-  transition: all 0.2s;
-}
-
-.price-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-}
-
-.price-label {
-  font-size: 13px;
-  color: var(--text-light);
-  margin: 0 0 8px 0;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.price-value {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--primary);
-  margin: 0;
-}
-
-.price-unit {
-  font-size: 14px;
-  color: var(--text-light);
-  margin: 4px 0 0 0;
-}
-
-.badge-status {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.badge-status.active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.badge-status.inactive {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.content-box {
-  background: var(--bg-light);
-  padding: 20px;
-  border-radius: 10px;
-  margin-top: 12px;
+.day-content {
+  padding: 16px;
+  background: white;
   line-height: 1.8;
-  color: var(--text-dark);
+  color: #374151;
 }
 
-.content-box p {
+.day-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.day-content h3 {
+  color: #3b82f6;
+  font-size: 15px;
+  margin: 12px 0 8px 0;
+}
+
+.day-content p {
   margin-bottom: 12px;
 }
 
-.content-box ul,
-.content-box ol {
+.day-content ul, .day-content ol {
   margin-left: 20px;
   margin-bottom: 12px;
 }
 
-.empty-content {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-light);
-  font-style: italic;
+.content-scrollable {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
-.management-links {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin-top: 20px;
+.content-scrollable::-webkit-scrollbar {
+  width: 6px;
 }
 
-.management-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  background: var(--bg-white);
-  border: 1px solid var(--border);
+.content-scrollable::-webkit-scrollbar-track {
+  background: #f1f5f9;
   border-radius: 10px;
-  text-decoration: none;
-  color: var(--text-dark);
-  font-weight: 600;
-  transition: all 0.2s;
 }
 
-.management-link:hover {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+.content-scrollable::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 10px;
 }
 
-.management-link i {
-  font-size: 18px;
-}
-
-/* Departure Plans Section */
-.departure-plans-section {
-  margin-top: 24px;
-}
-
-.departure-plans-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.departure-plans-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.departure-plans-title i {
-  color: var(--primary);
-}
-
-.departure-plans-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
-
-.departure-plans-table th {
-  background: var(--bg-light);
-  padding: 12px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--text-dark);
-  border-bottom: 2px solid var(--border);
-}
-
-.departure-plans-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  color: var(--text-dark);
-}
-
-.departure-plans-table tbody tr:hover {
-  background: var(--bg-light);
-}
-
-.departure-plans-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.departure-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.departure-status-badge.active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.departure-status-badge.inactive {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.departure-action-btn {
-  padding: 4px 8px;
-  border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 2px;
-  transition: all 0.2s;
-}
-
-.departure-action-btn.edit {
-  background: #fef3c7;
-  color: #78350f;
-}
-
-.departure-action-btn.edit:hover {
-  background: #f59e0b;
-  color: white;
-}
-
-.departure-action-btn.delete {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.departure-action-btn.delete:hover {
-  background: #ef4444;
-  color: white;
-}
-
-.empty-departure-plans {
+.empty-state {
   text-align: center;
-  padding: 40px 20px;
-  color: var(--text-light);
+  padding: 40px;
+  color: #9ca3af;
 }
 
-.empty-departure-plans i {
-  font-size: 48px;
-  opacity: 0.3;
-  margin-bottom: 12px;
-}
-
-.empty-departure-plans p {
-  margin-bottom: 16px;
+@media (max-width: 768px) {
+  .grid-2, .quick-links {
+    grid-template-columns: 1fr;
+  }
+  
+  .service-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 
-<div class="tour-detail-page">
-  <!-- Page Header -->
-  <div class="page-header">
-    <h1 class="page-title">
+<div class="detail-container">
+  <!-- Header -->
+  <div class="detail-header">
+    <h1 class="detail-title">
       <i class="fas fa-map-marked-alt"></i>
-      Chi tiết Tour
+      <?= htmlspecialchars($tour['tengoi'] ?? 'Chi tiết tour') ?>
     </h1>
-    <div class="action-buttons">
+    <div class="actions">
       <a href="<?= BASE_URL ?>?act=admin-tour-edit&id=<?= $tour['id_goi'] ?>" class="btn btn-primary">
-        <i class="fas fa-edit"></i>
-        Chỉnh sửa
+        <i class="fas fa-edit"></i> Sửa
       </a>
       <a href="<?= BASE_URL ?>?act=admin-tours" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i>
-        Quay lại
+        <i class="fas fa-arrow-left"></i> Quay lại
       </a>
     </div>
   </div>
 
   <!-- Tour Image -->
-  <div class="card tour-image-section">
-    <div class="card-body" style="padding: 0;">
-      <?php if (!empty($tour['hinhanh'])): ?>
-        <img src="<?= BASE_URL ?>/<?= safe_html($tour['hinhanh']) ?>" 
-             alt="<?= safe_html($tour['tengoi']) ?>" 
-             class="tour-image">
+  <?php if (!empty($tour['hinhanh'])): ?>
+    <div class="card">
+      <img src="<?= BASE_URL . $tour['hinhanh'] ?>" alt="<?= htmlspecialchars($tour['tengoi'] ?? '') ?>" class="tour-image">
+    </div>
+  <?php endif; ?>
+
+  <!-- Basic Info & Price (Full Width) -->
+  <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fas fa-info-circle"></i> Thông tin & Giá tour
+          </div>
+        </div>
+        
+        <div class="grid-2">
+          <div>
+            <div class="info-group">
+              <div class="info-label">Mã tour</div>
+              <div class="info-value"><?= htmlspecialchars($tour['mato'] ?? 'N/A') ?></div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Nơi xuất phát</div>
+              <div class="info-value"><?= htmlspecialchars($tour['noixuatphat'] ?? 'N/A') ?></div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Số ngày</div>
+              <div class="info-value"><?= htmlspecialchars($tour['songay'] ?? 'N/A') ?></div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Vị trí</div>
+              <div class="info-value"><?= htmlspecialchars($tour['vitri'] ?? 'N/A') ?></div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Điểm đến</div>
+              <div class="info-value">
+                <?php
+                $diemDen = [];
+                if (!empty($tour['ten_tinh'])) {
+                  $diemDen[] = $tour['ten_tinh'];
+                }
+                if (!empty($tour['quocgia']) && $tour['quocgia'] !== 'Việt Nam') {
+                  $diemDen[] = $tour['quocgia'];
+                } elseif (isset($tour['nuocngoai']) && $tour['nuocngoai'] == 1) {
+                  $diemDen[] = 'Nước ngoài';
+                }
+                echo !empty($diemDen) ? htmlspecialchars(implode(' - ', $diemDen)) : 'N/A';
+                ?>
+              </div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Ngày đăng</div>
+              <div class="info-value">
+                <?= !empty($tour['ngaydang']) ? date('d/m/Y', strtotime($tour['ngaydang'])) : 'N/A' ?>
+              </div>
+            </div>
+            <?php if ($coKhuyenMai): ?>
+            <div class="info-group">
+              <div class="info-label">Khuyến mãi</div>
+              <div class="info-value" style="color: #ef4444; font-weight: 700;">
+                <i class="fas fa-tag"></i> Giảm <?= $phantram ?>%
+                <?php if (!empty($tour['khuyenmai_denngay'])): ?>
+                  <br><small style="font-weight: 400; color: #6b7280;">
+                    Đến: <?= date('d/m/Y', strtotime($tour['khuyenmai_denngay'])) ?>
+                  </small>
+                <?php endif; ?>
+              </div>
+            </div>
+            <?php endif; ?>
+          </div>
+          
+          <div class="price-section">
+            <div class="price-row">
+              <span class="price-label"><i class="fas fa-user"></i> Người lớn</span>
+              <span class="price-value">
+                <?php 
+                $giaNguoiLon = $tour['giagoi'] ?? 0;
+                if ($coKhuyenMai):
+                  $giaSauGiam = $giaNguoiLon * (100 - $phantram) / 100;
+                ?>
+                  <span class="price-sale"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
+                  <span class="price-original"><?= number_format($giaNguoiLon, 0, ',', '.') ?> đ</span>
+                <?php else: ?>
+                  <?= number_format($giaNguoiLon, 0, ',', '.') ?> đ
+                <?php endif; ?>
+              </span>
+            </div>
+            
+            <div class="price-row">
+              <span class="price-label"><i class="fas fa-child"></i> Trẻ em (6-11 tuổi)</span>
+              <span class="price-value">
+                <?php 
+                $giaTreEm = $tour['giatreem'] ?? 0;
+                if ($coKhuyenMai):
+                  $giaSauGiam = $giaTreEm * (100 - $phantram) / 100;
+                ?>
+                  <span class="price-sale"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
+                  <span class="price-original"><?= number_format($giaTreEm, 0, ',', '.') ?> đ</span>
+                <?php else: ?>
+                  <?= number_format($giaTreEm, 0, ',', '.') ?> đ
+                <?php endif; ?>
+              </span>
+            </div>
+            
+            <div class="price-row">
+              <span class="price-label"><i class="fas fa-baby"></i> Trẻ nhỏ (2-5 tuổi)</span>
+              <span class="price-value">
+                <?php 
+                $giaTreNho = $tour['giatrenho'] ?? 0;
+                if ($coKhuyenMai):
+                  $giaSauGiam = $giaTreNho * (100 - $phantram) / 100;
+                ?>
+                  <span class="price-sale"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
+                  <span class="price-original"><?= number_format($giaTreNho, 0, ',', '.') ?> đ</span>
+                <?php else: ?>
+                  <?= number_format($giaTreNho, 0, ',', '.') ?> đ
+                <?php endif; ?>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Management Links (Full Width) -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-cog"></i> Quản lý chi tiết tour
+      </div>
+    </div>
+    <div class="quick-links">
+      <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="quick-link">
+        <i class="fas fa-images"></i> Thư viện
+      </a>
+      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="quick-link">
+        <i class="fas fa-file-contract"></i> Chính sách
+      </a>
+      <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $tour['id_goi'] ?>" class="quick-link">
+        <i class="fas fa-tags"></i> Phân loại
+      </a>
+      <a href="<?= BASE_URL ?>?act=admin-departure-plans&tour_id=<?= $tour['id_goi'] ?>" class="quick-link">
+        <i class="fas fa-calendar-alt"></i> Lịch KH
+      </a>
+    </div>
+  </div>
+
+  <!-- Departure Plans -->
+  <?php if (!empty($departurePlans)): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-calendar-alt"></i> Lịch khởi hành
+      </div>
+      <a href="<?= BASE_URL ?>?act=admin-departure-plan-create&tour_id=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary">
+        <i class="fas fa-plus"></i> Thêm lịch
+      </a>
+    </div>
+    <div class="departure-table-wrap">
+      <table class="departure-table">
+        <thead>
+          <tr>
+            <th>Ngày giờ</th>
+            <th>Điểm tập trung</th>
+            <th>Số chỗ</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($departurePlans as $plan): ?>
+            <tr>
+              <td>
+                <?php 
+                $date = !empty($plan['ngay_khoi_hanh']) ? date('d/m/Y', strtotime($plan['ngay_khoi_hanh'])) : '';
+                $time = !empty($plan['gio_khoi_hanh']) ? date('H:i', strtotime($plan['gio_khoi_hanh'])) : '';
+                echo $date . ($time ? ' ' . $time : '');
+                ?>
+              </td>
+              <td><?= htmlspecialchars($plan['diem_tap_trung'] ?? 'N/A') ?></td>
+              <td><?= htmlspecialchars($plan['so_cho'] ?? $plan['so_cho_du_kien'] ?? 'N/A') ?></td>
+              <td>
+                <?php if ($plan['trang_thai'] == 1): ?>
+                  <span class="status-active">Hoạt động</span>
+                <?php else: ?>
+                  <span class="status-inactive">Tạm dừng</span>
+                <?php endif; ?>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <!-- Categories & Tags -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-tags"></i> Phân loại & Tags
+      </div>
+      <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary">
+        <i class="fas fa-edit"></i> Sửa
+      </a>
+    </div>
+    <div style="padding: 4px 0;">
+      <?php if (!empty($tourCategories)): ?>
+        <div style="margin-bottom: 12px;">
+          <strong style="font-size: 13px; color: #6b7280; display: block; margin-bottom: 8px;">Loại tour:</strong>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <?php foreach ($tourCategories as $cat): ?>
+              <span style="background: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 16px; font-size: 13px; font-weight: 600;">
+                <i class="fas fa-folder"></i> <?= htmlspecialchars($cat['ten_loai']) ?>
+              </span>
+            <?php endforeach; ?>
+          </div>
+        </div>
       <?php else: ?>
-        <div class="image-placeholder">
-          <i class="fas fa-image"></i>
+        <div style="margin-bottom: 12px;">
+          <strong style="font-size: 13px; color: #6b7280; display: block; margin-bottom: 8px;">Loại tour:</strong>
+          <div style="color: #9ca3af; font-style: italic; font-size: 13px;">Chưa chọn loại tour</div>
+        </div>
+      <?php endif; ?>
+      
+      <?php if (!empty($tourTags)): ?>
+        <div>
+          <strong style="font-size: 13px; color: #6b7280; display: block; margin-bottom: 8px;">Tags:</strong>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <?php foreach ($tourTags as $tag): ?>
+              <span style="background: #d1fae5; color: #065f46; padding: 6px 12px; border-radius: 16px; font-size: 13px; font-weight: 600;">
+                <i class="fas fa-hashtag"></i><?= htmlspecialchars($tag['ten_tag']) ?>
+              </span>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php else: ?>
+        <div>
+          <strong style="font-size: 13px; color: #6b7280; display: block; margin-bottom: 8px;">Tags:</strong>
+          <div style="color: #9ca3af; font-style: italic; font-size: 13px;">Chưa có tags</div>
         </div>
       <?php endif; ?>
     </div>
   </div>
 
-  <!-- Tour Information -->
-  <div>
-      <!-- Basic Information -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-info-circle"></i> Thông tin tour</h3>
-        </div>
-        <div class="card-body">
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-tag"></i>
-              Tên tour
-            </div>
-            <div class="info-value">
-              <strong style="font-size: 18px; color: var(--primary);">
-                <?= safe_html($tour['tengoi']) ?>
-              </strong>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-globe"></i>
-              Quốc gia
-            </div>
-            <div class="info-value">
-              <?= safe_html($tour['quocgia']) ?>
-              <?php if (!empty($tour['nuocngoai']) && $tour['nuocngoai'] == 1): ?>
-                <span class="badge badge-info" style="margin-left: 8px;">Tour nước ngoài</span>
-              <?php endif; ?>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-map-marker-alt"></i>
-              Tỉnh/Thành phố
-            </div>
-            <div class="info-value"><?= safe_html($tour['ten_tinh']) ?></div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-map-pin"></i>
-              Điểm xuất phát
-            </div>
-            <div class="info-value"><?= safe_html($tour['noixuatphat']) ?></div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-location-dot"></i>
-              Điểm đến
-            </div>
-            <div class="info-value"><?= safe_html($tour['vitri']) ?></div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-bus"></i>
-              Phương tiện
-            </div>
-            <div class="info-value"><?= safe_html($tour['phuongtien']) ?></div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-days"></i>
-              Số ngày
-            </div>
-            <div class="info-value">
-              <strong style="font-size: 18px; color: var(--primary);">
-                <?= safe_html($tour['songay']) ?> ngày
-              </strong>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-clock"></i>
-              Giờ đi
-            </div>
-            <div class="info-value"><?= safe_html($tour['giodi']) ?></div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-day"></i>
-              Ngày xuất phát
-            </div>
-            <div class="info-value">
-              <?= !empty($tour['ngayxuatphat']) ? date('d/m/Y', strtotime($tour['ngayxuatphat'])) : 'Chưa xác định' ?>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-check"></i>
-              Ngày về
-            </div>
-            <div class="info-value">
-              <?= !empty($tour['ngayve']) ? date('d/m/Y', strtotime($tour['ngayve'])) : 'Chưa xác định' ?>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-calendar-plus"></i>
-              Ngày đăng
-            </div>
-            <div class="info-value">
-              <?= !empty($tour['ngaydang']) ? date('d/m/Y H:i', strtotime($tour['ngaydang'])) : 'Chưa xác định' ?>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fas fa-toggle-on"></i>
-              Trạng thái
-            </div>
-            <div class="info-value">
-              <?php if (!empty($tour['trangthai']) && $tour['trangthai'] == 1): ?>
-                <span class="badge-status active">
-                  <i class="fas fa-check-circle"></i> Đang hiển thị
-                </span>
-              <?php else: ?>
-                <span class="badge-status inactive">
-                  <i class="fas fa-times-circle"></i> Đang ẩn
-                </span>
-              <?php endif; ?>
-            </div>
-          </div>
-
-          <!-- Departure Plans Section -->
-          <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h4 style="font-size: 16px; font-weight: 700; margin: 0; color: var(--text-dark);">
-                <i class="fas fa-calendar-alt" style="color: var(--primary);"></i> Lịch khởi hành
-              </h4>
-              <a href="<?= BASE_URL ?>?act=admin-departure-plan-create&id_tour=<?= $tour['id_goi'] ?>" 
-                 class="btn btn-primary" 
-                 style="padding: 6px 12px; font-size: 12px;">
-                <i class="fas fa-plus"></i> Thêm
-              </a>
-            </div>
-            
-            <?php if (!empty($departurePlans) && is_array($departurePlans)): ?>
-              <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                  <thead>
-                    <tr style="background: var(--bg-light); border-bottom: 2px solid var(--border);">
-                      <th style="padding: 10px; text-align: left; font-weight: 600;">Ngày/Giờ</th>
-                      <th style="padding: 10px; text-align: left; font-weight: 600;">Điểm tập trung</th>
-                      <th style="padding: 10px; text-align: center; font-weight: 600;">Số chỗ</th>
-                      <th style="padding: 10px; text-align: left; font-weight: 600;">Ghi chú</th>
-                      <th style="padding: 10px; text-align: center; font-weight: 600;">Trạng thái</th>
-                      <th style="padding: 10px; text-align: center; font-weight: 600;">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($departurePlans as $plan): 
-                      $ngay_khoi_hanh = $plan['ngay_khoi_hanh'] ?? '';
-                      $gio_khoi_hanh = $plan['gio_khoi_hanh'] ?? '';
-                      $diem_tap_trung = $plan['diem_tap_trung'] ?? '-';
-                      $so_cho_du_kien = $plan['so_cho_du_kien'] ?? null;
-                      $ghi_chu_van_hanh = $plan['ghi_chu_van_hanh'] ?? '';
-                      $trang_thai = $plan['trang_thai'] ?? 0;
-                      
-                      // Format ngày giờ
-                      $ngay_gio = '';
-                      if ($ngay_khoi_hanh) {
-                        $ngay_gio = date('d/m/Y', strtotime($ngay_khoi_hanh));
-                        if ($gio_khoi_hanh) {
-                          $ngay_gio .= ' ' . date('H:i', strtotime($gio_khoi_hanh));
-                        }
-                      }
-                    ?>
-                      <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 10px;">
-                          <strong><?= safe_html($ngay_gio ?: '-') ?></strong>
-                        </td>
-                        <td style="padding: 10px;"><?= safe_html($diem_tap_trung) ?></td>
-                        <td style="padding: 10px; text-align: center;">
-                          <?php if ($so_cho_du_kien): ?>
-                            <strong><?= number_format($so_cho_du_kien) ?></strong>
-                          <?php else: ?>
-                            <span style="color: var(--text-light);">-</span>
-                          <?php endif; ?>
-                        </td>
-                        <td style="padding: 10px;">
-                          <?php if ($ghi_chu_van_hanh): ?>
-                            <span title="<?= safe_html($ghi_chu_van_hanh) ?>">
-                              <?= mb_substr($ghi_chu_van_hanh, 0, 30) . (mb_strlen($ghi_chu_van_hanh) > 30 ? '...' : '') ?>
-                            </span>
-                          <?php else: ?>
-                            <span style="color: var(--text-light);">-</span>
-                          <?php endif; ?>
-                        </td>
-                        <td style="padding: 10px; text-align: center;">
-                          <?php if ($trang_thai == 1): ?>
-                            <span class="badge-status active" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #d1fae5; color: #065f46;">
-                              <i class="fas fa-check-circle"></i> Hoạt động
-                            </span>
-                          <?php else: ?>
-                            <span class="badge-status inactive" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #fee2e2; color: #991b1b;">
-                              <i class="fas fa-ban"></i> Tạm dừng
-                            </span>
-                          <?php endif; ?>
-                        </td>
-                        <td style="padding: 10px; text-align: center;">
-                          <a href="<?= BASE_URL ?>?act=admin-departure-plan-edit&id=<?= $plan['id'] ?>&tour_id=<?= $tour['id_goi'] ?>" 
-                             title="Sửa"
-                             style="padding: 4px 8px; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #fef3c7; color: #78350f; margin: 2px;">
-                            <i class="fas fa-edit"></i>
-                          </a>
-                          <a href="<?= BASE_URL ?>?act=admin-departure-plan-delete&id=<?= $plan['id'] ?>&tour_id=<?= $tour['id_goi'] ?>" 
-                             title="Xóa"
-                             onclick="return confirm('Bạn có chắc muốn xóa lịch khởi hành này?')"
-                             style="padding: 4px 8px; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: #fee2e2; color: #991b1b; margin: 2px;">
-                            <i class="fas fa-trash"></i>
-                          </a>
-                        </td>
-                      </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-              </div>
-            <?php else: ?>
-              <div style="text-align: center; padding: 30px 20px; color: var(--text-light);">
-                <i class="fas fa-calendar-times" style="font-size: 36px; opacity: 0.3; margin-bottom: 8px;"></i>
-                <p style="margin-bottom: 12px; font-size: 14px;">Chưa có lịch khởi hành</p>
-                <a href="<?= BASE_URL ?>?act=admin-departure-plan-create&id_tour=<?= $tour['id_goi'] ?>" 
-                   class="btn btn-primary" 
-                   style="padding: 8px 16px; font-size: 13px;">
-                  <i class="fas fa-plus"></i> Tạo lịch khởi hành
-                </a>
-              </div>
-            <?php endif; ?>
-          </div>
-
-          <!-- Management Links in Info Card -->
-          <div style="margin-top: 24px; padding-top: 24px; border-top: 2px solid var(--border);">
-            <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--text-dark);">
-              <i class="fas fa-cog" style="color: var(--primary);"></i> Quản lý chi tiết
-            </h4>
-            <div class="management-links">
-              <a href="<?= BASE_URL ?>?act=tour-lichtrinh&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-                <i class="fas fa-route"></i>
-                Lịch trình
-              </a>
-              
-              <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-                <i class="fas fa-images"></i>
-                Thư viện ảnh
-              </a>
-              
-              <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-                <i class="fas fa-file-contract"></i>
-                Chính sách
-              </a>
-              
-              <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $tour['id_goi'] ?>" class="management-link">
-                <i class="fas fa-tags"></i>
-                Phân loại
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pricing Information -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-dollar-sign"></i> Bảng giá</h3>
-        </div>
-        <div class="card-body">
-          <?php if (!empty($tour['khuyenmai']) && $tour['khuyenmai'] > 0): ?>
-            <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-              <i class="fas fa-gift" style="color: #f59e0b; font-size: 20px;"></i>
-              <span style="color: #78350f; font-weight: 600;">
-                Đang có khuyến mãi: <?= safe_html($tour['khuyenmai']) ?>%
-              </span>
-            </div>
-          <?php endif; ?>
-
-          <div class="price-grid">
-            <div class="price-card">
-              <p class="price-label">
-                <i class="fas fa-user"></i> Người lớn
-              </p>
-              <h3 class="price-value"><?= number_format($tour['giagoi'] ?? 0, 0, ',', '.') ?></h3>
-              <p class="price-unit">VNĐ</p>
-            </div>
-
-            <div class="price-card">
-              <p class="price-label">
-                <i class="fas fa-child"></i> Trẻ em
-              </p>
-              <h3 class="price-value"><?= number_format($tour['giatreem'] ?? 0, 0, ',', '.') ?></h3>
-              <p class="price-unit">VNĐ</p>
-            </div>
-
-            <div class="price-card">
-              <p class="price-label">
-                <i class="fas fa-baby"></i> Trẻ nhỏ
-              </p>
-              <h3 class="price-value"><?= number_format($tour['giatrenho'] ?? 0, 0, ',', '.') ?></h3>
-              <p class="price-unit">VNĐ</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tour Details -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-file-alt"></i> Chi tiết gói tour</h3>
-        </div>
-        <div class="card-body">
-          <?php if (!empty($tour['chitietgoi'])): ?>
-            <div class="content-box">
-              <?= $tour['chitietgoi'] ?>
-            </div>
-          <?php else: ?>
-            <div class="empty-content">
-              <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-              <p>Chưa có chi tiết</p>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <!-- Schedule & Program Details (Merged) -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-route"></i> Lịch trình & Chương trình tour</h3>
-        </div>
-        <div class="card-body">
-          <?php if (!empty($tour['chuongtrinh'])): ?>
-            <div class="content-box">
-              <?= $tour['chuongtrinh'] ?>
-            </div>
-          <?php else: ?>
-            <div class="empty-content">
-              <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-              <p>Chưa có lịch trình & chương trình</p>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div class="card info-section">
-        <div class="card-header">
-          <h3><i class="fas fa-exclamation-triangle"></i> Lưu ý</h3>
-        </div>
-        <div class="card-body">
-          <?php if (!empty($tour['luuy'])): ?>
-            <div class="content-box">
-              <?= $tour['luuy'] ?>
-            </div>
-          <?php else: ?>
-            <div class="empty-content">
-              <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-              <p>Chưa có lưu ý</p>
-            </div>
-          <?php endif; ?>
-        </div>
+  <!-- Services -->
+  <?php if (!empty($tourServices)): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-concierge-bell"></i> Dịch vụ
       </div>
     </div>
+    <div class="service-grid">
+      <?php foreach ($tourServices as $service): ?>
+        <div class="service-item">
+          <div class="service-name">
+            <i class="fas fa-check-circle"></i>
+            <?= htmlspecialchars($service['ten_dich_vu'] ?? 'N/A') ?>
+          </div>
+          <?php if (!empty($service['nha_cung_cap'])): ?>
+            <div class="service-provider">
+              <?= htmlspecialchars($service['nha_cung_cap']) ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
   </div>
+  <?php endif; ?>
 
+  <!-- Itinerary -->
+  <?php if (!empty($tour['chuongtrinh'])): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-route"></i> Lịch trình tour
+      </div>
+    </div>
+    <?php
+    // Parse lịch trình theo ngày - tách thành các ngày riêng biệt
+    $chuongtrinh = html_entity_decode($tour['chuongtrinh'], ENT_QUOTES, 'UTF-8');
+    $days = [];
+    
+    if (!empty($chuongtrinh)) {
+      // Tìm tất cả các vị trí có "NGÀY X" (không phân biệt format)
+      preg_match_all('/(?:NGÀY|Day|Ngày)\s*(\d+)(?:\s*:\s*([^<\n]+))?/i', $chuongtrinh, $matches, PREG_OFFSET_CAPTURE);
+      
+      if (!empty($matches[0])) {
+        $markers = [];
+        
+        // Lấy tất cả các marker
+        for ($i = 0; $i < count($matches[0]); $i++) {
+          $dayNum = (int)$matches[1][$i][0];
+          $pos = $matches[0][$i][1];
+          $fullMatch = $matches[0][$i][0];
+          $title = isset($matches[2][$i]) ? trim(strip_tags($matches[2][$i][0])) : '';
+          
+          // Tìm vị trí kết thúc của tag HTML chứa marker (nếu có)
+          $afterText = substr($chuongtrinh, $pos, 500);
+          $endPos = $pos + strlen($fullMatch);
+          
+          // Tìm tag đóng sau marker
+          if (preg_match('/<\/[^>]+>/', $afterText, $closeTag, PREG_OFFSET_CAPTURE)) {
+            $tagEnd = $pos + $closeTag[0][1] + strlen($closeTag[0][0]);
+            if ($tagEnd > $endPos) {
+              $endPos = $tagEnd;
+            }
+          }
+          
+          // Chỉ giữ marker đầu tiên của mỗi ngày
+          if (!isset($markers[$dayNum]) || $markers[$dayNum]['pos'] > $pos) {
+            $markers[$dayNum] = [
+              'day' => $dayNum,
+              'pos' => $pos,
+              'end_pos' => $endPos,
+              'title' => $title
+            ];
+          }
+        }
+        
+        // Sắp xếp theo vị trí
+        uasort($markers, function($a, $b) {
+          return $a['pos'] - $b['pos'];
+        });
+        
+        // Chia nội dung theo các marker
+        $markerList = array_values($markers);
+        
+        for ($i = 0; $i < count($markerList); $i++) {
+          $marker = $markerList[$i];
+          $dayNum = $marker['day'];
+          
+          // Vị trí bắt đầu nội dung (sau marker)
+          $contentStart = $marker['end_pos'];
+          
+          // Vị trí kết thúc (trước marker tiếp theo hoặc cuối chuỗi)
+          $contentEnd = ($i < count($markerList) - 1) 
+            ? $markerList[$i + 1]['pos'] 
+            : strlen($chuongtrinh);
+          
+          // Lấy nội dung của ngày này
+          $dayContent = substr($chuongtrinh, $contentStart, $contentEnd - $contentStart);
+          $dayContent = trim($dayContent);
+          
+          // Loại bỏ header "NGÀY X" khỏi content nếu còn sót
+          $dayContent = preg_replace('/<[^>]*>\s*(?:NGÀY|Day|Ngày)\s*\d+[^<]*\s*<\/[^>]*>/is', '', $dayContent);
+          $dayContent = trim($dayContent);
+          
+          // Tạo title
+          $dayTitle = 'Ngày ' . $dayNum;
+          if (!empty($marker['title'])) {
+            $dayTitle .= ': ' . htmlspecialchars($marker['title']);
+          }
+          
+          // Thêm vào mảng days
+          $days[$dayNum] = [
+            'title' => $dayTitle,
+            'content' => $dayContent
+          ];
+        }
+      }
+    }
+    
+    // Nếu không tìm thấy marker, hiển thị toàn bộ trong 1 ngày
+    if (empty($days)) {
+      $days[1] = [
+        'title' => 'Ngày 1',
+        'content' => $chuongtrinh
+      ];
+    }
+    
+    // Sắp xếp theo số ngày
+    ksort($days);
+    
+    // Hiển thị các ngày - mỗi ngày một card riêng
+    ?>
+    <div class="content-scrollable">
+      <?php foreach ($days as $dayNum => $day): ?>
+        <div class="itinerary-day-card">
+          <div class="day-header">
+            <div class="day-number">
+              <i class="fas fa-calendar-day"></i>
+              <?= $day['title'] ?>
+            </div>
+          </div>
+          <div class="day-content">
+            <?= $day['content'] ?>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
+
+  <!-- Notes -->
+  <?php if (!empty($tour['luuy'])): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-exclamation-triangle"></i> Lưu ý
+      </div>
+    </div>
+    <div class="content-scrollable">
+      <?= html_entity_decode($tour['luuy']) ?>
+    </div>
+  </div>
+  <?php endif; ?>
 </div>

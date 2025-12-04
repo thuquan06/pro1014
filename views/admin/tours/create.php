@@ -54,6 +54,35 @@ function getError($field) {
   max-width: 1200px;
 }
 
+/* Day Builder Styles */
+.day-item {
+  background: #f9fafb;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: all 0.2s;
+}
+
+.day-item:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.day-title-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.day-title-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 .form-card {
   background: white;
   border: 1px solid var(--border);
@@ -528,18 +557,20 @@ function getError($field) {
       </div>
     </div>
 
-    <div class="form-group-modern">
-      <label for="tuyendiem">Tuyến điểm <span class="required">*</span></label>
-      <input type="text" 
-             name="tuyendiem" 
-             id="tuyendiem" 
-             value="<?= old('tuyendiem') ?>"
-             class="<?= hasError('tuyendiem') ? 'error-field' : '' ?>"
-             required 
-             placeholder="Ví dụ: Hà Nội - Hạ Long - Cát Bà">
-      <?php if (hasError('tuyendiem')): ?>
-        <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('tuyendiem') ?></span>
-      <?php endif; ?>
+    <div class="form-row">
+      <div class="form-group-modern">
+        <label for="songay">Số ngày <span class="required">*</span></label>
+        <input type="text" 
+               name="songay" 
+               id="songay" 
+               value="<?= old('songay') ?>"
+               class="<?= hasError('songay') ? 'error-field' : '' ?>"
+               required 
+               placeholder="Ví dụ: 3 ngày 2 đêm">
+        <?php if (hasError('songay')): ?>
+          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('songay') ?></span>
+        <?php endif; ?>
+      </div>
     </div>
   </div>
 
@@ -622,30 +653,99 @@ function getError($field) {
     </div>
   </div>
 
-  <!-- Card 4: Nội dung tour -->
+  <!-- Card 4: Dịch vụ -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-concierge-bell"></i>
+      <h3>Dịch vụ (Tùy chọn)</h3>
+    </div>
+    <div class="form-group-modern">
+      <label>Chọn dịch vụ cho tour</label>
+      <p style="font-size: 13px; color: var(--text-light); margin-bottom: 16px;">
+        Chọn các dịch vụ sẽ được sử dụng trong tour này. Có thể chọn nhiều dịch vụ.
+      </p>
+      
+      <?php if (!empty($serviceTypes)): ?>
+        <?php foreach ($serviceTypes as $typeKey => $typeName): ?>
+          <?php 
+          $servicesByType = array_filter($services ?? [], function($s) use ($typeKey) {
+            return ($s['loai_dich_vu'] ?? '') === $typeKey;
+          });
+          ?>
+          <?php if (!empty($servicesByType)): ?>
+            <div style="margin-bottom: 24px;">
+              <h4 style="font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+                <i class="fas fa-tag"></i> <?= htmlspecialchars($typeName) ?>
+              </h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
+                <?php foreach ($servicesByType as $service): ?>
+                  <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--bg-light); border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent;" 
+                         onmouseover="this.style.borderColor='var(--primary)'; this.style.background='#f0f7ff';" 
+                         onmouseout="this.style.borderColor='transparent'; this.style.background='var(--bg-light)';">
+                    <input type="checkbox" 
+                           name="dich_vu[]" 
+                           value="<?= $service['id'] ?>" 
+                           style="width: 18px; height: 18px; cursor: pointer;"
+                           <?= (isset($oldData['dich_vu']) && in_array($service['id'], $oldData['dich_vu'])) ? 'checked' : '' ?>>
+                    <div style="flex: 1;">
+                      <div style="font-weight: 600; font-size: 14px; color: var(--text-dark);">
+                        <?= htmlspecialchars($service['ten_dich_vu'] ?? '') ?>
+                      </div>
+                      <?php if (!empty($service['nha_cung_cap'])): ?>
+                        <div style="font-size: 12px; color: var(--text-light); margin-top: 2px;">
+                          <i class="fas fa-building"></i> <?= htmlspecialchars($service['nha_cung_cap']) ?>
+                        </div>
+                      <?php endif; ?>
+                      <?php if (!empty($service['gia'])): ?>
+                        <div style="font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px;">
+                          <?= number_format($service['gia'], 0, ',', '.') ?> đ
+                          <?php if (!empty($service['don_vi'])): ?>
+                            / <?= htmlspecialchars($service['don_vi']) ?>
+                          <?php endif; ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <div style="padding: 20px; text-align: center; color: var(--text-light); background: var(--bg-light); border-radius: 8px;">
+          <i class="fas fa-info-circle" style="font-size: 24px; margin-bottom: 8px;"></i>
+          <p>Chưa có dịch vụ nào. <a href="<?= BASE_URL ?>?act=admin-service-create" style="color: var(--primary);">Tạo dịch vụ mới</a></p>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- Card 5: Nội dung tour -->
   <div class="form-card">
     <div class="card-header">
       <i class="fas fa-file-alt"></i>
       <h3>Nội dung tour</h3>
     </div>
 
-    <div class="form-group-modern" style="margin-bottom: 24px;">
-      <label for="packagedetails">Chi tiết tour <span class="required">*</span></label>
-      <textarea class="form-control <?= hasError('chitietgoi') ? 'error-field' : '' ?>" 
-                name="chitietgoi" 
-                id="packagedetails" 
-                required><?= old('chitietgoi') ?></textarea>
-      <?php if (hasError('chitietgoi')): ?>
-        <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('chitietgoi') ?></span>
-      <?php endif; ?>
-    </div>
 
     <div class="form-group-modern" style="margin-bottom: 24px;">
-      <label for="packagedetails1">Chương trình tour <span class="required">*</span></label>
-      <textarea class="form-control <?= hasError('chuongtrinh') ? 'error-field' : '' ?>" 
-                name="chuongtrinh" 
-                id="packagedetails1" 
-                required><?= old('chuongtrinh') ?></textarea>
+      <label>Lịch trình tour <span class="required">*</span></label>
+      
+      <!-- Day Builder Interface -->
+      <div id="itinerary-builder" style="margin-bottom: 16px;">
+        <div style="margin-bottom: 16px;">
+          <button type="button" id="add-day-btn" class="btn btn-primary" style="padding: 10px 20px;">
+            <i class="fas fa-plus"></i> Thêm ngày
+          </button>
+        </div>
+        <div id="days-container">
+          <!-- Days will be added here -->
+        </div>
+      </div>
+      
+      <!-- Hidden textarea để lưu HTML cuối cùng -->
+      <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display: none;" required><?= old('chuongtrinh') ?></textarea>
+      
       <?php if (hasError('chuongtrinh')): ?>
         <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('chuongtrinh') ?></span>
       <?php endif; ?>
@@ -663,96 +763,44 @@ function getError($field) {
     </div>
   </div>
 
-  <!-- Card 5: Thời gian & Lịch trình -->
+  <!-- Card 5: Phân loại & Tags -->
   <div class="form-card">
     <div class="card-header">
-      <i class="fas fa-calendar-alt"></i>
-      <h3>Thời gian & Lịch trình</h3>
+      <i class="fas fa-tags"></i>
+      <h3>Phân loại & Tags</h3>
     </div>
 
     <div class="form-row">
       <div class="form-group-modern">
-        <label for="songay">Số ngày <span class="required">*</span></label>
-        <input type="number" 
-               name="songay" 
-               id="songay" 
-               value="<?= old('songay') ?>"
-               class="<?= hasError('songay') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: 3">
-        <?php if (hasError('songay')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('songay') ?></span>
-        <?php endif; ?>
+        <label>Loại tour</label>
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-light);">
+          <?php if (!empty($categories)): ?>
+            <?php foreach ($categories as $cat): ?>
+              <label style="display: block; padding: 8px; margin: 4px 0; background: white; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                <input type="checkbox" name="loai_ids[]" value="<?= $cat['id'] ?>" style="margin-right: 8px;">
+                <i class="fas fa-folder"></i> <?= htmlspecialchars($cat['ten_loai']) ?>
+              </label>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p style="color: var(--text-light); text-align: center; padding: 20px;">Chưa có loại tour nào</p>
+          <?php endif; ?>
+        </div>
       </div>
 
       <div class="form-group-modern">
-        <label for="phuongtien">Phương tiện <span class="required">*</span></label>
-        <input type="text" 
-               name="phuongtien" 
-               id="phuongtien" 
-               value="<?= old('phuongtien') ?>"
-               class="<?= hasError('phuongtien') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: Xe khách, Máy bay">
-        <?php if (hasError('phuongtien')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('phuongtien') ?></span>
-        <?php endif; ?>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="socho">Số chỗ <span class="required">*</span></label>
-        <input type="number" 
-               name="socho" 
-               id="socho" 
-               value="<?= old('socho') ?>"
-               class="<?= hasError('socho') ? 'error-field' : '' ?>"
-               required 
-               min="1"
-               placeholder="Ví dụ: 30">
-        <?php if (hasError('socho')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('socho') ?></span>
-        <?php endif; ?>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group-modern">
-        <label for="ngayxuatphat">Ngày xuất phát <span class="required">*</span></label>
-        <input type="date" 
-               name="ngayxuatphat" 
-               id="ngayxuatphat" 
-               value="<?= old('ngayxuatphat') ?>"
-               class="<?= hasError('ngayxuatphat') ? 'error-field' : '' ?>"
-               required>
-        <?php if (hasError('ngayxuatphat')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('ngayxuatphat') ?></span>
-        <?php endif; ?>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="giodi">Giờ xuất phát <span class="required">*</span></label>
-        <input type="time" 
-               name="giodi" 
-               id="giodi" 
-               value="<?= old('giodi') ?>"
-               class="<?= hasError('giodi') ? 'error-field' : '' ?>"
-               required>
-        <?php if (hasError('giodi')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('giodi') ?></span>
-        <?php endif; ?>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="ngayve">Ngày về <span class="required">*</span></label>
-        <input type="date" 
-               name="ngayve" 
-               id="ngayve" 
-               value="<?= old('ngayve') ?>"
-               class="<?= hasError('ngayve') ? 'error-field' : '' ?>"
-               required>
-        <?php if (hasError('ngayve')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('ngayve') ?></span>
-        <?php endif; ?>
+        <label>Tags</label>
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-light);">
+          <?php if (!empty($tags)): ?>
+            <?php foreach ($tags as $tag): ?>
+              <label style="display: block; padding: 8px; margin: 4px 0; background: white; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                <input type="checkbox" name="tag_ids[]" value="<?= $tag['id'] ?>" style="margin-right: 8px;">
+                <i class="fas fa-hashtag"></i><?= htmlspecialchars($tag['ten_tag']) ?>
+              </label>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <p style="color: var(--text-light); text-align: center; padding: 20px;">Chưa có tag nào</p>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
   </div>
@@ -809,59 +857,162 @@ const ckConfig = {
     height: 350
 };
 
-// Khởi tạo CKEditor và giữ lại giá trị nếu có lỗi
-var editor1 = null;
-var editor2 = null;
-var editor3 = null;
+// Itinerary Day Builder
+let dayCounter = 0;
+let dayEditors = {};
 
-// Khởi tạo CKEditor
-CKEDITOR.on('instanceReady', function(ev) {
-    var editor = ev.editor;
+// CKConfig cho day editors (nhỏ hơn một chút)
+const dayEditorConfig = {
+    height: 300,
+    filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
+    filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
+    filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
+    filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
+};
+
+// Hàm thêm ngày mới
+function addDay(dayTitle = '', dayContent = '') {
+    dayCounter++;
+    const dayId = 'day_' + dayCounter;
+    const editorId = 'day_editor_' + dayCounter;
     
-    if (editor.name === 'packagedetails') {
-        editor1 = editor;
-    } else if (editor.name === 'packagedetails1') {
-        editor2 = editor;
-    } else if (editor.name === 'packagedetails2') {
-        editor3 = editor;
+    const dayHtml = `
+        <div class="day-item" id="${dayId}" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--border); border-radius: 8px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: var(--primary); font-size: 16px;">
+                    <i class="fas fa-calendar-day"></i> Ngày ${dayCounter}
+                </h4>
+                <button type="button" onclick="removeDay(${dayCounter})" class="btn btn-sm" style="background: #ef4444; color: white; padding: 6px 12px;">
+                    <i class="fas fa-times"></i> Xóa
+                </button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Tiêu đề ngày (tùy chọn)</label>
+                <input type="text" class="day-title-input" data-day="${dayCounter}" placeholder="Ví dụ: Khởi hành, Tham quan thành phố..." 
+                       value="${dayTitle.replace(/"/g, '&quot;')}"
+                       style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Nội dung</label>
+                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;">${dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('days-container').insertAdjacentHTML('beforeend', dayHtml);
+    
+    // Khởi tạo CKEditor cho ngày này
+    setTimeout(() => {
+        dayEditors[dayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
+        if (dayContent) {
+            dayEditors[dayCounter].on('instanceReady', function() {
+                this.setData(dayContent);
+            });
+        }
+    }, 200);
+}
+
+// Hàm xóa ngày
+function removeDay(dayNum) {
+    if (confirm('Bạn có chắc chắn muốn xóa ngày này?')) {
+        const dayId = 'day_' + dayNum;
+        const dayElement = document.getElementById(dayId);
+        
+        if (dayElement) {
+            // Xóa CKEditor instance
+            if (dayEditors[dayNum]) {
+                dayEditors[dayNum].destroy();
+                delete dayEditors[dayNum];
+            }
+            
+            dayElement.remove();
+            updateDayNumbers();
+        }
     }
-    
-    // Giữ lại giá trị từ oldData nếu có lỗi
-    <?php if (!empty($oldData)): ?>
-    setTimeout(function() {
-        <?php if (!empty($oldData['chitietgoi'])): ?>
-        if (editor.name === 'packagedetails') {
-            editor.setData(<?= json_encode($oldData['chitietgoi'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>);
-        }
-        <?php endif; ?>
-        
-        <?php if (!empty($oldData['chuongtrinh'])): ?>
-        if (editor.name === 'packagedetails1') {
-            editor.setData(<?= json_encode($oldData['chuongtrinh'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>);
-        }
-        <?php endif; ?>
-        
-        <?php if (!empty($oldData['luuy'])): ?>
-        if (editor.name === 'packagedetails2') {
-            editor.setData(<?= json_encode($oldData['luuy'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>);
-        }
-        <?php endif; ?>
-    }, 100);
-    <?php endif; ?>
-});
+}
 
-// Khởi tạo CKEditor sau khi instance ready handler đã được đăng ký
-CKEDITOR.replace('packagedetails', ckConfig);
-CKEDITOR.replace('packagedetails1', ckConfig);
+// Cập nhật số ngày sau khi xóa
+function updateDayNumbers() {
+    const dayItems = document.querySelectorAll('.day-item');
+    dayItems.forEach((item, index) => {
+        const newDayNum = index + 1;
+        const dayNumAttr = item.getAttribute('id').replace('day_', '');
+        const titleInput = item.querySelector('.day-title-input');
+        const contentTextarea = item.querySelector('.day-content-editor');
+        const header = item.querySelector('h4');
+        
+        if (header) {
+            header.innerHTML = `<i class="fas fa-calendar-day"></i> Ngày ${newDayNum}`;
+        }
+        
+        if (titleInput) {
+            titleInput.dataset.day = newDayNum;
+        }
+        
+        if (contentTextarea) {
+            contentTextarea.dataset.day = newDayNum;
+        }
+        
+        // Cập nhật onclick của nút xóa
+        const removeBtn = item.querySelector('button');
+        if (removeBtn) {
+            removeBtn.setAttribute('onclick', `removeDay(${newDayNum})`);
+        }
+    });
+    dayCounter = dayItems.length;
+}
+
+// Hàm build HTML từ các ngày
+function buildItineraryHTML() {
+    let html = '';
+    const dayItems = document.querySelectorAll('.day-item');
+    
+    dayItems.forEach((item, index) => {
+        const dayNum = index + 1;
+        const titleInput = item.querySelector('.day-title-input');
+        const contentTextarea = item.querySelector('.day-content-editor');
+        const dayNumAttr = contentTextarea ? parseInt(contentTextarea.dataset.day) : dayNum;
+        
+        const title = titleInput ? titleInput.value.trim() : '';
+        let content = '';
+        
+        // Lấy nội dung từ CKEditor
+        if (dayEditors[dayNumAttr]) {
+            content = dayEditors[dayNumAttr].getData();
+        } else if (contentTextarea) {
+            content = contentTextarea.value;
+        }
+        
+        if (content.trim()) {
+            let dayHeader = '';
+            if (title) {
+                dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
+            } else {
+                dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
+            }
+            
+            html += dayHeader + content;
+        }
+    });
+    
+    return html;
+}
+
+// Khởi tạo CKEditor cho "Lưu ý"
 CKEDITOR.replace('packagedetails2', ckConfig);
 
-// Cập nhật textarea trước khi submit form để đảm bảo dữ liệu không bị mất
+// Xử lý khi submit form
 function updateCKEditorBeforeSubmit() {
     // Cập nhật tất cả editor instances
     for (var instance in CKEDITOR.instances) {
         CKEDITOR.instances[instance].updateElement();
     }
-    return true; // Cho phép form submit
+    
+    // Build itinerary HTML từ các ngày
+    const itineraryHTML = buildItineraryHTML();
+    document.getElementById('chuongtrinh-hidden').value = itineraryHTML;
+    
+    return true;
 }
 
 // Toggle between domestic and international tour fields
@@ -995,5 +1146,96 @@ document.addEventListener('DOMContentLoaded', function() {
         firstError.focus();
     }
     <?php endif; ?>
+    
+    // Itinerary Builder - Thêm ngày
+    const addDayBtn = document.getElementById('add-day-btn');
+    if (addDayBtn) {
+        addDayBtn.addEventListener('click', function() {
+            addDay();
+        });
+    }
+    
+    // Load dữ liệu cũ nếu có (khi có lỗi validation)
+    <?php if (!empty($oldData['chuongtrinh'])): ?>
+    const existingItinerary = <?= json_encode($oldData['chuongtrinh'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
+    if (existingItinerary && existingItinerary.trim()) {
+        parseAndLoadExistingItinerary(existingItinerary);
+    }
+    <?php endif; ?>
+    
+    // Nếu không có dữ liệu cũ, thêm 1 ngày mặc định
+    const daysContainer = document.getElementById('days-container');
+    if (daysContainer && daysContainer.children.length === 0) {
+        addDay();
+    }
 });
+
+// Hàm parse và load itinerary cũ
+function parseAndLoadExistingItinerary(html) {
+    if (!html || !html.trim()) return;
+    
+    // Tìm tất cả các marker "NGÀY X"
+    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
+    const daySections = [];
+    let match;
+    let lastIndex = 0;
+    
+    while ((match = regex.exec(html)) !== null) {
+        const dayNum = parseInt(match[1]);
+        const title = match[2] ? match[2].trim() : '';
+        const startPos = match.index;
+        
+        // Lấy nội dung của ngày này (từ sau heading đến heading tiếp theo)
+        const nextMatch = html.substring(startPos + match[0].length).match(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*\d+/i);
+        const endPos = nextMatch ? startPos + match[0].length + nextMatch.index : html.length;
+        const content = html.substring(startPos + match[0].length, endPos).trim();
+        
+        daySections.push({
+            day: dayNum,
+            title: title,
+            content: content
+        });
+        
+        lastIndex = endPos;
+    }
+    
+    // Nếu không tìm thấy marker, thử tìm trong text thuần
+    if (daySections.length === 0) {
+        const textRegex = /(?:NGÀY|Day|Ngày)\s*(\d+)(?::\s*([^\n<]+))?/gi;
+        let textMatch;
+        while ((textMatch = textRegex.exec(html)) !== null) {
+            const dayNum = parseInt(textMatch[1]);
+            const title = textMatch[2] ? textMatch[2].trim() : '';
+            const startPos = textMatch.index;
+            
+            const nextTextMatch = html.substring(startPos + textMatch[0].length).match(/(?:NGÀY|Day|Ngày)\s*\d+/i);
+            const endPos = nextTextMatch ? startPos + textMatch[0].length + nextTextMatch.index : html.length;
+            const content = html.substring(startPos + textMatch[0].length, endPos).trim();
+            
+            daySections.push({
+                day: dayNum,
+                title: title,
+                content: content
+            });
+        }
+    }
+    
+    // Nếu vẫn không tìm thấy, thêm toàn bộ nội dung vào ngày 1
+    if (daySections.length === 0) {
+        daySections.push({
+            day: 1,
+            title: '',
+            content: html
+        });
+    }
+    
+    // Sắp xếp và load các ngày
+    daySections.sort((a, b) => a.day - b.day);
+    
+    setTimeout(() => {
+        daySections.forEach(section => {
+            addDay(section.title, section.content);
+        });
+    }, 500);
+}
 </script>

@@ -12,171 +12,9 @@ class TourChiTietController
         $this->model = new TourChiTietModel();
     }
     
-    // ==================== LỊCH TRÌNH ====================
     
-    /**
-     * Trang quản lý lịch trình
-     */
-    public function danhSachLichTrinh() {
-    $idGoi = $_GET['id_goi'] ?? 0;
     
-    if (!$idGoi) {
-        $_SESSION['error'] = 'Không tìm thấy tour!';
-        header('Location: ?act=admin-tours');
-        exit;
-    }
     
-    // Lấy lịch trình của tour hiện tại
-    $lichtrinh = $this->model->layLichTrinh($idGoi);
-    
-    // ✨ THÊM DÒNG NÀY: Lấy tất cả tour để hiển thị dropdown
-    $allTours = $this->model->layTatCaTour();
-    
-    require_once './views/admin/tours/lichtrinh/index.php';
-}
-    
-    /**
-     * Form thêm lịch trình
-     */
-    public function themLichTrinh() {
-        $idGoi = $_GET['id_goi'] ?? 0;
-        
-        if (!$idGoi) {
-            $_SESSION['error'] = 'Không tìm thấy tour!';
-            header('Location: ?act=admin-tours');
-            exit;
-        }
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $data = [
-            'id_goi'     => $idGoi,
-            'ngay_thu'   => $_POST['ngay_thu'],
-            'tieude'     => trim($_POST['tieude']),
-            'mota'       => trim($_POST['mota']),
-            'diemden'    => trim($_POST['diemden'] ?? ''),      // ← THÊM
-            'thoiluong'  => trim($_POST['thoiluong'] ?? ''),    // ← THÊM
-            'hoatdong'   => trim($_POST['hoatdong'] ?? ''),
-            'buaan'      => $_POST['buaan'] ?? '',
-            'noinghi'    => trim($_POST['noinghi'] ?? ''),
-            'ghichu_hdv' => trim($_POST['ghichu_hdv'] ?? '')    // ← THÊM
-        ];
-            
-            // Validate
-            $errors = [];
-            if (empty($data['tieude'])) {
-                $errors[] = 'Tiêu đề không được để trống';
-            }
-            if (empty($data['mota'])) {
-                $errors[] = 'Mô tả không được để trống';
-            }
-            
-            if (empty($errors)) {
-                if ($this->model->themLichTrinh($data)) {
-                    $_SESSION['success'] = 'Thêm lịch trình thành công!';
-                    header("Location: ?act=admin-tours-lichtrinh&id_goi=$idGoi");
-                    exit;
-                } else {
-                    $errors[] = 'Có lỗi xảy ra, vui lòng thử lại!';
-                }
-            }
-            
-            $_SESSION['errors'] = $errors;
-        }
-        
-        require_once './views/admin/tours/lichtrinh/create.php';
-    }
-    
-    /**
-     * Form sửa lịch trình
-     */
-    /**
- * Form sửa lịch trình - ĐÃ SỬA: LẤY DỮ LIỆU CŨ
- */
-public function suaLichTrinh() {
-    $id = intval($_GET['id'] ?? 0);
-    $idGoi = intval($_GET['id_goi'] ?? 0);
-    
-    if (!$id || !$idGoi) {
-        $_SESSION['error'] = 'Thiếu thông tin!';
-        header('Location: ?act=tour-lichtrinh&id_goi=' . $idGoi); // ✅ BỎ BASE_URL
-        exit;
-    }
-    
-    $lichTrinh = $this->model->layMotNgay($id);
-    
-    if (!$lichTrinh) {
-        $_SESSION['error'] = 'Không tìm thấy lịch trình!';
-        header('Location: ?act=tour-lichtrinh&id_goi=' . $idGoi); // ✅ BỎ BASE_URL
-        exit;
-    }
-    
-    if ($lichTrinh['id_goi'] != $idGoi) {
-        $_SESSION['error'] = 'Lịch trình không thuộc tour này!';
-        header('Location: ?act=tour-lichtrinh&id_goi=' . $idGoi); // ✅ BỎ BASE_URL
-        exit;
-    }
-    
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $errors = [];
-        
-        $tieude = trim($_POST['tieude'] ?? '');
-        $mota = trim($_POST['mota'] ?? '');
-        $diemden = trim($_POST['diemden'] ?? '');        // ← THÊM
-        $thoiluong = trim($_POST['thoiluong'] ?? '');    // ← THÊM
-        $hoatdong = trim($_POST['hoatdong'] ?? '');
-        $buaan = trim($_POST['buaan'] ?? '');
-        $noinghi = trim($_POST['noinghi'] ?? '');
-        $ghichu_hdv = trim($_POST['ghichu_hdv'] ?? '');  // ← THÊM
-        
-        if (empty($tieude)) {
-            $errors[] = 'Tiêu đề không được để trống!';
-        }
-        
-        if (empty($mota)) {
-            $errors[] = 'Mô tả không được để trống!';
-        }
-        
-        if (empty($errors)) {
-        $data = [
-            'tieude'     => $tieude,
-            'mota'       => $mota,
-            'diemden'    => $diemden,        // ← THÊM
-            'thoiluong'  => $thoiluong,      // ← THÊM
-            'hoatdong'   => $hoatdong,
-            'buaan'      => $buaan,
-            'noinghi'    => $noinghi,
-            'ghichu_hdv' => $ghichu_hdv      // ← THÊM
-        ];
-            
-            if ($this->model->suaLichTrinh($id, $data)) {
-                $_SESSION['success'] = 'Cập nhật lịch trình thành công!';
-                header('Location: ?act=tour-lichtrinh&id_goi=' . $idGoi); // ✅ BỎ BASE_URL
-                exit;
-            } else {
-                $_SESSION['error'] = 'Có lỗi khi cập nhật!';
-            }
-        }
-    }
-    
-    require_once './views/admin/tours/lichtrinh/edit.php';
-}
-    
-    /**
-     * Xóa lịch trình
-     */
-    public function xoaLichTrinh() {
-        $id = $_GET['id'] ?? 0;
-        $idGoi = $_GET['id_goi'] ?? 0;
-        
-        if ($this->model->xoaLichTrinh($id)) {
-            $_SESSION['success'] = 'Xóa thành công!';
-        } else {
-            $_SESSION['error'] = 'Có lỗi xảy ra!';
-        }
-        
-        header("Location: ?act=admin-tours-lichtrinh&id_goi=$idGoi");
-        exit;
-    }
     
     // ==================== HÌNH ẢNH ====================
     
@@ -484,7 +322,7 @@ public function suaChinhSach() {
         }
         
         $_SESSION['success'] = 'Cập nhật loại tour thành công!';
-        header("Location: ?act=admin-tours-phanloai&id_goi=$idGoi");
+        header("Location: ?act=tour-phanloai&id_goi=$idGoi");
         exit;
     }
     
@@ -506,7 +344,7 @@ public function suaChinhSach() {
         }
         
         $_SESSION['success'] = 'Cập nhật tags thành công!';
-        header("Location: ?act=admin-tours-phanloai&id_goi=$idGoi");
+        header("Location: ?act=tour-phanloai&id_goi=$idGoi");
         exit;
     }
     

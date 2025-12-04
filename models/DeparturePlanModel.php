@@ -38,14 +38,22 @@ class DeparturePlanModel extends BaseModel
                     `id` INT(11) NOT NULL AUTO_INCREMENT,
                     `id_tour` INT(11) NULL DEFAULT NULL COMMENT 'ID tour',
                     `ngay_khoi_hanh` DATE NULL DEFAULT NULL COMMENT 'Ngày khởi hành',
+                    `ngay_ket_thuc` DATE NULL DEFAULT NULL COMMENT 'Ngày kết thúc tour',
                     `gio_khoi_hanh` TIME NULL DEFAULT NULL COMMENT 'Giờ khởi hành',
                     `gio_tap_trung` TIME NULL DEFAULT NULL COMMENT 'Giờ tập trung',
                     `diem_tap_trung` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Điểm tập trung',
-                    `so_cho_con_trong` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống',
+                    `so_cho` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ tối đa',
+                    `so_cho_da_dat` INT(11) NULL DEFAULT 0 COMMENT 'Số chỗ đã có người đặt',
+                    `so_cho_con_lai` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống',
+                    `so_cho_con_trong` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống (cũ)',
+                    `gia_nguoi_lon` DECIMAL(15,2) NULL DEFAULT NULL COMMENT 'Giá người lớn',
+                    `gia_tre_em` DECIMAL(15,2) NULL DEFAULT NULL COMMENT 'Giá trẻ em',
+                    `gia_tre_nho` DECIMAL(15,2) NULL DEFAULT NULL COMMENT 'Giá trẻ nhỏ',
                     `phuong_tien` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Phương tiện di chuyển',
                     `uu_dai_giam_gia` DECIMAL(5,2) NULL DEFAULT NULL COMMENT 'Ưu đãi giảm giá (%)',
+                    `ghi_chu` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú nội bộ',
                     `ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành',
-                    `trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng, 1=Mở bán, 2=Hết chỗ',
+                    `trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng/Khóa, 1=Đang mở, 2=Hết chỗ, 3=Gần đầy',
                     `ngay_tao` DATETIME NULL DEFAULT NULL COMMENT 'Ngày tạo',
                     `ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
                     PRIMARY KEY (`id`),
@@ -141,22 +149,31 @@ class DeparturePlanModel extends BaseModel
                 'id' => "`id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST",
                 'id_tour' => "`id_tour` INT(11) NULL DEFAULT NULL COMMENT 'ID tour' AFTER `id`",
                 'ngay_khoi_hanh' => "`ngay_khoi_hanh` DATE NULL DEFAULT NULL COMMENT 'Ngày khởi hành' AFTER `id_tour`",
-                'gio_khoi_hanh' => "`gio_khoi_hanh` TIME NULL DEFAULT NULL COMMENT 'Giờ khởi hành' AFTER `ngay_khoi_hanh`",
+                'ngay_ket_thuc' => "`ngay_ket_thuc` DATE NULL DEFAULT NULL COMMENT 'Ngày kết thúc tour' AFTER `ngay_khoi_hanh`",
+                'gio_khoi_hanh' => "`gio_khoi_hanh` TIME NULL DEFAULT NULL COMMENT 'Giờ khởi hành' AFTER `ngay_ket_thuc`",
                 'gio_tap_trung' => "`gio_tap_trung` TIME NULL DEFAULT NULL COMMENT 'Giờ tập trung' AFTER `gio_khoi_hanh`",
                 'diem_tap_trung' => "`diem_tap_trung` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Điểm tập trung' AFTER `gio_tap_trung`",
-                'so_cho_con_trong' => "`so_cho_con_trong` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống' AFTER `diem_tap_trung`",
-                'phuong_tien' => "`phuong_tien` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Phương tiện di chuyển' AFTER `so_cho_con_trong`",
+                'so_cho' => "`so_cho` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ tối đa' AFTER `diem_tap_trung`",
+                'so_cho_da_dat' => "`so_cho_da_dat` INT(11) NULL DEFAULT 0 COMMENT 'Số chỗ đã có người đặt' AFTER `so_cho`",
+                'so_cho_con_lai' => "`so_cho_con_lai` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống' AFTER `so_cho_da_dat`",
+                'so_cho_con_trong' => "`so_cho_con_trong` INT(11) NULL DEFAULT NULL COMMENT 'Số chỗ còn trống (cũ)' AFTER `so_cho_con_lai`",
+                'gia_nguoi_lon' => "`gia_nguoi_lon` DECIMAL(15,2) NULL DEFAULT NULL COMMENT 'Giá người lớn' AFTER `so_cho_con_lai`",
+                'gia_tre_em' => "`gia_tre_em` DECIMAL(15,2) NULL DEFAULT NULL COMMENT 'Giá trẻ em' AFTER `gia_nguoi_lon`",
+                'gia_tre_nho' => "`gia_tre_nho` DECIMAL(15,2) NULL DEFAULT NULL COMMENT 'Giá trẻ nhỏ' AFTER `gia_tre_em`",
+                'phuong_tien' => "`phuong_tien` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Phương tiện di chuyển' AFTER `gia_tre_nho`",
                 'uu_dai_giam_gia' => "`uu_dai_giam_gia` DECIMAL(5,2) NULL DEFAULT NULL COMMENT 'Ưu đãi giảm giá (%)' AFTER `phuong_tien`",
-                'ghi_chu_van_hanh' => "`ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành' AFTER `uu_dai_giam_gia`",
-                'trang_thai' => "`trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng, 1=Mở bán, 2=Hết chỗ' AFTER `ghi_chu_van_hanh`",
+                'ghi_chu' => "`ghi_chu` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú nội bộ' AFTER `uu_dai_giam_gia`",
+                'ghi_chu_van_hanh' => "`ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành' AFTER `ghi_chu`",
+                'trang_thai' => "`trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng/Khóa, 1=Đang mở, 2=Hết chỗ, 3=Gần đầy' AFTER `ghi_chu_van_hanh`",
                 'ngay_tao' => "`ngay_tao` DATETIME NULL DEFAULT NULL COMMENT 'Ngày tạo' AFTER `trang_thai`",
                 'ngay_cap_nhat' => "`ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật' AFTER `ngay_tao`"
             ];
             
             // Thứ tự các cột theo thứ tự mong muốn
-            $columnOrder = ['id', 'id_tour', 'ngay_khoi_hanh', 'gio_khoi_hanh', 'gio_tap_trung', 
-                          'diem_tap_trung', 'so_cho_con_trong', 'phuong_tien', 'uu_dai_giam_gia', 'ghi_chu_van_hanh', 
-                          'trang_thai', 'ngay_tao', 'ngay_cap_nhat'];
+            $columnOrder = ['id', 'id_tour', 'ngay_khoi_hanh', 'ngay_ket_thuc', 'gio_khoi_hanh', 'gio_tap_trung', 
+                          'diem_tap_trung', 'so_cho', 'so_cho_da_dat', 'so_cho_con_lai', 'so_cho_con_trong',
+                          'gia_nguoi_lon', 'gia_tre_em', 'gia_tre_nho', 'phuong_tien', 'uu_dai_giam_gia', 
+                          'ghi_chu', 'ghi_chu_van_hanh', 'trang_thai', 'ngay_tao', 'ngay_cap_nhat'];
             
             // Kiểm tra và tạo các cột còn thiếu
             foreach ($columnOrder as $idx => $columnName) {
@@ -264,13 +281,29 @@ class DeparturePlanModel extends BaseModel
     public function createDeparturePlan(array $data)
     {
         try {
+            // Tính toán so_cho_con_lai nếu có so_cho và so_cho_da_dat
+            $so_cho = $data['so_cho'] ?? null;
+            $so_cho_da_dat = $data['so_cho_da_dat'] ?? 0;
+            $so_cho_con_lai = $data['so_cho_con_lai'] ?? null;
+            if ($so_cho !== null && $so_cho_con_lai === null) {
+                $so_cho_con_lai = max(0, $so_cho - $so_cho_da_dat);
+            }
+            // Fallback: nếu có so_cho_con_trong thì dùng nó
+            if ($so_cho_con_lai === null && isset($data['so_cho_con_trong'])) {
+                $so_cho_con_lai = $data['so_cho_con_trong'];
+            }
+
             $sql = "INSERT INTO lich_khoi_hanh (
-                        id_tour, ngay_khoi_hanh, gio_khoi_hanh, gio_tap_trung,
-                        diem_tap_trung, so_cho_con_trong, phuong_tien, uu_dai_giam_gia, ghi_chu_van_hanh, 
+                        id_tour, ngay_khoi_hanh, ngay_ket_thuc, gio_khoi_hanh, gio_tap_trung,
+                        diem_tap_trung, so_cho, so_cho_da_dat, so_cho_con_lai, so_cho_con_trong,
+                        gia_nguoi_lon, gia_tre_em, gia_tre_nho,
+                        phuong_tien, uu_dai_giam_gia, ghi_chu, ghi_chu_van_hanh, 
                         trang_thai, ngay_tao, ngay_cap_nhat
                     ) VALUES (
-                        :id_tour, :ngay_khoi_hanh, :gio_khoi_hanh, :gio_tap_trung,
-                        :diem_tap_trung, :so_cho_con_trong, :phuong_tien, :uu_dai_giam_gia, :ghi_chu_van_hanh,
+                        :id_tour, :ngay_khoi_hanh, :ngay_ket_thuc, :gio_khoi_hanh, :gio_tap_trung,
+                        :diem_tap_trung, :so_cho, :so_cho_da_dat, :so_cho_con_lai, :so_cho_con_trong,
+                        :gia_nguoi_lon, :gia_tre_em, :gia_tre_nho,
+                        :phuong_tien, :uu_dai_giam_gia, :ghi_chu, :ghi_chu_van_hanh,
                         :trang_thai, NOW(), NOW()
                     )";
 
@@ -278,12 +311,20 @@ class DeparturePlanModel extends BaseModel
             $stmt->execute([
                 ':id_tour' => $data['id_tour'] ?? null,
                 ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
+                ':ngay_ket_thuc' => $data['ngay_ket_thuc'] ?? null,
                 ':gio_khoi_hanh' => $data['gio_khoi_hanh'] ?? null,
                 ':gio_tap_trung' => $data['gio_tap_trung'] ?? null,
                 ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
+                ':so_cho' => $so_cho,
+                ':so_cho_da_dat' => $so_cho_da_dat,
+                ':so_cho_con_lai' => $so_cho_con_lai,
                 ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
+                ':gia_nguoi_lon' => isset($data['gia_nguoi_lon']) && $data['gia_nguoi_lon'] !== '' ? (float)$data['gia_nguoi_lon'] : null,
+                ':gia_tre_em' => isset($data['gia_tre_em']) && $data['gia_tre_em'] !== '' ? (float)$data['gia_tre_em'] : null,
+                ':gia_tre_nho' => isset($data['gia_tre_nho']) && $data['gia_tre_nho'] !== '' ? (float)$data['gia_tre_nho'] : null,
                 ':phuong_tien' => $data['phuong_tien'] ?? null,
                 ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
+                ':ghi_chu' => $data['ghi_chu'] ?? null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
@@ -304,17 +345,35 @@ class DeparturePlanModel extends BaseModel
             if (strpos($e->getMessage(), 'phuong_tien') !== false || $e->getCode() == '42S22') {
                 try {
                     $this->ensurePhuongTienColumnExists();
-                    // Retry insert
+                    // Retry insert với các trường mới
+                    $so_cho_retry = $data['so_cho'] ?? null;
+                    $so_cho_da_dat_retry = $data['so_cho_da_dat'] ?? 0;
+                    $so_cho_con_lai_retry = $data['so_cho_con_lai'] ?? null;
+                    if ($so_cho_retry !== null && $so_cho_con_lai_retry === null) {
+                        $so_cho_con_lai_retry = max(0, $so_cho_retry - $so_cho_da_dat_retry);
+                    }
+                    if ($so_cho_con_lai_retry === null && isset($data['so_cho_con_trong'])) {
+                        $so_cho_con_lai_retry = $data['so_cho_con_trong'];
+                    }
+
                     $stmt = $this->conn->prepare($sql);
                     $stmt->execute([
                         ':id_tour' => $data['id_tour'] ?? null,
                         ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
+                        ':ngay_ket_thuc' => $data['ngay_ket_thuc'] ?? null,
                         ':gio_khoi_hanh' => $data['gio_khoi_hanh'] ?? null,
                         ':gio_tap_trung' => $data['gio_tap_trung'] ?? null,
                         ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
+                        ':so_cho' => $so_cho_retry,
+                        ':so_cho_da_dat' => $so_cho_da_dat_retry,
+                        ':so_cho_con_lai' => $so_cho_con_lai_retry,
                         ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
+                        ':gia_nguoi_lon' => isset($data['gia_nguoi_lon']) && $data['gia_nguoi_lon'] !== '' ? (float)$data['gia_nguoi_lon'] : null,
+                        ':gia_tre_em' => isset($data['gia_tre_em']) && $data['gia_tre_em'] !== '' ? (float)$data['gia_tre_em'] : null,
+                        ':gia_tre_nho' => isset($data['gia_tre_nho']) && $data['gia_tre_nho'] !== '' ? (float)$data['gia_tre_nho'] : null,
                         ':phuong_tien' => $data['phuong_tien'] ?? null,
                         ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
+                        ':ghi_chu' => $data['ghi_chu'] ?? null,
                         ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                         ':trang_thai' => $data['trang_thai'] ?? 1,
                     ]);
@@ -337,15 +396,31 @@ class DeparturePlanModel extends BaseModel
     public function updateDeparturePlan($id, array $data)
     {
         try {
+            // Tính toán so_cho_con_lai nếu có so_cho và so_cho_da_dat
+            $so_cho = $data['so_cho'] ?? null;
+            $so_cho_da_dat = $data['so_cho_da_dat'] ?? null;
+            $so_cho_con_lai = $data['so_cho_con_lai'] ?? null;
+            if ($so_cho !== null && $so_cho_da_dat !== null && $so_cho_con_lai === null) {
+                $so_cho_con_lai = max(0, $so_cho - $so_cho_da_dat);
+            }
+
             $sql = "UPDATE lich_khoi_hanh SET
                         id_tour = :id_tour,
                         ngay_khoi_hanh = :ngay_khoi_hanh,
+                        ngay_ket_thuc = :ngay_ket_thuc,
                         gio_khoi_hanh = :gio_khoi_hanh,
                         gio_tap_trung = :gio_tap_trung,
                         diem_tap_trung = :diem_tap_trung,
+                        so_cho = :so_cho,
+                        so_cho_da_dat = :so_cho_da_dat,
+                        so_cho_con_lai = :so_cho_con_lai,
                         so_cho_con_trong = :so_cho_con_trong,
+                        gia_nguoi_lon = :gia_nguoi_lon,
+                        gia_tre_em = :gia_tre_em,
+                        gia_tre_nho = :gia_tre_nho,
                         phuong_tien = :phuong_tien,
                         uu_dai_giam_gia = :uu_dai_giam_gia,
+                        ghi_chu = :ghi_chu,
                         ghi_chu_van_hanh = :ghi_chu_van_hanh,
                         trang_thai = :trang_thai,
                         ngay_cap_nhat = NOW()
@@ -356,12 +431,20 @@ class DeparturePlanModel extends BaseModel
                 ':id' => $id,
                 ':id_tour' => $data['id_tour'] ?? null,
                 ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
+                ':ngay_ket_thuc' => $data['ngay_ket_thuc'] ?? null,
                 ':gio_khoi_hanh' => $data['gio_khoi_hanh'] ?? null,
                 ':gio_tap_trung' => $data['gio_tap_trung'] ?? null,
                 ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
+                ':so_cho' => $so_cho,
+                ':so_cho_da_dat' => $so_cho_da_dat,
+                ':so_cho_con_lai' => $so_cho_con_lai,
                 ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
+                ':gia_nguoi_lon' => isset($data['gia_nguoi_lon']) && $data['gia_nguoi_lon'] !== '' ? (float)$data['gia_nguoi_lon'] : null,
+                ':gia_tre_em' => isset($data['gia_tre_em']) && $data['gia_tre_em'] !== '' ? (float)$data['gia_tre_em'] : null,
+                ':gia_tre_nho' => isset($data['gia_tre_nho']) && $data['gia_tre_nho'] !== '' ? (float)$data['gia_tre_nho'] : null,
                 ':phuong_tien' => $data['phuong_tien'] ?? null,
                 ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
+                ':ghi_chu' => $data['ghi_chu'] ?? null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
@@ -370,17 +453,32 @@ class DeparturePlanModel extends BaseModel
             if (!$result && (strpos($stmt->errorInfo()[2] ?? '', 'phuong_tien') !== false)) {
                 try {
                     $this->ensurePhuongTienColumnExists();
-                    // Retry update
+                    // Retry update với các trường mới
+                    $so_cho_retry = $data['so_cho'] ?? null;
+                    $so_cho_da_dat_retry = $data['so_cho_da_dat'] ?? null;
+                    $so_cho_con_lai_retry = $data['so_cho_con_lai'] ?? null;
+                    if ($so_cho_retry !== null && $so_cho_da_dat_retry !== null && $so_cho_con_lai_retry === null) {
+                        $so_cho_con_lai_retry = max(0, $so_cho_retry - $so_cho_da_dat_retry);
+                    }
+
                     return $stmt->execute([
                         ':id' => $id,
                         ':id_tour' => $data['id_tour'] ?? null,
                         ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
+                        ':ngay_ket_thuc' => $data['ngay_ket_thuc'] ?? null,
                         ':gio_khoi_hanh' => $data['gio_khoi_hanh'] ?? null,
                         ':gio_tap_trung' => $data['gio_tap_trung'] ?? null,
                         ':diem_tap_trung' => $data['diem_tap_trung'] ?? null,
+                        ':so_cho' => $so_cho_retry,
+                        ':so_cho_da_dat' => $so_cho_da_dat_retry,
+                        ':so_cho_con_lai' => $so_cho_con_lai_retry,
                         ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
+                        ':gia_nguoi_lon' => isset($data['gia_nguoi_lon']) && $data['gia_nguoi_lon'] !== '' ? (float)$data['gia_nguoi_lon'] : null,
+                        ':gia_tre_em' => isset($data['gia_tre_em']) && $data['gia_tre_em'] !== '' ? (float)$data['gia_tre_em'] : null,
+                        ':gia_tre_nho' => isset($data['gia_tre_nho']) && $data['gia_tre_nho'] !== '' ? (float)$data['gia_tre_nho'] : null,
                         ':phuong_tien' => $data['phuong_tien'] ?? null,
                         ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
+                        ':ghi_chu' => $data['ghi_chu'] ?? null,
                         ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
                         ':trang_thai' => $data['trang_thai'] ?? 1,
                     ]);

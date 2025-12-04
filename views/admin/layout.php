@@ -1055,12 +1055,6 @@ $msg   = $msg   ?? null;
           </a>
         </div>
         <div class="nav-item">
-          <a href="?act=tour-publish-dashboard" class="nav-link">
-            <i class="fas fa-rocket"></i>
-            <span>Xuất bản Tour</span>
-          </a>
-        </div>
-        <div class="nav-item">
           <a href="?act=admin-departure-plans" class="nav-link">
             <i class="fas fa-calendar-alt"></i>
             <span>Lịch khởi hành</span>
@@ -1087,7 +1081,7 @@ $msg   = $msg   ?? null;
       </div>
       
       <div class="nav-section">
-        <div class="nav-section-title">Dịch vụ</div>
+        <div class="nav-section-title">Danh Sách</div>
         <div class="nav-item">
           <a href="?act=admin-services" class="nav-link">
             <i class="fas fa-concierge-bell"></i>
@@ -1095,9 +1089,9 @@ $msg   = $msg   ?? null;
           </a>
         </div>
         <div class="nav-item">
-          <a href="?act=admin-service-assignments" class="nav-link">
-            <i class="fas fa-tasks"></i>
-            <span>Gán Dịch vụ</span>
+          <a href="?act=admin-categories-tags" class="nav-link">
+            <i class="fas fa-tags"></i>
+            <span>Danh sách Phân loại & Tags</span>
           </a>
         </div>
       </div>
