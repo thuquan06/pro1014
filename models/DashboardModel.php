@@ -30,7 +30,6 @@ class DashboardModel {
             $db = $this->conn->query("SELECT DATABASE()")->fetchColumn();
 
             // Map các bảng có thể khác tên
-            $tblNguoiDung = $this->firstExisting(['nguoidung','users','user']);
             $tblHoaDon    = $this->firstExisting(['hoadon','invoices','bill']);
             $tblGopY      = $this->firstExisting(['gopy','feedback']);
             $tblTour      = $this->firstExisting(['goidulich','goi_tour','tour','tours']);
@@ -43,7 +42,7 @@ class DashboardModel {
 
             $stats = [
                 'db'   => $db,
-                'cnt'  => $tblNguoiDung ? $this->countTable($tblNguoiDung) : 0,
+                'cnt'  => 0,
                 'cnt1' => $tblHoaDon    ? $this->countTable($tblHoaDon)    : 0,
                 'cnt2' => $tblGopY      ? $this->countTable($tblGopY)      : 0,
                 'cnt3' => $tblTour      ? $this->countTable($tblTour)      : 0,
@@ -57,7 +56,7 @@ class DashboardModel {
 
                 // debug nhẹ để soi nhanh nếu cần
                 '_tables' => [
-                    'nguoidung' => $tblNguoiDung, 'hoadon' => $tblHoaDon, 'gopy' => $tblGopY,
+                    'hoadon' => $tblHoaDon, 'gopy' => $tblGopY,
                     'tour' => $tblTour, 'trogiup' => $tblTroGiup, 'chuyenbay' => $tblChuyenBay,
                     'khachsan' => $tblKhachSan, 'duthuyen' => $tblDuThuyen, 'xe' => $tblXe, 'blog' => $tblBlog
                 ],

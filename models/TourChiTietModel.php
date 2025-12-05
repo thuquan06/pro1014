@@ -278,14 +278,51 @@ class TourChiTietModel extends BaseModel
      * Tạo loại tour mới
      */
     public function taoLoaiTour($tenLoai, $mota = null) {
-        $slug = $this->taoSlug($tenLoai);
-        $sql = "INSERT INTO loaitour (ten_loai, mota, slug) VALUES (:ten_loai, :mota, :slug)";
-        $stmt = $this->conn->prepare($sql);
-        
-        if ($stmt->execute([':ten_loai' => $tenLoai, ':mota' => $mota, ':slug' => $slug])) {
-            return $this->conn->lastInsertId();
+        try {
+            $slug = $this->taoSlug($tenLoai);
+            
+            // Kiểm tra xem có trường id trong bảng không và nó có phải AUTO_INCREMENT không
+            // Nếu không phải AUTO_INCREMENT, cần tìm ID tiếp theo
+            $checkSql = "SHOW COLUMNS FROM loaitour LIKE 'id'";
+            $checkStmt = $this->conn->query($checkSql);
+            $idInfo = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($idInfo && strpos($idInfo['Extra'], 'auto_increment') === false) {
+                // Nếu id không phải AUTO_INCREMENT, cần tìm ID tiếp theo
+                $maxIdSql = "SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM loaitour";
+                $maxIdStmt = $this->conn->query($maxIdSql);
+                $nextId = $maxIdStmt->fetchColumn();
+                
+                $sql = "INSERT INTO loaitour (id, ten_loai, mota, slug) VALUES (:id, :ten_loai, :mota, :slug)";
+                $stmt = $this->conn->prepare($sql);
+                
+                if ($stmt->execute([
+                    ':id' => $nextId,
+                    ':ten_loai' => $tenLoai, 
+                    ':mota' => $mota ?: null, 
+                    ':slug' => $slug
+                ])) {
+                    return $nextId;
+                }
+            } else {
+                // Nếu id là AUTO_INCREMENT, không cần insert vào id
+                $sql = "INSERT INTO loaitour (ten_loai, mota, slug) VALUES (:ten_loai, :mota, :slug)";
+                $stmt = $this->conn->prepare($sql);
+                
+                if ($stmt->execute([
+                    ':ten_loai' => $tenLoai, 
+                    ':mota' => $mota ?: null, 
+                    ':slug' => $slug
+                ])) {
+                    return $this->conn->lastInsertId();
+                }
+            }
+            
+            return false;
+        } catch (PDOException $e) {
+            error_log("Lỗi tạo loại tour: " . $e->getMessage());
+            return false;
         }
-        return false;
     }
     
     /**
