@@ -74,6 +74,47 @@ $filters = $filters ?? [];
   gap: 12px;
 }
 
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 .guides-card {
   background: white;
   border: 1px solid var(--border);
@@ -81,9 +122,75 @@ $filters = $filters ?? [];
   overflow: hidden;
 }
 
+.guides-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .guides-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
+}
+
+.guides-table th,
+.guides-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guides-table th:nth-child(1),
+.guides-table td:nth-child(1) {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+}
+
+.guides-table th:nth-child(2),
+.guides-table td:nth-child(2) {
+  width: 120px;
+  min-width: 120px;
+  white-space: normal;
+}
+
+.guides-table th:nth-child(3),
+.guides-table td:nth-child(3) {
+  width: 140px;
+  min-width: 140px;
+  white-space: normal;
+  font-size: 12px;
+}
+
+.guides-table th:nth-child(4),
+.guides-table td:nth-child(4),
+.guides-table th:nth-child(5),
+.guides-table td:nth-child(5),
+.guides-table th:nth-child(6),
+.guides-table td:nth-child(6) {
+  width: 100px;
+  min-width: 100px;
+  white-space: normal;
+}
+
+.guides-table th:nth-child(7),
+.guides-table td:nth-child(7),
+.guides-table th:nth-child(8),
+.guides-table td:nth-child(8) {
+  width: 80px;
+  min-width: 80px;
+  text-align: center;
+}
+
+.guides-table th:nth-child(9),
+.guides-table td:nth-child(9) {
+  width: 100px;
+  min-width: 100px;
+}
+
+.guides-table th:nth-child(10),
+.guides-table td:nth-child(10) {
+  width: 140px;
+  min-width: 140px;
 }
 
 .guides-table thead {
@@ -91,18 +198,26 @@ $filters = $filters ?? [];
 }
 
 .guides-table th {
-  padding: 16px;
+  padding: 10px 6px;
   text-align: left;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-dark);
   border-bottom: 2px solid var(--border);
 }
 
+.guides-table th:last-child {
+  text-align: center;
+}
+
+.guides-table td:last-child {
+  text-align: center;
+}
+
 .guides-table td {
-  padding: 16px;
+  padding: 10px 6px;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .guides-table tbody tr:hover {
@@ -198,6 +313,36 @@ $filters = $filters ?? [];
   color: white;
 }
 
+.btn-action.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.btn-action.success:hover {
+  background: #10b981;
+  color: white;
+}
+
+.btn-action.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-action.danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-action.info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-action.info:hover {
+  background: #3b82f6;
+  color: white;
+}
+
 .empty-state {
   padding: 60px 20px;
   text-align: center;
@@ -267,6 +412,7 @@ $filters = $filters ?? [];
 <!-- Guides Table -->
 <div class="guides-card">
   <?php if (!empty($guides)): ?>
+    <div class="guides-table-wrapper">
     <table class="guides-table">
       <thead>
         <tr>
@@ -335,34 +481,37 @@ $filters = $filters ?? [];
                   ? '<span class="status-badge success"><i class="fas fa-check-circle"></i> Hoạt động</span>'
                   : '<span class="status-badge danger"><i class="fas fa-ban"></i> Tạm dừng</span>' ?>
             </td>
-            <td>
-              <a href="<?= BASE_URL ?>?act=admin-guide-edit&id=<?= $guide['id'] ?>" 
-                 class="btn-action edit" 
-                 title="Sửa">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-assignment-create&id_hdv=<?= $guide['id'] ?>" 
-                 class="btn-action assign" 
-                 title="Phân công">
-                <i class="fas fa-calendar-plus"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-guide-toggle&id=<?= $guide['id'] ?>" 
-                 class="btn-action <?= $guide['trang_thai'] == 1 ? 'danger' : 'success' ?>" 
-                 title="Đổi trạng thái"
-                 onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
-                <i class="fas fa-toggle-<?= $guide['trang_thai'] == 1 ? 'on' : 'off' ?>"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-guide-delete&id=<?= $guide['id'] ?>" 
-                 class="btn-action delete" 
-                 title="Xóa"
-                 onclick="return confirm('Bạn có chắc muốn xóa HDV này?')">
-                <i class="fas fa-trash"></i>
-              </a>
+            <td style="text-align: center;">
+              <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+                <a href="<?= BASE_URL ?>?act=admin-guide-edit&id=<?= $guide['id'] ?>" 
+                   class="btn-action edit" 
+                   title="Sửa">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-assignment-create&id_hdv=<?= $guide['id'] ?>" 
+                   class="btn-action assign" 
+                   title="Phân công">
+                  <i class="fas fa-calendar-plus"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-guide-toggle&id=<?= $guide['id'] ?>" 
+                   class="btn-action <?= $guide['trang_thai'] == 1 ? 'danger' : 'success' ?>" 
+                   title="Đổi trạng thái"
+                   onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
+                  <i class="fas fa-toggle-<?= $guide['trang_thai'] == 1 ? 'on' : 'off' ?>"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-guide-delete&id=<?= $guide['id'] ?>" 
+                   class="btn-action delete" 
+                   title="Xóa"
+                   onclick="return confirm('Bạn có chắc muốn xóa HDV này?')">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
             </td>
           </tr>
         <?php $cnt++; endforeach; ?>
       </tbody>
     </table>
+    </div>
   <?php else: ?>
     <div class="empty-state">
       <i class="fas fa-user-slash"></i>

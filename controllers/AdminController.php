@@ -16,23 +16,24 @@ class AdminController extends BaseController {
     private $dashboardModel;
     private $tourModel;
     private $adminModel;
-    private $provinceModel;
     private $departurePlanModel;
     private $pretripChecklistModel;
     private $guideModel;
     private $assignmentModel;
     private $serviceModel;
+    private $bookingModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
         $this->tourModel      = new TourModel();
         $this->adminModel     = new AdminModel();
-        $this->provinceModel  = new ProvinceModel();
         $this->departurePlanModel = new DeparturePlanModel();
         $this->pretripChecklistModel = new PretripChecklistModel();
         $this->guideModel = new GuideModel();
         $this->assignmentModel = new AssignmentModel();
         $this->serviceModel = new ServiceModel();
+        require_once './models/BookingModel.php';
+        $this->bookingModel = new BookingModel();
     }
 
     
@@ -595,7 +596,6 @@ class AdminController extends BaseController {
     public function createTour() {
         $this->checkLogin();
 
-        $provinces = $this->provinceModel->getAll();
         $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
         $serviceTypes = ServiceModel::getServiceTypes();
         
@@ -634,9 +634,9 @@ class AdminController extends BaseController {
                 $error = "Không thể thêm tour. Vui lòng kiểm tra lại dữ liệu."; 
             }
 
-            $this->loadView('admin/tours/create', compact('provinces', 'services', 'serviceTypes', 'categories', 'tags', 'msg','error'), 'admin/layout');
+            $this->loadView('admin/tours/create', compact('services', 'serviceTypes', 'categories', 'tags', 'msg','error'), 'admin/layout');
         } else {
-            $this->loadView('admin/tours/create', compact('provinces', 'services', 'serviceTypes', 'categories', 'tags'), 'admin/layout');
+            $this->loadView('admin/tours/create', compact('services', 'serviceTypes', 'categories', 'tags'), 'admin/layout');
         }
     }
 
@@ -663,10 +663,6 @@ class AdminController extends BaseController {
                   ->minLength('noixuatphat', 3, 'Nơi xuất phát phải có ít nhất 3 ký tự')
                   ->maxLength('noixuatphat', 255, 'Nơi xuất phát không được quá 255 ký tự');
         
-        // Vị trí
-        $validator->required('vitri', 'Vị trí là bắt buộc')
-                  ->minLength('vitri', 3, 'Vị trí phải có ít nhất 3 ký tự')
-                  ->maxLength('vitri', 255, 'Vị trí không được quá 255 ký tự');
         
         // Giá gói
         $validator->required('giagoi', 'Giá gói là bắt buộc')
@@ -730,8 +726,7 @@ class AdminController extends BaseController {
                 $error = $validator->firstError();
                 $errors = $validator->errors();
                 $oldData = $_POST; // Giữ lại dữ liệu đã nhập
-                $provinces = $this->provinceModel->getAll();
-                return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
+                return $this->loadView('admin/tours/create', compact('error', 'errors', 'oldData'), 'admin/layout');
             }
 
             // ===== VALIDATE & UPLOAD IMAGE =====
@@ -747,8 +742,7 @@ class AdminController extends BaseController {
                     $error = $fileValidation['error'];
                     $errors = ['packageimage' => $fileValidation['error']];
                     $oldData = $_POST; // Giữ lại dữ liệu đã nhập
-                    $provinces = $this->provinceModel->getAll();
-                    return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
+                    return $this->loadView('admin/tours/create', compact('error', 'errors', 'oldData'), 'admin/layout');
                 }
 
                 $hinhanh = uploadFile($_FILES["packageimage"], 'uploads/tours/');
@@ -756,22 +750,19 @@ class AdminController extends BaseController {
                     $error = "Upload ảnh thất bại.";
                     $errors = ['packageimage' => "Upload ảnh thất bại."];
                     $oldData = $_POST; // Giữ lại dữ liệu đã nhập
-                    $provinces = $this->provinceModel->getAll();
-                    return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
+                    return $this->loadView('admin/tours/create', compact('error', 'errors', 'oldData'), 'admin/layout');
                 }
             } else {
                 $error = "Ảnh tour là bắt buộc.";
                 $errors = ['packageimage' => "Ảnh tour là bắt buộc."];
                 $oldData = $_POST; // Giữ lại dữ liệu đã nhập
-                $provinces = $this->provinceModel->getAll();
-                return $this->loadView('admin/tours/create', compact('provinces', 'error', 'errors', 'oldData'), 'admin/layout');
+                return $this->loadView('admin/tours/create', compact('error', 'errors', 'oldData'), 'admin/layout');
             }
 
             // ===== PREPARE DATA =====
             $validated = $validator->validated();
             $validated['hinhanh'] = $hinhanh;
             $validated['quocgia'] = sanitizeInput($validated['quocgia'] ?? 'Việt Nam');
-            $validated['ten_tinh'] = sanitizeInput($validated['ten_tinh'] ?? null);
             $validated['khuyenmai'] = isset($validated['khuyenmai']) ? 1 : 0;
             $validated['nuocngoai'] = isset($validated['nuocngoai']) ? 1 : 0;
             
@@ -797,7 +788,11 @@ class AdminController extends BaseController {
         }
 
         $tour = $this->tourModel->getTourByID($id);
-        $provinces = $this->provinceModel->getAll();
+        if (!$tour) {
+            $_SESSION['error'] = 'Không tìm thấy tour';
+            $this->redirect(BASE_URL . '?act=admin-tours');
+        }
+        
         $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
         $serviceTypes = ServiceModel::getServiceTypes();
         $tourServices = $this->tourModel->getTourServices($id);
@@ -813,7 +808,7 @@ class AdminController extends BaseController {
         $selectedCategoryIds = array_column($selectedCategories, 'id');
         $selectedTagIds = array_column($selectedTags, 'id');
         
-        $this->loadView('admin/tours/edit', compact('tour', 'provinces', 'services', 'serviceTypes', 'selectedServiceIds', 'categories', 'tags', 'selectedCategoryIds', 'selectedTagIds'), 'admin/layout');
+        $this->loadView('admin/tours/edit', compact('tour', 'services', 'serviceTypes', 'selectedServiceIds', 'categories', 'tags', 'selectedCategoryIds', 'selectedTagIds'), 'admin/layout');
     }
 
     /**
@@ -840,12 +835,44 @@ class AdminController extends BaseController {
             }
 
             $validated = $validator->validated();
-            $validated['quocgia'] = sanitizeInput($validated['quocgia'] ?? 'Việt Nam');
-            $validated['ten_tinh'] = sanitizeInput($validated['ten_tinh'] ?? null);
-            $validated['khuyenmai'] = isset($_POST['khuyenmai']) ? 1 : 0;
-            $validated['nuocngoai'] = isset($_POST['nuocngoai']) ? 1 : 0;
             
-            $this->tourModel->updateTour($id, $validated);
+            // Đảm bảo các trường bắt buộc được lấy từ POST
+            $validated['quocgia'] = sanitizeInput($_POST['quocgia'] ?? 'Việt Nam');
+            $validated['khuyenmai'] = isset($_POST['khuyenmai']) ? (int)$_POST['khuyenmai'] : 0;
+            $validated['nuocngoai'] = isset($_POST['nuocngoai']) ? (int)$_POST['nuocngoai'] : 0;
+            
+            // Đảm bảo các trường khuyến mãi được xử lý đúng
+            if ($validated['khuyenmai'] == 1) {
+                $validated['khuyenmai_phantram'] = isset($_POST['khuyenmai_phantram']) ? (float)$_POST['khuyenmai_phantram'] : 0;
+                $validated['khuyenmai_tungay'] = !empty($_POST['khuyenmai_tungay']) ? $_POST['khuyenmai_tungay'] : null;
+                $validated['khuyenmai_denngay'] = !empty($_POST['khuyenmai_denngay']) ? $_POST['khuyenmai_denngay'] : null;
+                $validated['khuyenmai_mota'] = !empty($_POST['khuyenmai_mota']) ? $_POST['khuyenmai_mota'] : null;
+            } else {
+                $validated['khuyenmai_phantram'] = 0;
+                $validated['khuyenmai_tungay'] = null;
+                $validated['khuyenmai_denngay'] = null;
+                $validated['khuyenmai_mota'] = null;
+            }
+            
+            // Lấy chuongtrinh từ hidden field (do được build bằng JavaScript)
+            $validated['chuongtrinh'] = $_POST['chuongtrinh'] ?? '';
+            // Lấy chitietgoi từ POST
+            $validated['chitietgoi'] = $_POST['chitietgoi'] ?? '';
+            // Lấy luuy từ POST
+            $validated['luuy'] = $_POST['luuy'] ?? '';
+            
+            // Debug: Log dữ liệu trước khi update (có thể xóa sau)
+            error_log("Update Tour ID: $id");
+            error_log("Data: " . print_r($validated, true));
+            
+            $result = $this->tourModel->updateTour($id, $validated);
+            
+            if (!$result) {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi cập nhật tour. Vui lòng kiểm tra log để biết chi tiết.';
+                error_log("Update tour failed for ID: $id");
+                $this->redirect(BASE_URL . '?act=admin-tour-edit&id=' . $id);
+                return;
+            }
             
             // Lưu dịch vụ được chọn
             if (!empty($_POST['dich_vu']) && is_array($_POST['dich_vu'])) {
@@ -884,7 +911,7 @@ class AdminController extends BaseController {
             }
             
             $_SESSION['success'] = 'Cập nhật tour thành công!';
-            $this->redirect(BASE_URL . '?act=admin-tours');
+            $this->redirect(BASE_URL . '?act=admin-tour-detail&id=' . $id);
         }
         
         $this->redirect(BASE_URL . '?act=admin-tours');
@@ -1031,6 +1058,12 @@ class AdminController extends BaseController {
         
         $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : null;
         $tour = null;
+        $filters = [];
+        
+        // Lấy filter tên tour
+        if (!empty($_GET['ten_tour'])) {
+            $filters['ten_tour'] = trim($_GET['ten_tour']);
+        }
         
         if ($tourId && $tourId > 0) {
             // Lấy lịch khởi hành theo tour ID
@@ -1038,8 +1071,8 @@ class AdminController extends BaseController {
             // Lấy thông tin tour để hiển thị
             $tour = $this->tourModel->getTourByID($tourId);
         } else {
-            // Lấy tất cả lịch khởi hành
-            $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+            // Lấy tất cả lịch khởi hành với filter
+            $departurePlans = $this->departurePlanModel->getAllDeparturePlans($filters);
         }
         
         // Lấy checklist cho mỗi departure plan
@@ -1051,7 +1084,7 @@ class AdminController extends BaseController {
             }
         }
         
-        $this->loadView('admin/departure-plans/list', compact('departurePlans', 'tour', 'tourId', 'checklists'), 'admin/layout');
+        $this->loadView('admin/departure-plans/list', compact('departurePlans', 'tour', 'tourId', 'checklists', 'filters'), 'admin/layout');
     }
 
     /**
@@ -1318,6 +1351,51 @@ class AdminController extends BaseController {
         
         header("Location: " . $redirectUrl);
         exit();
+    }
+
+    /**
+     * Xem chi tiết lịch khởi hành
+     * Route: ?act=admin-departure-plan-detail&id=X
+     */
+    public function viewDeparturePlanDetail() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+        
+        $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id);
+        if (!$departurePlan) {
+            $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+        
+        // Lấy thông tin tour nếu có
+        $tour = null;
+        if ($departurePlan['id_tour']) {
+            $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+        }
+        
+        // Lấy checklist nếu có
+        $checklist = null;
+        $checklistItems = [];
+        $completionPercentage = 0;
+        if ($id) {
+            $checklist = $this->pretripChecklistModel->getChecklistByDeparturePlanID($id);
+            if ($checklist) {
+                $checklistItems = $this->pretripChecklistModel->getChecklistItems($checklist['id']);
+                $completionPercentage = $this->pretripChecklistModel->getCompletionPercentage($checklist['id']);
+            }
+        }
+        
+        // Lấy danh sách phân công HDV cho lịch khởi hành này
+        require_once './models/AssignmentModel.php';
+        $assignmentModel = new AssignmentModel();
+        $assignments = $assignmentModel->getAssignmentsByDeparturePlanID($id);
+        
+        $this->loadView('admin/departure-plans/detail', compact('departurePlan', 'tour', 'checklist', 'checklistItems', 'completionPercentage', 'assignments'), 'admin/layout');
     }
 
     /* ==================== PRETRIP CHECKLIST MANAGEMENT ==================== */
@@ -1717,14 +1795,11 @@ class AdminController extends BaseController {
         $this->checkLogin();
         
         $filters = [];
-        if (!empty($_GET['id_lich_khoi_hanh'])) {
-            $filters['id_lich_khoi_hanh'] = (int)$_GET['id_lich_khoi_hanh'];
+        if (!empty($_GET['ten_tour'])) {
+            $filters['ten_tour'] = trim($_GET['ten_tour']);
         }
-        if (!empty($_GET['id_hdv'])) {
-            $filters['id_hdv'] = (int)$_GET['id_hdv'];
-        }
-        if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
-            $filters['trang_thai'] = (int)$_GET['trang_thai'];
+        if (!empty($_GET['ten_hdv'])) {
+            $filters['ten_hdv'] = trim($_GET['ten_hdv']);
         }
 
         $assignments = $this->assignmentModel->getAllAssignments($filters);
@@ -1874,14 +1949,17 @@ class AdminController extends BaseController {
         $this->checkLogin();
         
         $filters = [];
+        if (!empty($_GET['ten_dich_vu'])) {
+            $filters['ten_dich_vu'] = trim($_GET['ten_dich_vu']);
+        }
+        if (!empty($_GET['nha_cung_cap'])) {
+            $filters['nha_cung_cap'] = trim($_GET['nha_cung_cap']);
+        }
         if (!empty($_GET['loai_dich_vu'])) {
             $filters['loai_dich_vu'] = $_GET['loai_dich_vu'];
         }
         if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
             $filters['trang_thai'] = (int)$_GET['trang_thai'];
-        }
-        if (!empty($_GET['nha_cung_cap'])) {
-            $filters['nha_cung_cap'] = $_GET['nha_cung_cap'];
         }
 
         $services = $this->serviceModel->getAllServices($filters);
@@ -1981,6 +2059,304 @@ class AdminController extends BaseController {
         $this->redirect(BASE_URL . '?act=admin-services');
     }
 
+
+    /* ==================== BOOKING MANAGEMENT ==================== */
+
+    /**
+     * UC-View-Booking: Danh sách bookings
+     * Route: ?act=admin-bookings
+     */
+    public function listBookings() {
+        $this->checkLogin();
+        
+        $filters = [];
+        if (!empty($_GET['id_tour'])) {
+            $filters['id_tour'] = (int)$_GET['id_tour'];
+        }
+        if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
+            $filters['trang_thai'] = (int)$_GET['trang_thai'];
+        }
+        if (!empty($_GET['ho_ten'])) {
+            $filters['ho_ten'] = trim($_GET['ho_ten']);
+        }
+
+        $bookings = $this->bookingModel->getAllBookings($filters);
+        $tours = $this->tourModel->getAllTours();
+        $statusList = BookingModel::getStatusList();
+
+        $this->loadView('admin/bookings/list', compact('bookings', 'filters', 'tours', 'statusList'), 'admin/layout');
+    }
+
+    /**
+     * UC-View-Booking: Chi tiết booking
+     * Route: ?act=admin-booking-detail&id=X
+     */
+    public function viewBookingDetail() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID booking không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+
+        $booking = $this->bookingModel->getBookingById($id);
+        if (!$booking) {
+            $_SESSION['error'] = 'Không tìm thấy booking';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+
+        $statusList = BookingModel::getStatusList();
+        $this->loadView('admin/bookings/detail', compact('booking', 'statusList'), 'admin/layout');
+    }
+
+    /**
+     * UC-Create-Booking: Form tạo booking
+     * Route: ?act=admin-booking-create
+     */
+    public function createBooking() {
+        $this->checkLogin();
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Validate required fields
+            if (empty($_POST['id_lich_khoi_hanh']) || empty($_POST['ho_ten']) || empty($_POST['so_dien_thoai'])) {
+                $_SESSION['error'] = 'Vui lòng điền đầy đủ thông tin bắt buộc';
+                $tours = $this->tourModel->getAllTours();
+                $selectedTourId = $_POST['id_tour'] ?? null;
+                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                return;
+            }
+
+            // Validate số điện thoại
+            if (!BookingModel::validatePhone($_POST['so_dien_thoai'])) {
+                $_SESSION['error'] = 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 số bắt đầu bằng 0';
+                $tours = $this->tourModel->getAllTours();
+                $selectedTourId = $_POST['id_tour'] ?? null;
+                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                return;
+            }
+
+            // Validate email
+            if (!empty($_POST['email']) && !BookingModel::validateEmail($_POST['email'])) {
+                $_SESSION['error'] = 'Email không hợp lệ';
+                $tours = $this->tourModel->getAllTours();
+                $selectedTourId = $_POST['id_tour'] ?? null;
+                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                return;
+            }
+
+            // Validate loại booking
+            if (empty($_POST['loai_booking']) || !in_array($_POST['loai_booking'], [1, 2, 3, 4])) {
+                $_SESSION['error'] = 'Vui lòng chọn loại booking';
+                $tours = $this->tourModel->getAllTours();
+                $selectedTourId = $_POST['id_tour'] ?? null;
+                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                return;
+            }
+
+            // Validate danh sách khách cho nhóm/đoàn
+            $loaiBooking = (int)$_POST['loai_booking'];
+            if (in_array($loaiBooking, [3, 4])) {
+                $soNguoiLon = (int)($_POST['so_nguoi_lon'] ?? 0);
+                $soTreEm = (int)($_POST['so_tre_em'] ?? 0);
+                $soTreNho = (int)($_POST['so_tre_nho'] ?? 0);
+                $soEmBe = (int)($_POST['so_em_be'] ?? 0);
+                $tongSoKhach = $soNguoiLon + $soTreEm + $soTreNho + $soEmBe;
+                
+                $danhSachKhach = $_POST['danh_sach_khach'] ?? [];
+                if (empty($danhSachKhach) || count($danhSachKhach) != $tongSoKhach) {
+                    $_SESSION['error'] = 'Vui lòng nhập đầy đủ thông tin cho tất cả khách trong danh sách. Số lượng khách trong danh sách phải khớp với tổng số khách.';
+                    $tours = $this->tourModel->getAllTours();
+                    $selectedTourId = $_POST['id_tour'] ?? null;
+                    $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                    $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                    return;
+                }
+                
+                // Validate họ tên bắt buộc cho từng khách
+                foreach ($danhSachKhach as $index => $khach) {
+                    if (empty($khach['ho_ten'])) {
+                        $_SESSION['error'] = "Vui lòng nhập họ tên cho khách thứ " . ($index + 1);
+                        $tours = $this->tourModel->getAllTours();
+                        $selectedTourId = $_POST['id_tour'] ?? null;
+                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                        return;
+                    }
+                }
+            }
+
+            $result = $this->bookingModel->createBooking($_POST);
+            
+            if ($result['success']) {
+                $_SESSION['success'] = 'Tạo booking thành công! Mã booking: ' . $result['ma_booking'];
+                $this->redirect(BASE_URL . '?act=admin-booking-detail&id=' . $result['id']);
+            } else {
+                $_SESSION['error'] = $result['message'] ?? 'Không thể tạo booking';
+                $tours = $this->tourModel->getAllTours();
+                $selectedTourId = $_POST['id_tour'] ?? null;
+                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+            }
+        } else {
+            $tours = $this->tourModel->getAllTours();
+            $this->loadView('admin/bookings/create', compact('tours'), 'admin/layout');
+        }
+    }
+
+    /**
+     * UC-Update-Booking: Form cập nhật booking
+     * Route: ?act=admin-booking-edit&id=X
+     */
+    public function updateBooking() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID booking không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+
+        $booking = $this->bookingModel->getBookingById($id);
+        if (!$booking) {
+            $_SESSION['error'] = 'Không tìm thấy booking';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Validate số điện thoại
+            if (!BookingModel::validatePhone($_POST['so_dien_thoai'])) {
+                $_SESSION['error'] = 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 số bắt đầu bằng 0';
+                $statusList = BookingModel::getStatusList();
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+                return;
+            }
+
+            // Validate email
+            if (!empty($_POST['email']) && !BookingModel::validateEmail($_POST['email'])) {
+                $_SESSION['error'] = 'Email không hợp lệ';
+                $statusList = BookingModel::getStatusList();
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+                return;
+            }
+
+            // Xử lý ngày thanh toán: chuyển từ datetime-local sang DATETIME
+            if (!empty($_POST['ngay_thanh_toan'])) {
+                $_POST['ngay_thanh_toan'] = date('Y-m-d H:i:s', strtotime($_POST['ngay_thanh_toan']));
+            } else {
+                $_POST['ngay_thanh_toan'] = null;
+            }
+
+            $result = $this->bookingModel->updateBooking($id, $_POST);
+            
+            if ($result['success']) {
+                $_SESSION['success'] = $result['message'] ?? 'Cập nhật booking thành công!';
+                $this->redirect(BASE_URL . '?act=admin-booking-detail&id=' . $id);
+            } else {
+                $_SESSION['error'] = $result['message'] ?? 'Không thể cập nhật booking';
+                $statusList = BookingModel::getStatusList();
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+            }
+        } else {
+            $statusList = BookingModel::getStatusList();
+            $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+        }
+    }
+
+    /**
+     * Lấy danh sách lịch khởi hành theo tour (AJAX)
+     * Route: ?act=admin-get-departure-plans&tour_id=X
+     */
+    public function getDeparturePlansByTour() {
+        $this->checkLogin();
+        
+        $tourId = $_GET['tour_id'] ?? null;
+        if (!$tourId) {
+            echo json_encode(['success' => false, 'message' => 'Tour ID không hợp lệ']);
+            return;
+        }
+
+        $plans = $this->departurePlanModel->getDeparturePlansByTourID($tourId);
+        echo json_encode(['success' => true, 'plans' => $plans]);
+    }
+
+    /**
+     * Tính tổng tiền booking (AJAX)
+     * Route: ?act=admin-calculate-booking-total
+     */
+    public function calculateBookingTotal() {
+        $this->checkLogin();
+        
+        $id_lich_khoi_hanh = $_POST['id_lich_khoi_hanh'] ?? null;
+        $so_nguoi_lon = (int)($_POST['so_nguoi_lon'] ?? 0);
+        $so_tre_em = (int)($_POST['so_tre_em'] ?? 0);
+        $so_tre_nho = (int)($_POST['so_tre_nho'] ?? 0);
+        $so_em_be = (int)($_POST['so_em_be'] ?? 0);
+
+        if (!$id_lich_khoi_hanh) {
+            echo json_encode(['success' => false, 'message' => 'Lịch khởi hành không hợp lệ']);
+            return;
+        }
+
+        $tong_tien = $this->bookingModel->calculateTotal($id_lich_khoi_hanh, $so_nguoi_lon, $so_tre_em, $so_tre_nho, $so_em_be);
+        $so_nguoi = $so_nguoi_lon + $so_tre_em + $so_tre_nho + $so_em_be;
+        $seatCheck = $this->bookingModel->checkAvailableSeats($id_lich_khoi_hanh, $so_nguoi);
+
+        echo json_encode([
+            'success' => true,
+            'tong_tien' => $tong_tien,
+            'tong_tien_formatted' => number_format($tong_tien, 0, ',', '.') . ' đ',
+            'seat_check' => $seatCheck
+        ]);
+    }
+
+    /**
+     * Xóa booking
+     * Route: ?act=admin-booking-delete&id=X
+     */
+    public function deleteBooking() {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $_SESSION['error'] = 'ID booking không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+
+        $result = $this->bookingModel->deleteBooking($id);
+        
+        if ($result['success']) {
+            $_SESSION['success'] = $result['message'] ?? 'Xóa booking thành công!';
+        } else {
+            $_SESSION['error'] = $result['message'] ?? 'Không thể xóa booking';
+        }
+        
+        $this->redirect(BASE_URL . '?act=admin-bookings');
+    }
+
+    /**
+     * Quick change status (AJAX)
+     * Route: ?act=admin-booking-quick-change-status
+     */
+    public function quickChangeStatus() {
+        $this->checkLogin();
+        
+        $id = $_POST['id'] ?? null;
+        $trang_thai = $_POST['trang_thai'] ?? null;
+        $tien_dat_coc = isset($_POST['tien_dat_coc']) ? (float)$_POST['tien_dat_coc'] : null;
+
+        if (!$id || $trang_thai === null) {
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
+            return;
+        }
+
+        $result = $this->bookingModel->quickChangeStatus($id, (int)$trang_thai, $tien_dat_coc);
+        echo json_encode($result);
+    }
 
     /* ==================== CATEGORIES & TAGS MANAGEMENT ==================== */
 

@@ -13,6 +13,18 @@ class ServiceModel extends BaseModel
         $sql = "SELECT * FROM dich_vu WHERE 1=1";
         $params = [];
 
+        // Filter theo tên dịch vụ
+        if (!empty($filters['ten_dich_vu'])) {
+            $sql .= " AND ten_dich_vu LIKE :ten_dich_vu";
+            $params[':ten_dich_vu'] = '%' . $filters['ten_dich_vu'] . '%';
+        }
+
+        // Filter theo nhà cung cấp
+        if (!empty($filters['nha_cung_cap'])) {
+            $sql .= " AND nha_cung_cap LIKE :nha_cung_cap";
+            $params[':nha_cung_cap'] = '%' . $filters['nha_cung_cap'] . '%';
+        }
+
         // Filter theo loại dịch vụ
         if (!empty($filters['loai_dich_vu'])) {
             $sql .= " AND loai_dich_vu = :loai_dich_vu";
@@ -23,12 +35,6 @@ class ServiceModel extends BaseModel
         if (isset($filters['trang_thai'])) {
             $sql .= " AND trang_thai = :trang_thai";
             $params[':trang_thai'] = $filters['trang_thai'];
-        }
-
-        // Filter theo nhà cung cấp
-        if (!empty($filters['nha_cung_cap'])) {
-            $sql .= " AND nha_cung_cap LIKE :nha_cung_cap";
-            $params[':nha_cung_cap'] = '%' . $filters['nha_cung_cap'] . '%';
         }
 
         $sql .= " ORDER BY loai_dich_vu, ten_dich_vu ASC";

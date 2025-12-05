@@ -472,23 +472,6 @@ function getError($field) {
         <?php endif; ?>
       </div>
 
-      <div class="form-group-modern" id="field_tinh">
-        <label for="ten_tinh">Tỉnh/Thành phố <span class="required">*</span></label>
-        <select name="ten_tinh" 
-                id="ten_tinh"
-                class="<?= hasError('ten_tinh') ? 'error-field' : '' ?>">
-          <option value="">-- Chọn tỉnh --</option>
-          <?php if(!empty($provinces)) foreach($provinces as $p): 
-              $pn = safe_html($p['ten_tinh']);
-              $selected = old('ten_tinh') == $pn ? 'selected' : '';
-          ?>
-              <option value="<?=$pn?>" <?= $selected ?>><?=$pn?></option>
-          <?php endforeach; ?>
-        </select>
-        <?php if (hasError('ten_tinh')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('ten_tinh') ?></span>
-        <?php endif; ?>
-      </div>
     </div>
   </div>
 
@@ -527,34 +510,18 @@ function getError($field) {
       <?php endif; ?>
     </div>
 
-    <div class="form-row">
-      <div class="form-group-modern">
-        <label for="noixuatphat">Điểm khởi hành <span class="required">*</span></label>
-        <input type="text" 
-               name="noixuatphat" 
-               id="noixuatphat" 
-               value="<?= old('noixuatphat') ?>"
-               class="<?= hasError('noixuatphat') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: TP. Hồ Chí Minh">
-        <?php if (hasError('noixuatphat')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('noixuatphat') ?></span>
-        <?php endif; ?>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="vitri">Điểm đến <span class="required">*</span></label>
-        <input type="text" 
-               name="vitri" 
-               id="vitri" 
-               value="<?= old('vitri') ?>"
-               class="<?= hasError('vitri') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: Vịnh Hạ Long">
-        <?php if (hasError('vitri')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('vitri') ?></span>
-        <?php endif; ?>
-      </div>
+    <div class="form-group-modern">
+      <label for="noixuatphat">Điểm khởi hành <span class="required">*</span></label>
+      <input type="text" 
+             name="noixuatphat" 
+             id="noixuatphat" 
+             value="<?= old('noixuatphat') ?>"
+             class="<?= hasError('noixuatphat') ? 'error-field' : '' ?>"
+             required 
+             placeholder="Ví dụ: TP. Hồ Chí Minh">
+      <?php if (hasError('noixuatphat')): ?>
+        <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('noixuatphat') ?></span>
+      <?php endif; ?>
     </div>
 
     <div class="form-row">
@@ -1019,26 +986,19 @@ function updateCKEditorBeforeSubmit() {
 document.addEventListener('DOMContentLoaded', function() {
     var radioTrongNuoc = document.getElementById('tour_trongnuoc');
     var radioQuocTe    = document.getElementById('tour_quocte');
-    var fieldTinh      = document.getElementById('field_tinh');
     var fieldQuocGia   = document.getElementById('field_quocgia');
     var inputQuocGia   = document.getElementById('quocgia');
-    var selectTinh     = document.getElementById('ten_tinh');
 
     function toggleFields() {
         if (radioQuocTe.checked) {
-            fieldTinh.style.display = 'none';
             fieldQuocGia.style.display = 'block';
             // Không xóa giá trị nếu đã có
             if (!inputQuocGia.value) {
                 inputQuocGia.value = '';
             }
         } else {
-            fieldTinh.style.display = 'block';
             fieldQuocGia.style.display = 'none';
             // Không xóa giá trị nếu đã có
-            if (!selectTinh.value) {
-                selectTinh.value = '';
-            }
             if (!inputQuocGia.value) {
                 inputQuocGia.value = 'Việt Nam';
             }

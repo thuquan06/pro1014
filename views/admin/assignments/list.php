@@ -33,11 +33,12 @@ $filters = $filters ?? [];
 }
 
 .filter-card {
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .filter-row {
@@ -55,55 +56,240 @@ $filters = $filters ?? [];
 
 .filter-group label {
   font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 12px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 14px;
+  background: white;
   color: var(--text-dark);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .filter-group select {
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
+
+.filter-group input {
+  cursor: text;
+}
+
+.filter-group input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.filter-group select:hover,
+.filter-group input:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  background-color: white;
+  transform: translateY(-1px);
 }
 
 .filter-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.btn-cancel {
+  background: #ffffff;
+  color: #6b7280;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-cancel:hover {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .assignments-card {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.assignments-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .assignments-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
+}
+
+.assignments-table th,
+.assignments-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assignments-table th:nth-child(1),
+.assignments-table td:nth-child(1) {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+}
+
+.assignments-table th:nth-child(2),
+.assignments-table td:nth-child(2) {
+  width: 140px;
+  min-width: 140px;
+  white-space: normal;
+}
+
+.assignments-table th:nth-child(3),
+.assignments-table td:nth-child(3) {
+  width: 150px;
+  min-width: 150px;
+  white-space: normal;
+}
+
+.assignments-table th:nth-child(4),
+.assignments-table td:nth-child(4) {
+  width: 120px;
+  min-width: 120px;
+  white-space: normal;
+}
+
+.assignments-table th:nth-child(5),
+.assignments-table td:nth-child(5) {
+  width: 100px;
+  min-width: 100px;
+}
+
+.assignments-table th:nth-child(6),
+.assignments-table td:nth-child(6),
+.assignments-table th:nth-child(7),
+.assignments-table td:nth-child(7) {
+  width: 100px;
+  min-width: 100px;
+  white-space: normal;
+}
+
+.assignments-table th:nth-child(8),
+.assignments-table td:nth-child(8) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.assignments-table th:nth-child(9),
+.assignments-table td:nth-child(9) {
+  width: 120px;
+  min-width: 120px;
+}
+
+.assignments-table th:nth-child(10),
+.assignments-table td:nth-child(10) {
+  width: 140px;
+  min-width: 140px;
 }
 
 .assignments-table thead {
-  background: var(--bg-light);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .assignments-table th {
-  padding: 16px;
+  padding: 10px 6px;
   text-align: left;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-dark);
   border-bottom: 2px solid var(--border);
 }
 
 .assignments-table td {
-  padding: 16px;
+  padding: 10px 6px;
   border-bottom: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 12px;
+}
+
+.assignments-table th:last-child {
+  text-align: center;
+}
+
+.assignments-table td:last-child {
+  text-align: center;
+}
+
+.assignments-table tbody tr {
+  transition: all 0.2s ease;
 }
 
 .assignments-table tbody tr:hover {
-  background: var(--bg-light);
+  background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+  transform: scale(1.001);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .status-badge {
@@ -212,56 +398,23 @@ $filters = $filters ?? [];
 
 <!-- Filter Section -->
 <div class="filter-card">
-  <form method="GET" action="<?= BASE_URL ?>?act=admin-assignments">
+  <form method="GET" action="<?= BASE_URL ?>">
+    <input type="hidden" name="act" value="admin-assignments">
     <div class="filter-row">
       <div class="filter-group">
-        <label>Lịch khởi hành</label>
-        <select name="id_lich_khoi_hanh">
-          <option value="">Tất cả</option>
-          <?php
-          $departurePlanModel = new DeparturePlanModel();
-          $allDeparturePlans = $departurePlanModel->getAllDeparturePlans();
-          foreach ($allDeparturePlans as $dp):
-            $selected = (isset($filters['id_lich_khoi_hanh']) && $filters['id_lich_khoi_hanh'] == $dp['id']) ? 'selected' : '';
-            $ngay_gio = '';
-            if ($dp['ngay_khoi_hanh']) {
-              $ngay_gio = date('d/m/Y', strtotime($dp['ngay_khoi_hanh']));
-              if ($dp['gio_khoi_hanh']) {
-                $ngay_gio .= ' ' . date('H:i', strtotime($dp['gio_khoi_hanh']));
-              }
-            }
-          ?>
-            <option value="<?= $dp['id'] ?>" <?= $selected ?>>
-              <?= safe_html($dp['tengoi'] ?? 'Tour') ?> - <?= $ngay_gio ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
+        <label>Tên tour</label>
+        <input type="text" 
+               name="ten_tour" 
+               value="<?= htmlspecialchars($filters['ten_tour'] ?? '') ?>"
+               placeholder="Nhập tên tour...">
       </div>
       
       <div class="filter-group">
-        <label>Hướng dẫn viên</label>
-        <select name="id_hdv">
-          <option value="">Tất cả</option>
-          <?php
-          $guideModel = new GuideModel();
-          $allGuides = $guideModel->getAllGuides(['trang_thai' => 1]);
-          foreach ($allGuides as $guide):
-            $selected = (isset($filters['id_hdv']) && $filters['id_hdv'] == $guide['id']) ? 'selected' : '';
-          ?>
-            <option value="<?= $guide['id'] ?>" <?= $selected ?>>
-              <?= safe_html($guide['ho_ten']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      
-      <div class="filter-group">
-        <label>Trạng thái</label>
-        <select name="trang_thai">
-          <option value="">Tất cả</option>
-          <option value="1" <?= (isset($filters['trang_thai']) && $filters['trang_thai'] == 1) ? 'selected' : '' ?>>Đã phân công</option>
-          <option value="0" <?= (isset($filters['trang_thai']) && $filters['trang_thai'] == 0) ? 'selected' : '' ?>>Đã hủy</option>
-        </select>
+        <label>Tên HDV</label>
+        <input type="text" 
+               name="ten_hdv" 
+               value="<?= htmlspecialchars($filters['ten_hdv'] ?? '') ?>"
+               placeholder="Nhập tên HDV...">
       </div>
     </div>
     
@@ -279,6 +432,7 @@ $filters = $filters ?? [];
 <!-- Assignments Table -->
 <div class="assignments-card">
   <?php if (!empty($assignments)): ?>
+    <div class="assignments-table-wrapper">
     <table class="assignments-table">
       <thead>
         <tr>
@@ -350,29 +504,32 @@ $filters = $filters ?? [];
                   ? '<span class="status-badge success"><i class="fas fa-check-circle"></i> Đã phân công</span>'
                   : '<span class="status-badge danger"><i class="fas fa-ban"></i> Đã hủy</span>' ?>
             </td>
-            <td>
-              <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" 
-                 class="btn-action edit" 
-                 title="Sửa">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-assignment-toggle&id=<?= $assignment['id'] ?>" 
-                 class="btn-action <?= $assignment['trang_thai'] == 1 ? 'danger' : 'success' ?>" 
-                 title="Đổi trạng thái"
-                 onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
-                <i class="fas fa-toggle-<?= $assignment['trang_thai'] == 1 ? 'on' : 'off' ?>"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-assignment-delete&id=<?= $assignment['id'] ?>" 
-                 class="btn-action delete" 
-                 title="Xóa"
-                 onclick="return confirm('Bạn có chắc muốn xóa phân công này?')">
-                <i class="fas fa-trash"></i>
-              </a>
+            <td style="text-align: center;">
+              <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+                <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" 
+                   class="btn-action edit" 
+                   title="Sửa">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-assignment-toggle&id=<?= $assignment['id'] ?>" 
+                   class="btn-action <?= $assignment['trang_thai'] == 1 ? 'danger' : 'success' ?>" 
+                   title="Đổi trạng thái"
+                   onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
+                  <i class="fas fa-toggle-<?= $assignment['trang_thai'] == 1 ? 'on' : 'off' ?>"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-assignment-delete&id=<?= $assignment['id'] ?>" 
+                   class="btn-action delete" 
+                   title="Xóa"
+                   onclick="return confirm('Bạn có chắc muốn xóa phân công này?')">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
             </td>
           </tr>
         <?php $cnt++; endforeach; ?>
       </tbody>
     </table>
+    </div>
   <?php else: ?>
     <div class="empty-state">
       <i class="fas fa-calendar-times"></i>

@@ -31,14 +31,14 @@ class TourModel extends BaseModel
 
             $sql = "INSERT INTO goidulich (
                         khuyenmai, khuyenmai_phantram, khuyenmai_tungay, khuyenmai_denngay, khuyenmai_mota,
-                        nuocngoai, quocgia, ten_tinh, mato, tengoi,
-                        noixuatphat, vitri, giagoi, giatreem, giatrenho,
+                        nuocngoai, quocgia, mato, tengoi,
+                        noixuatphat, giagoi, giatreem, giatrenho,
                         chitietgoi, chuongtrinh, luuy,
                         songay, hinhanh, ngaydang
                     ) VALUES (
                         :khuyenmai, :khuyenmai_phantram, :khuyenmai_tungay, :khuyenmai_denngay, :khuyenmai_mota,
-                        :nuocngoai, :quocgia, :ten_tinh, :mato, :tengoi,
-                        :noixuatphat, :vitri, :giagoi, :giatreem, :giatrenho,
+                        :nuocngoai, :quocgia, :mato, :tengoi,
+                        :noixuatphat, :giagoi, :giatreem, :giatrenho,
                         :chitietgoi, :chuongtrinh, :luuy,
                         :songay, :hinhanh, NOW()
                     )";
@@ -52,11 +52,9 @@ class TourModel extends BaseModel
                 ':khuyenmai_mota'     => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_mota'] ?? null) : null,
                 ':nuocngoai'    => $data['nuocngoai']  ?? 0,
                 ':quocgia'      => $data['quocgia']    ?? 'Việt Nam',
-                ':ten_tinh'     => $data['ten_tinh']   ?? null,
                 ':mato'         => $data['mato'] ?? null,
                 ':tengoi'       => $data['tengoi'],
                 ':noixuatphat'  => $data['noixuatphat'],
-                ':vitri'        => $data['vitri'],
                 ':giagoi'       => $data['giagoi'],
                 ':giatreem'     => $data['giatreem'],
                 ':giatrenho'    => $data['giatrenho'],
@@ -104,11 +102,9 @@ class TourModel extends BaseModel
                         khuyenmai_mota      = :khuyenmai_mota,
                         nuocngoai    = :nuocngoai,
                         quocgia      = :quocgia,
-                        ten_tinh     = :ten_tinh,
                         mato         = :mato,
                         tengoi       = :tengoi,
                         noixuatphat  = :noixuatphat,
-                        vitri        = :vitri,
                         giagoi       = :giagoi,
                         giatreem     = :giatreem,
                         giatrenho    = :giatrenho,
@@ -119,28 +115,33 @@ class TourModel extends BaseModel
                     WHERE id_goi = :id";
 
             $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                ':khuyenmai'          => $data['khuyenmai']  ?? 0,
-                ':khuyenmai_phantram' => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_phantram'] ?? 0) : 0,
-                ':khuyenmai_tungay'   => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_tungay'] ?? null) : null,
-                ':khuyenmai_denngay'  => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_denngay'] ?? null) : null,
-                ':khuyenmai_mota'     => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_mota'] ?? null) : null,
-                ':nuocngoai'    => $data['nuocngoai']  ?? 0,
-                ':quocgia'      => $data['quocgia']    ?? 'Việt Nam',
-                ':ten_tinh'     => $data['ten_tinh']   ?? null,
+            $result = $stmt->execute([
+                ':khuyenmai'          => isset($data['khuyenmai']) ? (int)$data['khuyenmai'] : 0,
+                ':khuyenmai_phantram' => isset($data['khuyenmai_phantram']) ? (float)$data['khuyenmai_phantram'] : 0,
+                ':khuyenmai_tungay'   => !empty($data['khuyenmai_tungay']) ? $data['khuyenmai_tungay'] : null,
+                ':khuyenmai_denngay'  => !empty($data['khuyenmai_denngay']) ? $data['khuyenmai_denngay'] : null,
+                ':khuyenmai_mota'     => !empty($data['khuyenmai_mota']) ? $data['khuyenmai_mota'] : null,
+                ':nuocngoai'    => isset($data['nuocngoai']) ? (int)$data['nuocngoai'] : 0,
+                ':quocgia'      => $data['quocgia'] ?? 'Việt Nam',
                 ':mato'         => $data['mato'] ?? null,
-                ':tengoi'       => $data['tengoi'],
-                ':noixuatphat'  => $data['noixuatphat'],
-                ':vitri'        => $data['vitri'],
-                ':giagoi'       => $data['giagoi'],
-                ':giatreem'     => $data['giatreem'],
-                ':giatrenho'    => $data['giatrenho'],
-                ':chitietgoi'   => $data['chitietgoi'],
-                ':chuongtrinh'  => $data['chuongtrinh'],
-                ':luuy'         => $data['luuy'],
-                ':songay'       => $data['songay'],
+                ':tengoi'       => $data['tengoi'] ?? '',
+                ':noixuatphat'  => $data['noixuatphat'] ?? '',
+                ':giagoi'       => isset($data['giagoi']) ? (float)$data['giagoi'] : 0,
+                ':giatreem'     => isset($data['giatreem']) ? (float)$data['giatreem'] : 0,
+                ':giatrenho'    => isset($data['giatrenho']) ? (float)$data['giatrenho'] : 0,
+                ':chitietgoi'   => $data['chitietgoi'] ?? '',
+                ':chuongtrinh'  => $data['chuongtrinh'] ?? '',
+                ':luuy'         => $data['luuy'] ?? '',
+                ':songay'       => $data['songay'] ?? '',
                 ':id'           => $id,
             ]);
+            
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("Lỗi updateTour execute: " . print_r($errorInfo, true));
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Lỗi updateTour: " . $e->getMessage());
             return false;

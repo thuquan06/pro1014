@@ -43,22 +43,21 @@ if (!preg_match('/^[a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹ�
 try {
 
     // Load models & controllers cho admin routes
-    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'province') === 0 ||  strpos($act, 'blog') === 0 || strpos($act, 'hoadon') === 0 || in_array($act, ['login', 'logout', 'forgot-password', 'forgot-password-handle', 'reset-password', 'reset-password-handle'])) {
+    if (strpos($act, 'admin') === 0 || strpos($act, 'tour-') === 0 || strpos($act, 'blog') === 0 || strpos($act, 'hoadon') === 0 || in_array($act, ['login', 'logout', 'forgot-password', 'forgot-password-handle', 'reset-password', 'reset-password-handle'])) {
         require_once './models/BaseModel.php';
         require_once './models/DashboardModel.php';
         require_once './models/TourModel.php';
         require_once './models/AdminModel.php';
-        require_once './models/ProvinceModel.php';
         require_once './models/DeparturePlanModel.php';
         require_once './models/PretripChecklistModel.php';
         require_once './models/GuideModel.php';
         require_once './models/AssignmentModel.php';
         require_once './models/ServiceModel.php';
         require_once './models/ServiceAssignmentModel.php';
+        require_once './models/BookingModel.php';
 
         // Controller
         require_once './controllers/BaseController.php';
-        require_once './controllers/ProvinceController.php';
 
         require_once './controllers/AdminController.php';
 
@@ -175,6 +174,12 @@ try {
             (new AdminController())->toggleDeparturePlanStatus();
             break;
 
+        case 'admin-departure-plan-detail':
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->viewDeparturePlanDetail();
+            break;
+
         // ==================== PRETRIP CHECKLIST ====================
         case 'admin-pretrip-checklists':
             require_once './models/PretripChecklistModel.php';
@@ -284,6 +289,47 @@ try {
             (new AdminController())->toggleServiceStatus();
             break;
 
+        // --- Booking Management ---
+        case 'admin-bookings':
+            require_once './models/BookingModel.php';
+            (new AdminController())->listBookings();
+            break;
+
+        case 'admin-booking-detail':
+            require_once './models/BookingModel.php';
+            (new AdminController())->viewBookingDetail();
+            break;
+
+        case 'admin-booking-create':
+            require_once './models/BookingModel.php';
+            (new AdminController())->createBooking();
+            break;
+
+        case 'admin-booking-edit':
+            require_once './models/BookingModel.php';
+            (new AdminController())->updateBooking();
+            break;
+
+        case 'admin-booking-delete':
+            require_once './models/BookingModel.php';
+            (new AdminController())->deleteBooking();
+            break;
+
+        case 'admin-booking-quick-change-status':
+            require_once './models/BookingModel.php';
+            (new AdminController())->quickChangeStatus();
+            break;
+
+        case 'admin-get-departure-plans':
+            require_once './models/DeparturePlanModel.php';
+            (new AdminController())->getDeparturePlansByTour();
+            break;
+
+        case 'admin-calculate-booking-total':
+            require_once './models/BookingModel.php';
+            (new AdminController())->calculateBookingTotal();
+            break;
+
         // ==================== CHI TIẾT TOUR (MỚI) ====================
 
         // GALLERY
@@ -388,37 +434,6 @@ try {
             (new BlogController())->store();
             break;
 
-
-        case 'province-list':
-            require_once './controllers/ProvinceController.php';
-            $controller = new ProvinceController();
-            $controller->index();
-            break;
-        case 'province-create':
-            require_once './controllers/ProvinceController.php';
-            $controller = new ProvinceController();
-            $controller->create();
-            break;
-        case 'province-store':
-            require_once './controllers/ProvinceController.php';
-            $controller = new ProvinceController();
-            $controller->store();
-            break;
-        case 'province-edit':
-            require_once './controllers/ProvinceController.php';
-            $controller = new ProvinceController();
-            $controller->edit();
-            break;
-        case 'province-update':
-            require_once './controllers/ProvinceController.php';
-            $controller = new ProvinceController();
-            $controller->update();
-            break;
-        case 'province-delete':
-            require_once './controllers/ProvinceController.php';
-            $controller = new ProvinceController();
-            $controller->delete();
-            break;
 
                 // ========== HÓA ĐƠN ROUTES (MỚI) ==========
         case 'hoadon-list':

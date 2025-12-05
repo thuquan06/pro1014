@@ -283,13 +283,6 @@ class BookingEmailHelper
                     <span class="info-value">' . htmlspecialchars($tour['tengoi'] ?? 'N/A') . '</span>
                 </div>';
         
-        if (!empty($tour['vitri'])) {
-            $html .= '<div class="info-row">
-                    <span class="info-label">Địa điểm:</span>
-                    <span class="info-value">' . htmlspecialchars($tour['vitri']) . '</span>
-                </div>';
-        }
-        
         if (!empty($hoadon['ngayvao'])) {
             $html .= '<div class="info-row">
                     <span class="info-label">Ngày khởi hành:</span>

@@ -1061,6 +1061,12 @@ $msg   = $msg   ?? null;
           </a>
         </div>
         <div class="nav-item">
+          <a href="?act=admin-bookings" class="nav-link">
+            <i class="fas fa-calendar-check"></i>
+            <span>Quản lý Booking</span>
+          </a>
+        </div>
+        <div class="nav-item">
           <a href="?act=admin-guides" class="nav-link">
             <i class="fas fa-user-tie"></i>
             <span>Hướng dẫn viên</span>
@@ -1099,10 +1105,6 @@ $msg   = $msg   ?? null;
           </a>
         </div>
         <div class="nav-item">
-          <a href="?act=province-list" class="nav-link">
-            <i class="fas fa-map-marker-alt"></i>
-            <span>Tỉnh thành</span>
-          </a>
         </div>
       </div>
       

@@ -34,6 +34,11 @@ if ($tourId === 0 || $tourId === '0' || $tourId === '') {
 if (!isset($checklists)) {
     $checklists = [];
 }
+
+// Đảm bảo biến filters được định nghĩa
+if (!isset($filters)) {
+    $filters = [];
+}
 ?>
 
 <style>
@@ -84,6 +89,14 @@ if (!isset($checklists)) {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--border);
+}
+
+.departure-table th:last-child {
+  text-align: center;
+}
+
+.departure-table td:last-child {
+  text-align: center;
 }
 
 .departure-table td {
@@ -193,22 +206,56 @@ if (!isset($checklists)) {
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.btn-cancel {
+  background: #ffffff;
+  color: #6b7280;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-cancel:hover {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #d1d5db;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .empty-state {
@@ -232,6 +279,73 @@ if (!isset($checklists)) {
 .empty-state p {
   font-size: 14px;
   margin-bottom: 24px;
+}
+
+.filter-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.filter-group input {
+  padding: 12px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+  color: var(--text-dark);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-sizing: border-box;
+  cursor: text;
+}
+
+.filter-group input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.filter-group input:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.filter-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  background-color: white;
+  transform: translateY(-1px);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 </style>
 
@@ -265,6 +379,33 @@ if (!isset($checklists)) {
   </div>
 </div>
 
+<!-- Filter Section -->
+<?php if (!$tourId || $tourId === null): ?>
+<div class="filter-card">
+  <form method="GET" action="<?= BASE_URL ?>">
+    <input type="hidden" name="act" value="admin-departure-plans">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Tên tour</label>
+        <input type="text" 
+               name="ten_tour" 
+               value="<?= htmlspecialchars($filters['ten_tour'] ?? '') ?>"
+               placeholder="Nhập tên tour...">
+      </div>
+    </div>
+    
+    <div class="filter-actions">
+      <button type="submit" class="btn-primary">
+        <i class="fas fa-search"></i> Tìm kiếm
+      </button>
+      <a href="<?= BASE_URL ?>?act=admin-departure-plans" class="btn-cancel">
+        <i class="fas fa-times"></i> Xóa bộ lọc
+      </a>
+    </div>
+  </form>
+</div>
+<?php endif; ?>
+
 <!-- Departure Plans Table -->
 <div class="departure-card">
   <?php if (!empty($departurePlans)): ?>
@@ -278,7 +419,6 @@ if (!isset($checklists)) {
           <th>Ngày/Giờ khởi hành</th>
           <th>Điểm tập trung</th>
           <th>Ghi chú</th>
-          <th>Checklist</th>
           <th>Trạng thái</th>
           <th>Thao tác</th>
         </tr>
@@ -318,55 +458,32 @@ if (!isset($checklists)) {
                 <span style="color: var(--text-light);">-</span>
               <?php endif; ?>
             </td>
-            <td>
-              <?php
-              $checklist = $checklists[$id] ?? null;
-              if ($checklist):
-                $items = json_decode($checklist['checklist_items'], true);
-                $allChecked = true;
-                if ($items) {
-                  foreach ($items as $item) {
-                    if (!isset($item['checked']) || !$item['checked']) {
-                      $allChecked = false;
-                      break;
-                    }
-                  }
-                }
-              ?>
-                <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-create&departure_plan_id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
-                   class="btn-action <?= $allChecked ? 'success' : 'warning' ?>" 
-                   title="<?= $allChecked ? 'Ready - Xem/Sửa checklist' : 'Chưa ready - Xem/Sửa checklist' ?>">
-                  <i class="fas fa-<?= $allChecked ? 'check-circle' : 'clipboard-check' ?>"></i>
-                  <?= $allChecked ? 'Ready' : 'Chưa Ready' ?>
-                </a>
-              <?php else: ?>
-                <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-create&departure_plan_id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
-                   class="btn-action info" 
-                   title="Tạo checklist">
-                  <i class="fas fa-plus-circle"></i>
-                  Tạo checklist
-                </a>
-              <?php endif; ?>
-            </td>
             <td><?= getTrangThaiText($trang_thai) ?></td>
-            <td>
-              <a href="<?= BASE_URL ?>?act=admin-departure-plan-edit&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
-                 class="btn-action edit" 
-                 title="Sửa">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-departure-plan-toggle&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
-                 class="btn-action toggle" 
-                 title="Đổi trạng thái"
-                 onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
-                <i class="fas fa-toggle-<?= $trang_thai ? 'on' : 'off' ?>"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-departure-plan-delete&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
-                 class="btn-action delete" 
-                 title="Xóa"
-                 onclick="return confirm('Bạn có chắc muốn xóa lịch khởi hành này?')">
-                <i class="fas fa-trash"></i>
-              </a>
+            <td style="text-align: center;">
+              <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+                <a href="<?= BASE_URL ?>?act=admin-departure-plan-detail&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
+                   class="btn-action info" 
+                   title="Xem chi tiết">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-departure-plan-edit&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
+                   class="btn-action edit" 
+                   title="Sửa">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-departure-plan-toggle&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
+                   class="btn-action toggle" 
+                   title="Đổi trạng thái"
+                   onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
+                  <i class="fas fa-toggle-<?= $trang_thai ? 'on' : 'off' ?>"></i>
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-departure-plan-delete&id=<?= $id ?><?= $tourId ? '&tour_id=' . $tourId : '' ?>" 
+                   class="btn-action delete" 
+                   title="Xóa"
+                   onclick="return confirm('Bạn có chắc muốn xóa lịch khởi hành này?')">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
             </td>
           </tr>
         <?php 

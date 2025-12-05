@@ -21,22 +21,16 @@ class AssignmentModel extends BaseModel
                 WHERE 1=1";
         $params = [];
 
-        // Filter theo lịch khởi hành
-        if (!empty($filters['id_lich_khoi_hanh'])) {
-            $sql .= " AND pc.id_lich_khoi_hanh = :id_lich_khoi_hanh";
-            $params[':id_lich_khoi_hanh'] = $filters['id_lich_khoi_hanh'];
+        // Filter theo tên tour
+        if (!empty($filters['ten_tour'])) {
+            $sql .= " AND g.tengoi LIKE :ten_tour";
+            $params[':ten_tour'] = '%' . $filters['ten_tour'] . '%';
         }
 
-        // Filter theo HDV
-        if (!empty($filters['id_hdv'])) {
-            $sql .= " AND pc.id_hdv = :id_hdv";
-            $params[':id_hdv'] = $filters['id_hdv'];
-        }
-
-        // Filter theo trạng thái
-        if (isset($filters['trang_thai'])) {
-            $sql .= " AND pc.trang_thai = :trang_thai";
-            $params[':trang_thai'] = $filters['trang_thai'];
+        // Filter theo tên HDV
+        if (!empty($filters['ten_hdv'])) {
+            $sql .= " AND hdv.ho_ten LIKE :ten_hdv";
+            $params[':ten_hdv'] = '%' . $filters['ten_hdv'] . '%';
         }
 
         $sql .= " ORDER BY pc.ngay_bat_dau DESC";
