@@ -196,6 +196,16 @@ try {
             (new AdminController())->deletePretripChecklist();
             break;
 
+        case 'admin-pretrip-checklist-items':
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->manageChecklistItems();
+            break;
+
+        case 'admin-pretrip-checklist-approve-ready':
+            require_once './models/PretripChecklistModel.php';
+            (new AdminController())->approveReadyStatus();
+            break;
+
         // ==================== GUIDE MANAGEMENT ====================
         case 'admin-guides':
             require_once './models/GuideModel.php';
@@ -534,9 +544,24 @@ try {
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
             require_once './models/TourJournalModel.php';
+            require_once './models/PretripChecklistModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->assignmentDetail();
+            break;
+
+        case 'guide-checklist':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './models/PretripChecklistModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->viewChecklist();
             break;
 
         case 'guide-profile':
