@@ -1072,12 +1072,6 @@ $msg   = $msg   ?? null;
             <span>Phân công HDV</span>
           </a>
         </div>
-        <div class="nav-item">
-          <a href="?act=admin-users" class="nav-link">
-            <i class="fas fa-users"></i>
-            <span>Người Dùng</span>
-          </a>
-        </div>
       </div>
       
       <div class="nav-section">
