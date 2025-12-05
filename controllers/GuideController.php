@@ -10,6 +10,8 @@ class GuideController extends BaseController {
     private $tourModel;
     private $journalModel;
     private $incidentReportModel;
+    private $pretripChecklistModel;
+    private $attendanceModel;
 
     public function __construct() {
         $this->guideModel = new GuideModel();
@@ -18,7 +20,18 @@ class GuideController extends BaseController {
         $this->departurePlanModel = new DeparturePlanModel();
         $this->tourModel = new TourModel();
         $this->journalModel = new TourJournalModel();
-        // IncidentReportModel sẽ được khởi tạo khi cần (lazy loading)
+        // PretripChecklistModel và IncidentReportModel sẽ được khởi tạo khi cần (lazy loading)
+    }
+
+    /**
+     * Lazy load PretripChecklistModel
+     */
+    private function getPretripChecklistModel() {
+        if ($this->pretripChecklistModel === null) {
+            require_once './models/PretripChecklistModel.php';
+            $this->pretripChecklistModel = new PretripChecklistModel();
+        }
+        return $this->pretripChecklistModel;
     }
 
     /**
@@ -30,6 +43,17 @@ class GuideController extends BaseController {
             $this->incidentReportModel = new IncidentReportModel();
         }
         return $this->incidentReportModel;
+    }
+
+    /**
+     * Lazy load AttendanceModel
+     */
+    private function getAttendanceModel() {
+        if ($this->attendanceModel === null) {
+            require_once './models/AttendanceModel.php';
+            $this->attendanceModel = new AttendanceModel();
+        }
+        return $this->attendanceModel;
     }
 
     /**
@@ -226,7 +250,104 @@ class GuideController extends BaseController {
             $services = $this->serviceAssignmentModel->getAssignmentsByDeparturePlanID($assignment['id_lich_khoi_hanh']);
         }
         
-        $this->loadView('guide/assignments/detail', compact('assignment', 'departurePlan', 'tour', 'services'), 'guide/layout');
+        // Lấy checklist nếu có
+        $checklist = null;
+        $checklistItems = [];
+        $completionPercentage = 0;
+        if ($assignment['id_lich_khoi_hanh']) {
+            $checklistModel = $this->getPretripChecklistModel();
+            $checklist = $checklistModel->getChecklistByDeparturePlanID($assignment['id_lich_khoi_hanh']);
+            if ($checklist) {
+                $checklistItems = $checklistModel->getChecklistItems($checklist['id']);
+                $completionPercentage = $checklistModel->getCompletionPercentage($checklist['id']);
+            }
+        }
+        
+        $this->loadView('guide/assignments/detail', compact('assignment', 'departurePlan', 'tour', 'services', 'checklist', 'checklistItems', 'completionPercentage'), 'guide/layout');
+    }
+
+    /**
+     * Xem và tick checklist cho tour được phân công
+     * Route: ?act=guide-checklist&assignment_id=X
+     */
+    public function viewChecklist() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? null;
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền xem';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Kiểm tra quyền truy cập checklist
+        if (!$assignment['id_lich_khoi_hanh']) {
+            $_SESSION['error'] = 'Phân công chưa có lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        $checklistModel = $this->getPretripChecklistModel();
+        $hasAccess = $checklistModel->isGuideAssignedToDeparturePlan($guideId, $assignment['id_lich_khoi_hanh']);
+        if (!$hasAccess) {
+            $_SESSION['error'] = 'Bạn không có quyền cập nhật checklist của tour này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Lấy checklist
+        $checklist = $checklistModel->getChecklistByDeparturePlanID($assignment['id_lich_khoi_hanh']);
+        if (!$checklist) {
+            $_SESSION['error'] = 'Chưa có checklist cho tour này. Vui lòng liên hệ admin để tạo checklist.';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Xử lý POST request - tick/untick items
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            $itemId = $_POST['item_id'] ?? null;
+            
+            if ($action === 'toggle_item' && $itemId) {
+                $checklistModel = $this->getPretripChecklistModel();
+                $currentItem = $checklistModel->getChecklistItemByID($itemId);
+                if ($currentItem && $currentItem['id_checklist'] == $checklist['id']) {
+                    $checked = !$currentItem['da_hoan_thanh'];
+                    $result = $checklistModel->toggleChecklistItem($itemId, $guideId, 'guide', $checked);
+                    if ($result) {
+                        $_SESSION['success'] = $checked ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu hoàn thành!';
+                    } else {
+                        $_SESSION['error'] = 'Không thể cập nhật trạng thái';
+                    }
+                } else {
+                    $_SESSION['error'] = 'Mục checklist không hợp lệ';
+                }
+            }
+            
+            $this->redirect(BASE_URL . '?act=guide-checklist&assignment_id=' . $assignmentId);
+        }
+        
+        // Lấy items và thông tin liên quan
+        $checklistModel = $this->getPretripChecklistModel();
+        $items = $checklistModel->getChecklistItems($checklist['id']);
+        $completionPercentage = $checklistModel->getCompletionPercentage($checklist['id']);
+        $history = $checklistModel->getChecklistHistory($checklist['id'], 20);
+        
+        // Lấy thông tin tour và departure plan
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/checklist', compact('assignment', 'checklist', 'items', 'completionPercentage', 'history', 'departurePlan', 'tour'), 'guide/layout');
     }
 
     /**
@@ -881,6 +1002,342 @@ class GuideController extends BaseController {
         }
         
         $this->redirect(BASE_URL . '?act=guide-incidents');
+    }
+
+    /**
+     * Danh sách điểm danh tại điểm dừng nghỉ
+     * Route: ?act=guide-attendance&assignment_id=X
+     */
+    public function listAttendance() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? null;
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập phân công
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Bạn không có quyền xem điểm danh của phân công này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Lấy thông tin tour và lịch trình
+        $departurePlan = null;
+        $tour = null;
+        $scheduleDays = [];
+        
+        if ($assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+                
+                // Lấy lịch trình tour
+                require_once './models/TourChiTietModel.php';
+                $tourChiTietModel = new TourChiTietModel();
+                $scheduleDays = $tourChiTietModel->layLichTrinh($departurePlan['id_tour']);
+            }
+        }
+        
+        // Lấy danh sách điểm danh đã thực hiện
+        $attendanceModel = $this->getAttendanceModel();
+        $attendances = $attendanceModel->getAttendancesByAssignmentID($assignmentId);
+        
+        // Tạo map điểm danh theo lịch trình
+        $attendanceMap = [];
+        foreach ($attendances as $attendance) {
+            $attendanceMap[$attendance['id_lich_trinh']] = $attendance;
+        }
+        
+        $this->loadView('guide/attendance/list', compact('assignment', 'departurePlan', 'tour', 'scheduleDays', 'attendances', 'attendanceMap'), 'guide/layout');
+    }
+
+    /**
+     * Tạo điểm danh mới tại điểm dừng nghỉ
+     * Route: ?act=guide-attendance-create&assignment_id=X&schedule_id=Y
+     */
+    public function createAttendance() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? null;
+        $scheduleId = $_GET['schedule_id'] ?? null;
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập phân công
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Bạn không có quyền tạo điểm danh cho phân công này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Lấy thông tin tour và lịch trình
+        $departurePlan = null;
+        $tour = null;
+        $schedule = null;
+        
+        if ($assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+                
+                // Lấy lịch trình cụ thể nếu có schedule_id
+                if ($scheduleId) {
+                    require_once './models/TourChiTietModel.php';
+                    $tourChiTietModel = new TourChiTietModel();
+                    $schedule = $tourChiTietModel->layMotNgay($scheduleId);
+                }
+            }
+        }
+        
+        // Xử lý POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $attendanceModel = $this->getAttendanceModel();
+            
+            // Lấy danh sách có mặt và vắng mặt
+            $danhSachCoMat = [];
+            $danhSachVangMat = [];
+            
+            if (!empty($_POST['danh_sach_co_mat'])) {
+                $danhSachCoMat = is_array($_POST['danh_sach_co_mat']) 
+                    ? $_POST['danh_sach_co_mat'] 
+                    : explode("\n", trim($_POST['danh_sach_co_mat']));
+                $danhSachCoMat = array_filter(array_map('trim', $danhSachCoMat));
+            }
+            
+            if (!empty($_POST['danh_sach_vang_mat'])) {
+                $danhSachVangMat = is_array($_POST['danh_sach_vang_mat']) 
+                    ? $_POST['danh_sach_vang_mat'] 
+                    : explode("\n", trim($_POST['danh_sach_vang_mat']));
+                $danhSachVangMat = array_filter(array_map('trim', $danhSachVangMat));
+            }
+            
+            $data = [
+                'id_phan_cong' => $assignmentId,
+                'id_lich_trinh' => $_POST['id_lich_trinh'] ?? $scheduleId,
+                'id_tour' => $tour['id_goi'] ?? null,
+                'diem_nghi' => $_POST['diem_nghi'] ?? ($schedule['noinghi'] ?? null),
+                'ngay_thu' => $_POST['ngay_thu'] ?? ($schedule['ngay_thu'] ?? null),
+                'ngay_diem_danh' => $_POST['ngay_diem_danh'] ?? date('Y-m-d'),
+                'gio_diem_danh' => $_POST['gio_diem_danh'] ?? date('H:i:s'),
+                'so_nguoi_co_mat' => count($danhSachCoMat),
+                'so_nguoi_vang_mat' => count($danhSachVangMat),
+                'danh_sach_co_mat' => $danhSachCoMat,
+                'danh_sach_vang_mat' => $danhSachVangMat,
+                'ghi_chu' => $_POST['ghi_chu'] ?? null,
+                'id_hdv' => $guideId,
+            ];
+            
+            $attendanceId = $attendanceModel->createAttendance($data);
+            
+            if ($attendanceId) {
+                $_SESSION['success'] = 'Điểm danh thành công!';
+                $this->redirect(BASE_URL . '?act=guide-attendance&assignment_id=' . $assignmentId);
+            } else {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi tạo điểm danh. Vui lòng thử lại.';
+            }
+        }
+        
+        // Lấy danh sách lịch trình có điểm nghỉ
+        $scheduleDays = [];
+        if ($tour) {
+            require_once './models/TourChiTietModel.php';
+            $tourChiTietModel = new TourChiTietModel();
+            $allSchedules = $tourChiTietModel->layLichTrinh($tour['id_goi']);
+            // Chỉ lấy các ngày có điểm nghỉ
+            foreach ($allSchedules as $sched) {
+                if (!empty($sched['noinghi'])) {
+                    $scheduleDays[] = $sched;
+                }
+            }
+        }
+        
+        $this->loadView('guide/attendance/create', compact('assignment', 'departurePlan', 'tour', 'schedule', 'scheduleDays'), 'guide/layout');
+    }
+
+    /**
+     * Chi tiết điểm danh
+     * Route: ?act=guide-attendance-detail&id=X
+     */
+    public function attendanceDetail() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $attendanceId = $_GET['id'] ?? null;
+        
+        if (!$attendanceId) {
+            $_SESSION['error'] = 'ID điểm danh không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        $attendanceModel = $this->getAttendanceModel();
+        $attendance = $attendanceModel->getAttendanceByID($attendanceId);
+        
+        if (!$attendance) {
+            $_SESSION['error'] = 'Không tìm thấy điểm danh';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập
+        if (!$attendanceModel->checkGuideAccess($attendanceId, $guideId)) {
+            $_SESSION['error'] = 'Bạn không có quyền xem điểm danh này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Lấy thông tin phân công và tour
+        $assignment = $this->assignmentModel->getAssignmentByID($attendance['id_phan_cong']);
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment && $assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/attendance/detail', compact('attendance', 'assignment', 'departurePlan', 'tour'), 'guide/layout');
+    }
+
+    /**
+     * Chỉnh sửa điểm danh
+     * Route: ?act=guide-attendance-edit&id=X
+     */
+    public function editAttendance() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $attendanceId = $_GET['id'] ?? null;
+        
+        if (!$attendanceId) {
+            $_SESSION['error'] = 'ID điểm danh không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        $attendanceModel = $this->getAttendanceModel();
+        $attendance = $attendanceModel->getAttendanceByID($attendanceId);
+        
+        if (!$attendance) {
+            $_SESSION['error'] = 'Không tìm thấy điểm danh';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập
+        if (!$attendanceModel->checkGuideAccess($attendanceId, $guideId)) {
+            $_SESSION['error'] = 'Bạn không có quyền chỉnh sửa điểm danh này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Xử lý POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $danhSachCoMat = [];
+            $danhSachVangMat = [];
+            
+            if (!empty($_POST['danh_sach_co_mat'])) {
+                $danhSachCoMat = is_array($_POST['danh_sach_co_mat']) 
+                    ? $_POST['danh_sach_co_mat'] 
+                    : explode("\n", trim($_POST['danh_sach_co_mat']));
+                $danhSachCoMat = array_filter(array_map('trim', $danhSachCoMat));
+            }
+            
+            if (!empty($_POST['danh_sach_vang_mat'])) {
+                $danhSachVangMat = is_array($_POST['danh_sach_vang_mat']) 
+                    ? $_POST['danh_sach_vang_mat'] 
+                    : explode("\n", trim($_POST['danh_sach_vang_mat']));
+                $danhSachVangMat = array_filter(array_map('trim', $danhSachVangMat));
+            }
+            
+            $data = [
+                'ngay_diem_danh' => $_POST['ngay_diem_danh'] ?? date('Y-m-d'),
+                'gio_diem_danh' => $_POST['gio_diem_danh'] ?? date('H:i:s'),
+                'so_nguoi_co_mat' => count($danhSachCoMat),
+                'so_nguoi_vang_mat' => count($danhSachVangMat),
+                'danh_sach_co_mat' => $danhSachCoMat,
+                'danh_sach_vang_mat' => $danhSachVangMat,
+                'ghi_chu' => $_POST['ghi_chu'] ?? null,
+            ];
+            
+            $result = $attendanceModel->updateAttendance($attendanceId, $data);
+            
+            if ($result) {
+                $_SESSION['success'] = 'Cập nhật điểm danh thành công!';
+                $this->redirect(BASE_URL . '?act=guide-attendance-detail&id=' . $attendanceId);
+            } else {
+                $_SESSION['error'] = 'Có lỗi xảy ra khi cập nhật điểm danh. Vui lòng thử lại.';
+            }
+        }
+        
+        // Lấy thông tin phân công và tour
+        $assignment = $this->assignmentModel->getAssignmentByID($attendance['id_phan_cong']);
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment && $assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/attendance/edit', compact('attendance', 'assignment', 'departurePlan', 'tour'), 'guide/layout');
+    }
+
+    /**
+     * Xóa điểm danh
+     * Route: ?act=guide-attendance-delete&id=X
+     */
+    public function deleteAttendance() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $attendanceId = $_GET['id'] ?? null;
+        
+        if (!$attendanceId) {
+            $_SESSION['error'] = 'ID điểm danh không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        // Kiểm tra quyền truy cập
+        $attendanceModel = $this->getAttendanceModel();
+        if (!$attendanceModel->checkGuideAccess($attendanceId, $guideId)) {
+            $_SESSION['error'] = 'Bạn không có quyền xóa điểm danh này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        $attendance = $attendanceModel->getAttendanceByID($attendanceId);
+        $assignmentId = $attendance['id_phan_cong'] ?? null;
+        
+        $result = $attendanceModel->deleteAttendance($attendanceId);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Xóa điểm danh thành công!';
+        } else {
+            $_SESSION['error'] = 'Có lỗi xảy ra khi xóa điểm danh. Vui lòng thử lại.';
+        }
+        
+        if ($assignmentId) {
+            $this->redirect(BASE_URL . '?act=guide-attendance&assignment_id=' . $assignmentId);
+        } else {
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
     }
 }
 
