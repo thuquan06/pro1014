@@ -1003,7 +1003,20 @@ class AdminController extends BaseController {
         $tourCategories = $tourChiTietModel->layLoaiTourCuaTour($id);
         $tourTags = $tourChiTietModel->layTagsCuaTour($id);
         
-        $this->loadView('admin/tours/detail', compact('tour', 'departurePlans', 'tourServices', 'serviceTypes', 'tourCategories', 'tourTags'), 'admin/layout');
+        // Lấy checklist cho tour (từ departure plan đầu tiên nếu có)
+        $checklist = null;
+        $checklistItems = [];
+        $completionPercentage = 0;
+        if (!empty($departurePlans)) {
+            $firstPlan = $departurePlans[0];
+            $checklist = $this->pretripChecklistModel->getChecklistByDeparturePlanID($firstPlan['id']);
+            if ($checklist) {
+                $checklistItems = $this->pretripChecklistModel->getChecklistItems($checklist['id']);
+                $completionPercentage = $this->pretripChecklistModel->getCompletionPercentage($checklist['id']);
+            }
+        }
+        
+        $this->loadView('admin/tours/detail', compact('tour', 'departurePlans', 'tourServices', 'serviceTypes', 'tourCategories', 'tourTags', 'checklist', 'checklistItems', 'completionPercentage'), 'admin/layout');
     }
 
     /* ==================== DEPARTURE PLAN MANAGEMENT ==================== */
@@ -1449,6 +1462,133 @@ class AdminController extends BaseController {
                 $redirectUrl .= '&tour_id=' . $departurePlan['id_tour'];
             }
         }
+        $this->redirect($redirectUrl);
+    }
+
+    /**
+     * Quản lý checklist items (thêm/sửa/xóa)
+     * Route: ?act=admin-pretrip-checklist-items&checklist_id=X
+     */
+    public function manageChecklistItems() {
+        $this->checkLogin();
+        
+        $checklistId = $_GET['checklist_id'] ?? null;
+        if (!$checklistId) {
+            $_SESSION['error'] = 'ID checklist không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-pretrip-checklists');
+        }
+
+        $checklist = $this->pretripChecklistModel->getChecklistByID($checklistId);
+        if (!$checklist) {
+            $_SESSION['error'] = 'Không tìm thấy checklist';
+            $this->redirect(BASE_URL . '?act=admin-pretrip-checklists');
+        }
+
+        // Xử lý POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            
+            if ($action === 'add_item') {
+                $tenMuc = trim($_POST['ten_muc'] ?? '');
+                $moTa = trim($_POST['mo_ta'] ?? '');
+                if ($tenMuc) {
+                    $result = $this->pretripChecklistModel->createChecklistItem($checklistId, $tenMuc, $moTa ?: null);
+                    if ($result) {
+                        $_SESSION['success'] = 'Thêm mục checklist thành công!';
+                        // Ghi log
+                        $this->pretripChecklistModel->logHistory($checklistId, $result, 'create_item', $_SESSION['admin_id'] ?? null, 'admin', [
+                            'ten_muc' => $tenMuc
+                        ]);
+                    } else {
+                        $_SESSION['error'] = 'Không thể thêm mục checklist';
+                    }
+                }
+            } elseif ($action === 'update_item') {
+                $itemId = $_POST['item_id'] ?? null;
+                $tenMuc = trim($_POST['ten_muc'] ?? '');
+                $moTa = trim($_POST['mo_ta'] ?? '');
+                if ($itemId && $tenMuc) {
+                    $result = $this->pretripChecklistModel->updateChecklistItem($itemId, $tenMuc, $moTa ?: null);
+                    if ($result) {
+                        $_SESSION['success'] = 'Cập nhật mục checklist thành công!';
+                        // Ghi log
+                        $this->pretripChecklistModel->logHistory($checklistId, $itemId, 'update_item', $_SESSION['admin_id'] ?? null, 'admin', [
+                            'ten_muc' => $tenMuc
+                        ]);
+                    } else {
+                        $_SESSION['error'] = 'Không thể cập nhật mục checklist';
+                    }
+                }
+            } elseif ($action === 'delete_item') {
+                $itemId = $_POST['item_id'] ?? null;
+                if ($itemId) {
+                    $item = $this->pretripChecklistModel->getChecklistItemByID($itemId);
+                    $result = $this->pretripChecklistModel->deleteChecklistItem($itemId);
+                    if ($result) {
+                        $_SESSION['success'] = 'Xóa mục checklist thành công!';
+                        // Ghi log
+                        $this->pretripChecklistModel->logHistory($checklistId, $itemId, 'delete_item', $_SESSION['admin_id'] ?? null, 'admin', [
+                            'ten_muc' => $item['ten_muc'] ?? ''
+                        ]);
+                    } else {
+                        $_SESSION['error'] = 'Không thể xóa mục checklist';
+                    }
+                }
+            }
+            
+            $this->redirect(BASE_URL . '?act=admin-pretrip-checklist-items&checklist_id=' . $checklistId);
+        }
+
+        // Lấy items và history
+        $items = $this->pretripChecklistModel->getChecklistItems($checklistId);
+        $history = $this->pretripChecklistModel->getChecklistHistory($checklistId, 20);
+        $completionPercentage = $this->pretripChecklistModel->getCompletionPercentage($checklistId);
+        
+        // Lấy thông tin departure plan
+        $departurePlan = null;
+        if ($checklist['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($checklist['id_lich_khoi_hanh']);
+        }
+
+        $this->loadView('admin/pretrip-checklists/items', compact('checklist', 'items', 'history', 'completionPercentage', 'departurePlan'), 'admin/layout');
+    }
+
+    /**
+     * Duyệt trạng thái Ready
+     * Route: ?act=admin-pretrip-checklist-approve-ready&checklist_id=X
+     */
+    public function approveReadyStatus() {
+        $this->checkLogin();
+        
+        $checklistId = $_GET['checklist_id'] ?? null;
+        if (!$checklistId) {
+            $_SESSION['error'] = 'ID checklist không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-pretrip-checklists');
+        }
+
+        $adminId = $_SESSION['admin_id'] ?? null;
+        if (!$adminId) {
+            $_SESSION['error'] = 'Không xác định được admin';
+            $this->redirect(BASE_URL . '?act=admin-pretrip-checklists');
+        }
+
+        $result = $this->pretripChecklistModel->approveReadyStatus($checklistId, $adminId);
+        
+        if ($result['success']) {
+            $_SESSION['success'] = $result['message'];
+        } else {
+            $_SESSION['error'] = $result['message'];
+        }
+
+        $checklist = $this->pretripChecklistModel->getChecklistByID($checklistId);
+        $redirectUrl = BASE_URL . '?act=admin-pretrip-checklist-items&checklist_id=' . $checklistId;
+        if ($checklist && $checklist['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($checklist['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $redirectUrl = BASE_URL . '?act=admin-tour-detail&id=' . $departurePlan['id_tour'];
+            }
+        }
+        
         $this->redirect($redirectUrl);
     }
 

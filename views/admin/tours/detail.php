@@ -44,6 +44,24 @@ if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
   gap: 8px;
 }
 
+.header-left-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-outline {
+  background: #f9fafb;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-outline:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #1f2937;
+}
+
 .card {
   background: white;
   border-radius: 12px;
@@ -184,7 +202,7 @@ if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
 
 .quick-links {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -357,6 +375,10 @@ if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
 }
 
 @media (max-width: 768px) {
+  .header-left-actions {
+    flex-wrap: wrap;
+  }
+  
   .grid-2, .quick-links {
     grid-template-columns: 1fr;
   }
@@ -374,7 +396,13 @@ if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
       <i class="fas fa-map-marked-alt"></i>
       <?= htmlspecialchars($tour['tengoi'] ?? 'Chi tiết tour') ?>
     </h1>
-    <div class="actions">
+    <div class="header-left-actions">
+      <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-outline">
+        <i class="fas fa-images"></i> Thư viện
+      </a>
+      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-outline">
+        <i class="fas fa-file-contract"></i> Chính sách
+      </a>
       <a href="<?= BASE_URL ?>?act=admin-tour-edit&id=<?= $tour['id_goi'] ?>" class="btn btn-primary">
         <i class="fas fa-edit"></i> Sửa
       </a>
@@ -506,29 +534,6 @@ if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Quick Management Links (Full Width) -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-cog"></i> Quản lý chi tiết tour
-      </div>
-    </div>
-    <div class="quick-links">
-      <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="quick-link">
-        <i class="fas fa-images"></i> Thư viện
-      </a>
-      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="quick-link">
-        <i class="fas fa-file-contract"></i> Chính sách
-      </a>
-      <a href="<?= BASE_URL ?>?act=tour-phanloai&id_goi=<?= $tour['id_goi'] ?>" class="quick-link">
-        <i class="fas fa-tags"></i> Phân loại
-      </a>
-      <a href="<?= BASE_URL ?>?act=admin-departure-plans&tour_id=<?= $tour['id_goi'] ?>" class="quick-link">
-        <i class="fas fa-calendar-alt"></i> Lịch KH
-      </a>
     </div>
   </div>
 
@@ -779,6 +784,123 @@ if ($tour['khuyenmai'] == 1 && !empty($tour['khuyenmai_phantram'])) {
   </div>
   <?php endif; ?>
 
+  <!-- Pretrip Checklist -->
+  <?php if (!empty($departurePlans)): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-clipboard-check"></i> Checklist Trước Ngày Khởi Hành
+      </div>
+      <?php if (!empty($departurePlans[0])): ?>
+        <?php if (!empty($checklist)): ?>
+          <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-items&checklist_id=<?= $checklist['id'] ?>" class="btn btn-sm btn-primary">
+            <i class="fas fa-edit"></i> Quản lý Checklist
+          </a>
+        <?php else: ?>
+          <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-create&departure_plan_id=<?= $departurePlans[0]['id'] ?>" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> Tạo Checklist
+          </a>
+        <?php endif; ?>
+      <?php endif; ?>
+    </div>
+    
+    <?php if (!empty($checklist)): ?>
+      <?php
+      $items = $checklistItems ?? [];
+      $completionPercentage = $completionPercentage ?? 0;
+      $allCompleted = ($completionPercentage == 100);
+      ?>
+      
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span class="info-label">Tiến độ hoàn thành</span>
+          <span class="info-value" style="font-weight: 700; color: <?= $allCompleted ? '#10b981' : '#3b82f6' ?>;">
+            <?= $completionPercentage ?>%
+          </span>
+        </div>
+        <div style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+          <div style="background: <?= $allCompleted ? '#10b981' : '#3b82f6' ?>; height: 100%; width: <?= $completionPercentage ?>%; transition: width 0.3s;"></div>
+        </div>
+      </div>
+
+      <?php if ($allCompleted && $checklist['trang_thai_ready'] == 0): ?>
+        <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: #065f46;"><i class="fas fa-check-circle"></i> Checklist đã hoàn thành!</strong>
+              <p style="margin: 4px 0 0 0; color: #047857; font-size: 13px;">Tất cả các mục đã được tick. Bạn có thể duyệt trạng thái Ready.</p>
+            </div>
+            <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-approve-ready&checklist_id=<?= $checklist['id'] ?>" 
+               class="btn btn-sm" 
+               style="background: #10b981; color: white;"
+               onclick="return confirm('Xác nhận duyệt trạng thái Ready cho tour này?')">
+              <i class="fas fa-check-double"></i> Duyệt Ready
+            </a>
+          </div>
+        </div>
+      <?php elseif ($checklist['trang_thai_ready'] == 1): ?>
+        <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+          <strong style="color: #1e40af;"><i class="fas fa-check-double"></i> Tour đã được duyệt Ready</strong>
+          <?php if ($checklist['ngay_duyet_ready']): ?>
+            <p style="margin: 4px 0 0 0; color: #1e3a8a; font-size: 13px;">
+              Ngày duyệt: <?= date('d/m/Y H:i', strtotime($checklist['ngay_duyet_ready'])) ?>
+            </p>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($items)): ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
+          <?php foreach ($items as $item): ?>
+            <div style="padding: 12px; background: <?= $item['da_hoan_thanh'] ? '#d1fae5' : '#f9fafb' ?>; border-radius: 6px; border-left: 3px solid <?= $item['da_hoan_thanh'] ? '#10b981' : '#e5e7eb' ?>;">
+              <div style="display: flex; align-items: start; gap: 8px;">
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">
+                    <?php if ($item['da_hoan_thanh']): ?>
+                      <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                    <?php else: ?>
+                      <i class="far fa-circle" style="color: #9ca3af;"></i>
+                    <?php endif; ?>
+                    <?= htmlspecialchars($item['ten_muc']) ?>
+                  </div>
+                  <?php if (!empty($item['mo_ta'])): ?>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                      <?= htmlspecialchars($item['mo_ta']) ?>
+                    </div>
+                  <?php endif; ?>
+                  <?php if ($item['da_hoan_thanh'] && $item['nguoi_tick']): ?>
+                    <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+                      <i class="fas fa-user"></i> 
+                      <?= htmlspecialchars($item['ten_hdv'] ?? $item['ten_admin'] ?? 'N/A') ?>
+                      <?php if ($item['ngay_tick']): ?>
+                        - <?= date('d/m/Y H:i', strtotime($item['ngay_tick'])) ?>
+                      <?php endif; ?>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <div class="empty-state">
+          <i class="fas fa-clipboard-list" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></i>
+          <p>Chưa có mục checklist nào. Vui lòng tạo mới.</p>
+        </div>
+      <?php endif; ?>
+    <?php else: ?>
+      <div class="empty-state">
+        <i class="fas fa-clipboard-list" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></i>
+        <p>Chưa có checklist cho tour này.</p>
+        <?php if (!empty($departurePlans[0])): ?>
+          <a href="<?= BASE_URL ?>?act=admin-pretrip-checklist-create&departure_plan_id=<?= $departurePlans[0]['id'] ?>" class="btn btn-primary" style="margin-top: 16px;">
+            <i class="fas fa-plus"></i> Tạo Checklist
+          </a>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
 
   <!-- Notes -->
   <?php if (!empty($tour['luuy'])): ?>

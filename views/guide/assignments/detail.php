@@ -6,6 +6,11 @@
   <div class="card-header">
     <h3><i class="fas fa-info-circle"></i> Chi tiết phân công</h3>
     <div style="display: flex; gap: 12px;">
+      <?php if (!empty($checklist)): ?>
+        <a href="?act=guide-checklist&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: #10b981; color: white;">
+          <i class="fas fa-clipboard-check"></i> Checklist (<?= $completionPercentage ?>%)
+        </a>
+      <?php endif; ?>
       <a href="?act=guide-journal-create&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm btn-primary">
         <i class="fas fa-book"></i> Tạo nhật ký
       </a>
