@@ -10,6 +10,7 @@ class GuideController extends BaseController {
     private $tourModel;
     private $journalModel;
     private $incidentReportModel;
+    private $pretripChecklistModel;
 
     public function __construct() {
         $this->guideModel = new GuideModel();
@@ -18,7 +19,18 @@ class GuideController extends BaseController {
         $this->departurePlanModel = new DeparturePlanModel();
         $this->tourModel = new TourModel();
         $this->journalModel = new TourJournalModel();
-        // IncidentReportModel sẽ được khởi tạo khi cần (lazy loading)
+        // PretripChecklistModel và IncidentReportModel sẽ được khởi tạo khi cần (lazy loading)
+    }
+
+    /**
+     * Lazy load PretripChecklistModel
+     */
+    private function getPretripChecklistModel() {
+        if ($this->pretripChecklistModel === null) {
+            require_once './models/PretripChecklistModel.php';
+            $this->pretripChecklistModel = new PretripChecklistModel();
+        }
+        return $this->pretripChecklistModel;
     }
 
     /**
@@ -226,7 +238,104 @@ class GuideController extends BaseController {
             $services = $this->serviceAssignmentModel->getAssignmentsByDeparturePlanID($assignment['id_lich_khoi_hanh']);
         }
         
-        $this->loadView('guide/assignments/detail', compact('assignment', 'departurePlan', 'tour', 'services'), 'guide/layout');
+        // Lấy checklist nếu có
+        $checklist = null;
+        $checklistItems = [];
+        $completionPercentage = 0;
+        if ($assignment['id_lich_khoi_hanh']) {
+            $checklistModel = $this->getPretripChecklistModel();
+            $checklist = $checklistModel->getChecklistByDeparturePlanID($assignment['id_lich_khoi_hanh']);
+            if ($checklist) {
+                $checklistItems = $checklistModel->getChecklistItems($checklist['id']);
+                $completionPercentage = $checklistModel->getCompletionPercentage($checklist['id']);
+            }
+        }
+        
+        $this->loadView('guide/assignments/detail', compact('assignment', 'departurePlan', 'tour', 'services', 'checklist', 'checklistItems', 'completionPercentage'), 'guide/layout');
+    }
+
+    /**
+     * Xem và tick checklist cho tour được phân công
+     * Route: ?act=guide-checklist&assignment_id=X
+     */
+    public function viewChecklist() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? null;
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền xem';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Kiểm tra quyền truy cập checklist
+        if (!$assignment['id_lich_khoi_hanh']) {
+            $_SESSION['error'] = 'Phân công chưa có lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        $checklistModel = $this->getPretripChecklistModel();
+        $hasAccess = $checklistModel->isGuideAssignedToDeparturePlan($guideId, $assignment['id_lich_khoi_hanh']);
+        if (!$hasAccess) {
+            $_SESSION['error'] = 'Bạn không có quyền cập nhật checklist của tour này';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Lấy checklist
+        $checklist = $checklistModel->getChecklistByDeparturePlanID($assignment['id_lich_khoi_hanh']);
+        if (!$checklist) {
+            $_SESSION['error'] = 'Chưa có checklist cho tour này. Vui lòng liên hệ admin để tạo checklist.';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Xử lý POST request - tick/untick items
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $action = $_POST['action'] ?? '';
+            $itemId = $_POST['item_id'] ?? null;
+            
+            if ($action === 'toggle_item' && $itemId) {
+                $checklistModel = $this->getPretripChecklistModel();
+                $currentItem = $checklistModel->getChecklistItemByID($itemId);
+                if ($currentItem && $currentItem['id_checklist'] == $checklist['id']) {
+                    $checked = !$currentItem['da_hoan_thanh'];
+                    $result = $checklistModel->toggleChecklistItem($itemId, $guideId, 'guide', $checked);
+                    if ($result) {
+                        $_SESSION['success'] = $checked ? 'Đã đánh dấu hoàn thành!' : 'Đã bỏ đánh dấu hoàn thành!';
+                    } else {
+                        $_SESSION['error'] = 'Không thể cập nhật trạng thái';
+                    }
+                } else {
+                    $_SESSION['error'] = 'Mục checklist không hợp lệ';
+                }
+            }
+            
+            $this->redirect(BASE_URL . '?act=guide-checklist&assignment_id=' . $assignmentId);
+        }
+        
+        // Lấy items và thông tin liên quan
+        $checklistModel = $this->getPretripChecklistModel();
+        $items = $checklistModel->getChecklistItems($checklist['id']);
+        $completionPercentage = $checklistModel->getCompletionPercentage($checklist['id']);
+        $history = $checklistModel->getChecklistHistory($checklist['id'], 20);
+        
+        // Lấy thông tin tour và departure plan
+        $departurePlan = null;
+        $tour = null;
+        if ($assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+            if ($departurePlan && $departurePlan['id_tour']) {
+                $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            }
+        }
+        
+        $this->loadView('guide/checklist', compact('assignment', 'checklist', 'items', 'completionPercentage', 'history', 'departurePlan', 'tour'), 'guide/layout');
     }
 
     /**
