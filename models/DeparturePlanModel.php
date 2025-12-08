@@ -164,7 +164,8 @@ class DeparturePlanModel extends BaseModel
                 'uu_dai_giam_gia' => "`uu_dai_giam_gia` DECIMAL(5,2) NULL DEFAULT NULL COMMENT 'Ưu đãi giảm giá (%)' AFTER `phuong_tien`",
                 'ghi_chu' => "`ghi_chu` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú nội bộ' AFTER `uu_dai_giam_gia`",
                 'ghi_chu_van_hanh' => "`ghi_chu_van_hanh` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú vận hành' AFTER `ghi_chu`",
-                'trang_thai' => "`trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng/Khóa, 1=Đang mở, 2=Hết chỗ, 3=Gần đầy' AFTER `ghi_chu_van_hanh`",
+                'chuongtrinh' => "`chuongtrinh` TEXT NULL DEFAULT NULL COMMENT 'Lịch trình tour' AFTER `ghi_chu_van_hanh`",
+                'trang_thai' => "`trang_thai` TINYINT(1) DEFAULT 1 COMMENT 'Trạng thái: 0=Đóng/Khóa, 1=Đang mở, 2=Hết chỗ, 3=Gần đầy' AFTER `chuongtrinh`",
                 'ngay_tao' => "`ngay_tao` DATETIME NULL DEFAULT NULL COMMENT 'Ngày tạo' AFTER `trang_thai`",
                 'ngay_cap_nhat' => "`ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật' AFTER `ngay_tao`"
             ];
@@ -173,7 +174,7 @@ class DeparturePlanModel extends BaseModel
             $columnOrder = ['id', 'id_tour', 'ngay_khoi_hanh', 'ngay_ket_thuc', 'gio_khoi_hanh', 'gio_tap_trung', 
                           'diem_tap_trung', 'so_cho', 'so_cho_da_dat', 'so_cho_con_lai', 'so_cho_con_trong',
                           'gia_nguoi_lon', 'gia_tre_em', 'gia_tre_nho', 'phuong_tien', 'uu_dai_giam_gia', 
-                          'ghi_chu', 'ghi_chu_van_hanh', 'trang_thai', 'ngay_tao', 'ngay_cap_nhat'];
+                          'ghi_chu', 'ghi_chu_van_hanh', 'chuongtrinh', 'trang_thai', 'ngay_tao', 'ngay_cap_nhat'];
             
             // Kiểm tra và tạo các cột còn thiếu
             foreach ($columnOrder as $idx => $columnName) {
@@ -307,13 +308,13 @@ class DeparturePlanModel extends BaseModel
                         id_tour, ngay_khoi_hanh, ngay_ket_thuc, gio_khoi_hanh, gio_tap_trung,
                         diem_tap_trung, so_cho, so_cho_da_dat, so_cho_con_lai, so_cho_con_trong,
                         gia_nguoi_lon, gia_tre_em, gia_tre_nho,
-                        phuong_tien, uu_dai_giam_gia, ghi_chu, ghi_chu_van_hanh, 
+                        phuong_tien, uu_dai_giam_gia, ghi_chu, ghi_chu_van_hanh, chuongtrinh,
                         trang_thai, ngay_tao, ngay_cap_nhat
                     ) VALUES (
                         :id_tour, :ngay_khoi_hanh, :ngay_ket_thuc, :gio_khoi_hanh, :gio_tap_trung,
                         :diem_tap_trung, :so_cho, :so_cho_da_dat, :so_cho_con_lai, :so_cho_con_trong,
                         :gia_nguoi_lon, :gia_tre_em, :gia_tre_nho,
-                        :phuong_tien, :uu_dai_giam_gia, :ghi_chu, :ghi_chu_van_hanh,
+                        :phuong_tien, :uu_dai_giam_gia, :ghi_chu, :ghi_chu_van_hanh, :chuongtrinh,
                         :trang_thai, NOW(), NOW()
                     )";
 
@@ -385,6 +386,7 @@ class DeparturePlanModel extends BaseModel
                         ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                         ':ghi_chu' => $data['ghi_chu'] ?? null,
                         ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
+                        ':chuongtrinh' => $data['chuongtrinh'] ?? null,
                         ':trang_thai' => $data['trang_thai'] ?? 1,
                     ]);
                     $this->lastError = null;
@@ -407,9 +409,9 @@ class DeparturePlanModel extends BaseModel
     {
         try {
             // Tính toán so_cho_con_lai nếu có so_cho và so_cho_da_dat
-            $so_cho = $data['so_cho'] ?? null;
-            $so_cho_da_dat = $data['so_cho_da_dat'] ?? null;
-            $so_cho_con_lai = $data['so_cho_con_lai'] ?? null;
+            $so_cho = isset($data['so_cho']) && $data['so_cho'] !== '' ? (int)$data['so_cho'] : null;
+            $so_cho_da_dat = isset($data['so_cho_da_dat']) && $data['so_cho_da_dat'] !== '' ? (int)$data['so_cho_da_dat'] : null;
+            $so_cho_con_lai = isset($data['so_cho_con_lai']) && $data['so_cho_con_lai'] !== '' ? (int)$data['so_cho_con_lai'] : null;
             if ($so_cho !== null && $so_cho_da_dat !== null && $so_cho_con_lai === null) {
                 $so_cho_con_lai = max(0, $so_cho - $so_cho_da_dat);
             }
@@ -432,6 +434,7 @@ class DeparturePlanModel extends BaseModel
                         uu_dai_giam_gia = :uu_dai_giam_gia,
                         ghi_chu = :ghi_chu,
                         ghi_chu_van_hanh = :ghi_chu_van_hanh,
+                        chuongtrinh = :chuongtrinh,
                         trang_thai = :trang_thai,
                         ngay_cap_nhat = NOW()
                     WHERE id = :id";
@@ -456,6 +459,7 @@ class DeparturePlanModel extends BaseModel
                 ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                 ':ghi_chu' => $data['ghi_chu'] ?? null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
+                ':chuongtrinh' => $data['chuongtrinh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
             
@@ -463,15 +467,16 @@ class DeparturePlanModel extends BaseModel
             if (!$result && (strpos($stmt->errorInfo()[2] ?? '', 'phuong_tien') !== false)) {
                 try {
                     $this->ensurePhuongTienColumnExists();
-                    // Retry update với các trường mới
-                    $so_cho_retry = $data['so_cho'] ?? null;
-                    $so_cho_da_dat_retry = $data['so_cho_da_dat'] ?? null;
-                    $so_cho_con_lai_retry = $data['so_cho_con_lai'] ?? null;
+                    // Retry update với các trường mới - cần prepare lại statement
+                    $so_cho_retry = isset($data['so_cho']) && $data['so_cho'] !== '' ? (int)$data['so_cho'] : null;
+                    $so_cho_da_dat_retry = isset($data['so_cho_da_dat']) && $data['so_cho_da_dat'] !== '' ? (int)$data['so_cho_da_dat'] : null;
+                    $so_cho_con_lai_retry = isset($data['so_cho_con_lai']) && $data['so_cho_con_lai'] !== '' ? (int)$data['so_cho_con_lai'] : null;
                     if ($so_cho_retry !== null && $so_cho_da_dat_retry !== null && $so_cho_con_lai_retry === null) {
                         $so_cho_con_lai_retry = max(0, $so_cho_retry - $so_cho_da_dat_retry);
                     }
 
-                    return $stmt->execute([
+                    $stmt_retry = $this->conn->prepare($sql);
+                    return $stmt_retry->execute([
                         ':id' => $id,
                         ':id_tour' => $data['id_tour'] ?? null,
                         ':ngay_khoi_hanh' => $data['ngay_khoi_hanh'] ?? null,
@@ -490,6 +495,7 @@ class DeparturePlanModel extends BaseModel
                         ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                         ':ghi_chu' => $data['ghi_chu'] ?? null,
                         ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
+                        ':chuongtrinh' => $data['chuongtrinh'] ?? null,
                         ':trang_thai' => $data['trang_thai'] ?? 1,
                     ]);
                 } catch (PDOException $e2) {
@@ -498,11 +504,19 @@ class DeparturePlanModel extends BaseModel
                 }
             }
             
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                $errorMsg = "Lỗi cập nhật lịch khởi hành: " . ($errorInfo[2] ?? 'Unknown error');
+                $errorMsg .= " | Code: " . ($errorInfo[0] ?? 'N/A');
+                $errorMsg .= " | SQL: " . $sql;
+                error_log($errorMsg);
+            }
+            
             return $result;
         } catch (PDOException $e) {
             $errorMsg = "Lỗi cập nhật lịch khởi hành: " . $e->getMessage();
             $errorMsg .= " | Code: " . $e->getCode();
-            $errorMsg .= " | SQL: " . $sql;
+            $errorMsg .= " | SQL: " . ($sql ?? 'N/A');
             error_log($errorMsg);
             return false;
         }

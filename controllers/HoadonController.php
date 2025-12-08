@@ -55,6 +55,51 @@ class HoadonController extends BaseController
     }
 
     /**
+     * Xuất hóa đơn (Printable)
+     */
+    public function print()
+    {
+        $id = $_GET['id'] ?? null;
+        
+        if (!$id) {
+            echo "<script>alert('ID hóa đơn không hợp lệ!'); window.location='?act=hoadon-list';</script>";
+            return;
+        }
+
+        $hoadon = $this->hoadonModel->getHoadonById($id);
+        if (!$hoadon) {
+            echo "<script>alert('Không tìm thấy hóa đơn!'); window.location='?act=hoadon-list';</script>";
+            return;
+        }
+
+        $total = $this->hoadonModel->calculateTotal($id);
+
+        // Cập nhật trạng thái hóa đơn thành "Đã xuất" (1) khi xuất hóa đơn
+        if (($hoadon['trang_thai_hoa_don'] ?? 0) == 0) {
+            $this->hoadonModel->updateInvoiceStatus($id, 1);
+        }
+
+        // Load view trực tiếp không qua layout
+        $ROOT = rtrim(dirname(__DIR__), '/\\');
+        $viewPath = $ROOT . '/views/admin/hoadon/print.php';
+        
+        if (is_file($viewPath)) {
+            // Đảm bảo BASE_URL được định nghĩa
+            if (!defined('BASE_URL')) {
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $script = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+                define('BASE_URL', rtrim($protocol . $host . $script, '/'));
+            }
+            
+            extract(['hoadon' => $hoadon, 'total' => $total]);
+            include $viewPath;
+        } else {
+            echo "❌ Không tìm thấy view: " . $viewPath;
+        }
+    }
+
+    /**
      * Tạo hóa đơn mới
      */
     public function create()
@@ -130,6 +175,27 @@ class HoadonController extends BaseController
             }
         } else {
             echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ!']);
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái hóa đơn mới (0=Chưa xuất, 1=Đã xuất, 2=Đã gửi, 3=Hủy)
+     */
+    public function updateInvoiceStatus()
+    {
+        $id = $_POST['id'] ?? null;
+        $trang_thai_hoa_don = $_POST['trang_thai_hoa_don'] ?? null;
+
+        if ($id && $trang_thai_hoa_don !== null) {
+            $result = $this->hoadonModel->updateInvoiceStatus($id, $trang_thai_hoa_don);
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Cập nhật trạng thái hóa đơn thành công!']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Cập nhật trạng thái hóa đơn thất bại!']);
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Thiếu thông tin!']);
         }
     }
 

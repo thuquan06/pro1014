@@ -263,28 +263,8 @@ try {
 
         // ==================== ASSIGNMENT MANAGEMENT ====================
         case 'admin-assignments':
-            require_once './models/AssignmentModel.php';
+            require_once './controllers/AdminController.php';
             (new AdminController())->listAssignments();
-            break;
-
-        case 'admin-assignment-create':
-            require_once './models/AssignmentModel.php';
-            (new AdminController())->createAssignment();
-            break;
-
-        case 'admin-assignment-edit':
-            require_once './models/AssignmentModel.php';
-            (new AdminController())->editAssignment();
-            break;
-
-        case 'admin-assignment-delete':
-            require_once './models/AssignmentModel.php';
-            (new AdminController())->deleteAssignment();
-            break;
-
-        case 'admin-assignment-toggle':
-            require_once './models/AssignmentModel.php';
-            (new AdminController())->toggleAssignmentStatus();
             break;
 
         // ==================== SERVICE MANAGEMENT ====================
@@ -347,6 +327,11 @@ try {
         case 'admin-get-departure-plans':
             require_once './models/DeparturePlanModel.php';
             (new AdminController())->getDeparturePlansByTour();
+            break;
+
+        case 'admin-get-guide-roles':
+            require_once './models/AssignmentModel.php';
+            (new AdminController())->getGuideRoles();
             break;
 
         case 'admin-calculate-booking-total':
@@ -468,6 +453,10 @@ try {
             (new HoadonController())->detail();
             break;
 
+        case 'hoadon-print':
+            (new HoadonController())->print();
+            break;
+
         case 'hoadon-create':
             (new HoadonController())->create();
             break;
@@ -498,6 +487,10 @@ try {
 
         case 'hoadon-filter':
             (new HoadonController())->filterByStatus();
+            break;
+
+        case 'hoadon-update-invoice-status':
+            (new HoadonController())->updateInvoiceStatus();
             break;
 
         case 'hoadon-search':

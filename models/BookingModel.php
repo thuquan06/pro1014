@@ -30,6 +30,7 @@ class BookingModel extends BaseModel
                     `ma_booking` VARCHAR(50) NOT NULL UNIQUE COMMENT 'Mã booking tự động',
                     `id_lich_khoi_hanh` INT(11) NULL DEFAULT NULL COMMENT 'ID lịch khởi hành',
                     `id_tour` INT(11) NULL DEFAULT NULL COMMENT 'ID tour (backup)',
+                    `id_hdv` INT(11) NULL DEFAULT NULL COMMENT 'ID hướng dẫn viên được phân công',
                     `ho_ten` VARCHAR(255) NOT NULL COMMENT 'Họ tên khách hàng',
                     `so_dien_thoai` VARCHAR(20) NOT NULL COMMENT 'Số điện thoại',
                     `email` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Email',
@@ -50,6 +51,7 @@ class BookingModel extends BaseModel
                     `ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
                     KEY `idx_lich_khoi_hanh` (`id_lich_khoi_hanh`),
                     KEY `idx_tour` (`id_tour`),
+                    KEY `idx_hdv` (`id_hdv`),
                     KEY `idx_trang_thai` (`trang_thai`),
                     KEY `idx_ngay_dat` (`ngay_dat`),
                     KEY `idx_ma_booking` (`ma_booking`)
@@ -95,9 +97,28 @@ class BookingModel extends BaseModel
                 $this->conn->exec("ALTER TABLE booking ADD COLUMN `ngay_thanh_toan` DATETIME NULL DEFAULT NULL COMMENT 'Ngày thanh toán' AFTER `ngay_dat`");
             }
             
+            // Thêm cột trang_thai_hoa_don nếu chưa có
+            if (!in_array('trang_thai_hoa_don', $columns)) {
+                $this->conn->exec("ALTER TABLE booking ADD COLUMN `trang_thai_hoa_don` TINYINT(1) DEFAULT 0 COMMENT '0=Chưa xuất, 1=Đã xuất, 2=Đã gửi, 3=Hủy' AFTER `trang_thai`");
+            }
+            
+            // Thêm cột vai_tro nếu chưa có
+            if (!in_array('vai_tro', $columns)) {
+                $this->conn->exec("ALTER TABLE booking ADD COLUMN `vai_tro` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Vai trò của HDV (HDV chính, HDV phụ, Trợ lý)' AFTER `id_hdv`");
+            }
+            
+            // Đảm bảo bảng booking_hdv tồn tại để lưu nhiều HDV cho một booking
+            $this->ensureBookingHdvTableExists();
+            
             // Thêm cột loai_booking nếu chưa có
             if (!in_array('loai_booking', $columns)) {
                 $this->conn->exec("ALTER TABLE booking ADD COLUMN `loai_booking` TINYINT(1) DEFAULT 1 COMMENT '1=Cá nhân, 2=Gia đình, 3=Nhóm, 4=Đoàn' AFTER `so_em_be`");
+            }
+            
+            // Thêm cột id_hdv nếu chưa có
+            if (!in_array('id_hdv', $columns)) {
+                $this->conn->exec("ALTER TABLE booking ADD COLUMN `id_hdv` INT(11) NULL DEFAULT NULL COMMENT 'ID hướng dẫn viên được phân công' AFTER `id_tour`");
+                $this->conn->exec("ALTER TABLE booking ADD KEY `idx_hdv` (`id_hdv`)");
             }
         } catch (PDOException $e) {
             error_log("Lỗi ensureColumnsExist BookingModel: " . $e->getMessage());
@@ -105,6 +126,36 @@ class BookingModel extends BaseModel
         
         // Đảm bảo bảng booking_detail tồn tại
         $this->ensureBookingDetailTableExists();
+        
+        // Đảm bảo bảng booking_hdv tồn tại
+        $this->ensureBookingHdvTableExists();
+    }
+    
+    /**
+     * Đảm bảo bảng booking_hdv tồn tại để lưu nhiều HDV cho một booking
+     */
+    private function ensureBookingHdvTableExists()
+    {
+        try {
+            $tableExists = $this->conn->query("SHOW TABLES LIKE 'booking_hdv'")->rowCount() > 0;
+            
+            if (!$tableExists) {
+                $createTableSQL = "CREATE TABLE `booking_hdv` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    `id_booking` INT(11) NOT NULL COMMENT 'ID booking',
+                    `id_hdv` INT(11) NOT NULL COMMENT 'ID hướng dẫn viên',
+                    `vai_tro` VARCHAR(50) NOT NULL DEFAULT 'HDV chính' COMMENT 'Vai trò (HDV chính, HDV phụ, Trợ lý)',
+                    `ngay_tao` DATETIME NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
+                    KEY `idx_booking` (`id_booking`),
+                    KEY `idx_hdv` (`id_hdv`),
+                    FOREIGN KEY (`id_booking`) REFERENCES `booking`(`id`) ON DELETE CASCADE,
+                    FOREIGN KEY (`id_hdv`) REFERENCES `huong_dan_vien`(`id`) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng lưu nhiều HDV cho một booking'";
+                $this->conn->exec($createTableSQL);
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi ensureBookingHdvTableExists: " . $e->getMessage());
+        }
     }
     
     /**
@@ -161,10 +212,14 @@ class BookingModel extends BaseModel
                        lkh.gia_tre_em, 
                        lkh.gia_tre_nho,
                        g.tengoi as ten_tour,
-                       g.mato as ma_tour
+                       g.mato as ma_tour,
+                       hdv.ho_ten as ten_hdv,
+                       hdv.so_dien_thoai as sdt_hdv,
+                       hdv.email as email_hdv
                 FROM booking b
                 LEFT JOIN lich_khoi_hanh lkh ON b.id_lich_khoi_hanh = lkh.id
                 LEFT JOIN goidulich g ON b.id_tour = g.id_goi
+                LEFT JOIN huong_dan_vien hdv ON b.id_hdv = hdv.id
                 WHERE 1=1";
         $params = [];
 
@@ -212,10 +267,14 @@ class BookingModel extends BaseModel
                        lkh.so_cho_con_lai,
                        g.tengoi as ten_tour,
                        g.mato as ma_tour,
-                       g.noixuatphat as noi_xuat_phat
+                       g.noixuatphat as noi_xuat_phat,
+                       hdv.ho_ten as ten_hdv,
+                       hdv.so_dien_thoai as sdt_hdv,
+                       hdv.email as email_hdv
                 FROM booking b
                 LEFT JOIN lich_khoi_hanh lkh ON b.id_lich_khoi_hanh = lkh.id
                 LEFT JOIN goidulich g ON b.id_tour = g.id_goi
+                LEFT JOIN huong_dan_vien hdv ON b.id_hdv = hdv.id
                 WHERE b.id = :id";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':id' => $id]);
@@ -335,12 +394,12 @@ class BookingModel extends BaseModel
 
             // Tạo booking
             $sql = "INSERT INTO booking (
-                        ma_booking, id_lich_khoi_hanh, id_tour, voucher_id, voucher_code,
+                        ma_booking, id_lich_khoi_hanh, id_tour, id_hdv, vai_tro, voucher_id, voucher_code,
                         ho_ten, so_dien_thoai, email, dia_chi,
                         so_nguoi_lon, so_tre_em, so_tre_nho, loai_booking, tong_tien, voucher_discount, tien_dat_coc,
                         trang_thai, ghi_chu, nguoi_tao, ngay_dat
                     ) VALUES (
-                        :ma_booking, :id_lich_khoi_hanh, :id_tour, :voucher_id, :voucher_code,
+                        :ma_booking, :id_lich_khoi_hanh, :id_tour, :id_hdv, :vai_tro, :voucher_id, :voucher_code,
                         :ho_ten, :so_dien_thoai, :email, :dia_chi,
                         :so_nguoi_lon, :so_tre_em, :so_tre_nho, :loai_booking, :tong_tien, :voucher_discount, :tien_dat_coc,
                         :trang_thai, :ghi_chu, :nguoi_tao, NOW()
@@ -351,6 +410,8 @@ class BookingModel extends BaseModel
                 ':ma_booking' => $ma_booking,
                 ':id_lich_khoi_hanh' => $data['id_lich_khoi_hanh'],
                 ':id_tour' => $id_tour,
+                ':id_hdv' => isset($data['id_hdv']) && $data['id_hdv'] !== '' ? (int)$data['id_hdv'] : null,
+                ':vai_tro' => $data['vai_tro'] ?? null,
                 ':voucher_id' => $data['voucher_id'] ?? null,
                 ':voucher_code' => $data['voucher_code'] ?? null,
                 ':ho_ten' => $data['ho_ten'],
@@ -380,6 +441,17 @@ class BookingModel extends BaseModel
                 $this->saveBookingDetails($booking_id, $danh_sach_khach);
             }
 
+            // Lưu nhiều HDV nếu có
+            if (!empty($data['danh_sach_hdv']) && is_array($data['danh_sach_hdv'])) {
+                $this->saveBookingGuides($booking_id, $data['danh_sach_hdv']);
+            } elseif (!empty($data['id_hdv']) && !empty($data['vai_tro'])) {
+                // Nếu chỉ có một HDV, lưu vào booking_hdv
+                $this->saveBookingGuides($booking_id, [[
+                    'id_hdv' => $data['id_hdv'],
+                    'vai_tro' => $data['vai_tro']
+                ]]);
+            }
+
             // Trừ số chỗ trong lịch khởi hành
             $this->updateSeats($data['id_lich_khoi_hanh'], $so_nguoi, 'subtract');
 
@@ -402,8 +474,46 @@ class BookingModel extends BaseModel
                 return ['success' => false, 'message' => 'Không tìm thấy booking'];
             }
 
-            $oldTrangThai = $oldBooking['trang_thai'];
-            $newTrangThai = $data['trang_thai'] ?? $oldTrangThai;
+            $oldTrangThai = (int)($oldBooking['trang_thai'] ?? 0);
+            $newTrangThai = isset($data['trang_thai']) ? (int)$data['trang_thai'] : $oldTrangThai;
+            
+            // Kiểm tra quy trình thay đổi trạng thái
+            // Quy trình: 0 (Chờ xử lý) -> 2 (Đã đặt cọc) -> 3 (Đã thanh toán) -> 4 (Đã hoàn thành)
+            // Có thể hủy (5) từ trạng thái Chờ xử lý hoặc Đã đặt cọc
+            // Không cho phép hủy khi đã thanh toán hoặc đã hoàn thành (đảm bảo tính toàn vẹn dữ liệu tài chính)
+            // Có thể quay lại từ hủy (5) về các trạng thái hợp lệ
+            if ($oldTrangThai != $newTrangThai) {
+                $allowedTransitions = [
+                    0 => [2, 5], // Chờ xử lý -> Đã đặt cọc hoặc Hủy
+                    2 => [3, 5], // Đã đặt cọc -> Đã thanh toán hoặc Hủy
+                    3 => [4],    // Đã thanh toán -> chỉ có thể Đã hoàn thành (không cho hủy)
+                    4 => [],     // Đã hoàn thành -> không thể thay đổi trạng thái
+                    5 => [0, 2], // Hủy -> có thể quay lại Chờ xử lý hoặc Đã đặt cọc
+                ];
+                
+                if (isset($allowedTransitions[$oldTrangThai]) && !in_array($newTrangThai, $allowedTransitions[$oldTrangThai])) {
+                    $statusNames = [
+                        0 => 'Chờ xử lý',
+                        2 => 'Đã đặt cọc',
+                        3 => 'Đã thanh toán',
+                        4 => 'Đã hoàn thành',
+                        5 => 'Hủy'
+                    ];
+                    $oldName = $statusNames[$oldTrangThai] ?? 'Trạng thái hiện tại';
+                    $newName = $statusNames[$newTrangThai] ?? 'Trạng thái mới';
+                    
+                    // Xác định trạng thái tiếp theo hợp lệ
+                    $nextStatuses = array_map(function($s) use ($statusNames) {
+                        return $statusNames[$s] ?? '';
+                    }, $allowedTransitions[$oldTrangThai]);
+                    
+                    return [
+                        'success' => false, 
+                        'message' => "Không thể chuyển từ '{$oldName}' sang '{$newName}'. Quy trình: " . implode(' → ', $nextStatuses)
+                    ];
+                }
+            }
+            
             $oldSoNguoi = ($oldBooking['so_nguoi_lon'] ?? 0) + ($oldBooking['so_tre_em'] ?? 0) + ($oldBooking['so_tre_nho'] ?? 0);
             
             // Nếu thay đổi số khách, kiểm tra lại số chỗ
@@ -460,6 +570,12 @@ class BookingModel extends BaseModel
             $voucherCode = isset($data['voucher_code']) ? ($data['voucher_code'] ?: null) : $oldBooking['voucher_code'];
             $voucherDiscount = isset($data['voucher_discount']) ? (float)($data['voucher_discount'] ?? 0) : ($oldBooking['voucher_discount'] ?? 0);
             
+            // Xử lý id_hdv
+            $idHdv = isset($data['id_hdv']) ? ($data['id_hdv'] !== '' ? (int)$data['id_hdv'] : null) : ($oldBooking['id_hdv'] ?? null);
+            
+            // Xử lý vai_tro
+            $vaiTro = isset($data['vai_tro']) ? ($data['vai_tro'] !== '' ? $data['vai_tro'] : null) : ($oldBooking['vai_tro'] ?? null);
+            
             // Cập nhật booking
             $sql = "UPDATE booking SET
                         ho_ten = :ho_ten,
@@ -469,6 +585,8 @@ class BookingModel extends BaseModel
                         so_nguoi_lon = :so_nguoi_lon,
                         so_tre_em = :so_tre_em,
                         so_tre_nho = :so_tre_nho,
+                        id_hdv = :id_hdv,
+                        vai_tro = :vai_tro,
                         tong_tien = :tong_tien,
                         voucher_id = :voucher_id,
                         voucher_code = :voucher_code,
@@ -488,6 +606,8 @@ class BookingModel extends BaseModel
                 ':so_nguoi_lon' => $data['so_nguoi_lon'] ?? $oldBooking['so_nguoi_lon'] ?? 0,
                 ':so_tre_em' => $data['so_tre_em'] ?? $oldBooking['so_tre_em'] ?? 0,
                 ':so_tre_nho' => $data['so_tre_nho'] ?? $oldBooking['so_tre_nho'] ?? 0,
+                ':id_hdv' => $idHdv,
+                ':vai_tro' => $vaiTro,
                 ':tong_tien' => $tong_tien,
                 ':voucher_id' => $voucherId,
                 ':voucher_code' => $voucherCode,
@@ -537,6 +657,17 @@ class BookingModel extends BaseModel
                 }
             }
 
+            // Xử lý danh sách HDV
+            if (!empty($data['danh_sach_hdv']) && is_array($data['danh_sach_hdv'])) {
+                $this->saveBookingGuides($id, $data['danh_sach_hdv']);
+            } elseif (!empty($data['id_hdv']) && !empty($data['vai_tro'])) {
+                // Nếu chỉ có một HDV, lưu vào booking_hdv
+                $this->saveBookingGuides($id, [[
+                    'id_hdv' => $data['id_hdv'],
+                    'vai_tro' => $data['vai_tro']
+                ]]);
+            }
+
             return ['success' => true, 'message' => 'Cập nhật booking thành công'];
         } catch (PDOException $e) {
             error_log("Lỗi updateBooking: " . $e->getMessage());
@@ -578,14 +709,31 @@ class BookingModel extends BaseModel
     public function deleteBooking($id)
     {
         try {
-            // Lấy booking để cộng lại số chỗ
+            // Lấy booking để kiểm tra trạng thái
             $booking = $this->getBookingById($id);
             if (!$booking) {
                 return ['success' => false, 'message' => 'Không tìm thấy booking'];
             }
 
+            // Chỉ cho phép xóa booking ở trạng thái "Chờ xử lý" (0) hoặc "Đã hủy" (5)
+            // Không cho phép xóa booking đã đặt cọc, đã thanh toán, hoặc đã hoàn thành
+            $trangThai = (int)($booking['trang_thai'] ?? 0);
+            if ($trangThai == 2 || $trangThai == 3 || $trangThai == 4) {
+                return [
+                    'success' => false, 
+                    'message' => 'Không thể xóa booking đã đặt cọc, thanh toán hoặc hoàn thành. Vui lòng hủy booking thay vì xóa.'
+                ];
+            }
+
+            // Bắt đầu transaction
+            $this->conn->beginTransaction();
+
+            // Xóa các dữ liệu liên quan trước
+            $this->deleteBookingGuides($id);
+            $this->deleteBookingDetails($id);
+
             // Nếu booking không ở trạng thái hủy, cộng lại số chỗ
-            if ($booking['trang_thai'] != 5) {
+            if ($trangThai != 5) {
                 $so_nguoi = ($booking['so_nguoi_lon'] ?? 0) + ($booking['so_tre_em'] ?? 0) + ($booking['so_tre_nho'] ?? 0) + ($booking['so_em_be'] ?? 0);
                 $this->updateSeats($booking['id_lich_khoi_hanh'], $so_nguoi, 'add');
             }
@@ -596,11 +744,18 @@ class BookingModel extends BaseModel
             $result = $stmt->execute([':id' => $id]);
 
             if (!$result) {
+                $this->conn->rollBack();
                 return ['success' => false, 'message' => 'Không thể xóa booking'];
             }
 
+            // Commit transaction
+            $this->conn->commit();
+
             return ['success' => true, 'message' => 'Xóa booking thành công'];
         } catch (PDOException $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             error_log("Lỗi deleteBooking: " . $e->getMessage());
             return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
         }
@@ -641,7 +796,48 @@ class BookingModel extends BaseModel
                 return ['success' => false, 'message' => 'Không tìm thấy booking'];
             }
 
-            $oldTrangThai = $booking['trang_thai'];
+            $oldTrangThai = (int)($booking['trang_thai'] ?? 0);
+            $newTrangThai = (int)$trang_thai;
+            
+            // Kiểm tra quy trình thay đổi trạng thái
+            // Quy trình: 0 (Chờ xử lý) -> 2 (Đã đặt cọc) -> 3 (Đã thanh toán) -> 4 (Đã hoàn thành)
+            // Có thể hủy (5) từ trạng thái Chờ xử lý hoặc Đã đặt cọc
+            // Không cho phép hủy khi đã thanh toán hoặc đã hoàn thành (đảm bảo tính toàn vẹn dữ liệu tài chính)
+            // Có thể quay lại từ hủy (5) về các trạng thái hợp lệ
+            
+            $allowedTransitions = [
+                0 => [2, 5], // Chờ xử lý -> Đã đặt cọc hoặc Hủy
+                2 => [3, 5], // Đã đặt cọc -> Đã thanh toán hoặc Hủy
+                3 => [4],    // Đã thanh toán -> chỉ có thể Đã hoàn thành (không cho hủy)
+                4 => [],     // Đã hoàn thành -> không thể thay đổi trạng thái
+                5 => [0, 2], // Hủy -> có thể quay lại Chờ xử lý hoặc Đã đặt cọc
+            ];
+            
+            // Nếu không phải chuyển về cùng trạng thái và không nằm trong quy trình cho phép
+            if ($oldTrangThai != $newTrangThai && isset($allowedTransitions[$oldTrangThai])) {
+                if (!in_array($newTrangThai, $allowedTransitions[$oldTrangThai])) {
+                    $statusNames = [
+                        0 => 'Chờ xử lý',
+                        2 => 'Đã đặt cọc',
+                        3 => 'Đã thanh toán',
+                        4 => 'Đã hoàn thành',
+                        5 => 'Hủy'
+                    ];
+                    $oldName = $statusNames[$oldTrangThai] ?? 'Trạng thái hiện tại';
+                    $newName = $statusNames[$newTrangThai] ?? 'Trạng thái mới';
+                    
+                    // Xác định trạng thái tiếp theo hợp lệ
+                    $nextStatuses = array_map(function($s) use ($statusNames) {
+                        return $statusNames[$s] ?? '';
+                    }, $allowedTransitions[$oldTrangThai]);
+                    
+                    return [
+                        'success' => false, 
+                        'message' => "Không thể chuyển từ '{$oldName}' sang '{$newName}'. Quy trình: " . implode(' → ', $nextStatuses)
+                    ];
+                }
+            }
+            
             $so_nguoi = ($booking['so_nguoi_lon'] ?? 0) + ($booking['so_tre_em'] ?? 0) + ($booking['so_tre_nho'] ?? 0) + ($booking['so_em_be'] ?? 0);
 
             // Xử lý ngày thanh toán
@@ -792,6 +988,215 @@ class BookingModel extends BaseModel
     }
     
     /**
+     * Lưu danh sách HDV cho booking
+     */
+    private function saveBookingGuides($id_booking, $danh_sach_hdv)
+    {
+        try {
+            // Đảm bảo bảng booking_hdv tồn tại
+            $this->ensureBookingHdvTableExists();
+            
+            // Xóa các HDV cũ của booking này
+            $this->deleteBookingGuides($id_booking);
+            
+            // Thêm các HDV mới
+            if (!empty($danh_sach_hdv) && is_array($danh_sach_hdv)) {
+                $sql = "INSERT INTO booking_hdv (id_booking, id_hdv, vai_tro) VALUES (:id_booking, :id_hdv, :vai_tro)";
+                $stmt = $this->conn->prepare($sql);
+                
+                $savedCount = 0;
+                foreach ($danh_sach_hdv as $hdv) {
+                    if (!empty($hdv['id_hdv']) && !empty($hdv['vai_tro'])) {
+                        $stmt->execute([
+                            ':id_booking' => $id_booking,
+                            ':id_hdv' => (int)$hdv['id_hdv'],
+                            ':vai_tro' => $hdv['vai_tro']
+                        ]);
+                        $savedCount++;
+                    }
+                }
+                error_log("Saved " . $savedCount . " HDV assignments for booking ID: " . $id_booking);
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi saveBookingGuides BookingModel: " . $e->getMessage());
+            error_log("Booking ID: " . $id_booking);
+            error_log("HDV Data: " . print_r($danh_sach_hdv, true));
+        }
+    }
+    
+    /**
+     * Migrate dữ liệu từ booking.id_hdv sang booking_hdv
+     * Chỉ migrate các booking có id_hdv nhưng chưa có trong booking_hdv
+     */
+    private function migrateBookingHdvData()
+    {
+        try {
+            // Kiểm tra xem có booking nào có id_hdv nhưng chưa có trong booking_hdv không
+            $sql = "SELECT b.id, b.id_hdv, b.vai_tro 
+                    FROM booking b 
+                    WHERE b.id_hdv IS NOT NULL 
+                    AND b.id_hdv > 0
+                    AND NOT EXISTS (
+                        SELECT 1 FROM booking_hdv bh WHERE bh.id_booking = b.id
+                    )";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $bookingsToMigrate = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (!empty($bookingsToMigrate)) {
+                $insertSql = "INSERT INTO booking_hdv (id_booking, id_hdv, vai_tro) VALUES (:id_booking, :id_hdv, :vai_tro)";
+                $insertStmt = $this->conn->prepare($insertSql);
+                
+                foreach ($bookingsToMigrate as $booking) {
+                    $vaiTro = !empty($booking['vai_tro']) ? $booking['vai_tro'] : 'HDV chính';
+                    $insertStmt->execute([
+                        ':id_booking' => $booking['id'],
+                        ':id_hdv' => $booking['id_hdv'],
+                        ':vai_tro' => $vaiTro
+                    ]);
+                }
+                
+                error_log("Migrated " . count($bookingsToMigrate) . " booking HDV records to booking_hdv table");
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi migrateBookingHdvData BookingModel: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Xóa tất cả HDV của một booking
+     */
+    private function deleteBookingGuides($id_booking)
+    {
+        try {
+            $sql = "DELETE FROM booking_hdv WHERE id_booking = :id_booking";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id_booking' => $id_booking]);
+        } catch (PDOException $e) {
+            error_log("Lỗi deleteBookingGuides BookingModel: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Lấy danh sách HDV của một booking
+     */
+    public function getBookingGuides($id_booking)
+    {
+        try {
+            $sql = "SELECT bh.*, hdv.ho_ten, hdv.so_dien_thoai, hdv.email
+                    FROM booking_hdv bh
+                    LEFT JOIN huong_dan_vien hdv ON bh.id_hdv = hdv.id
+                    WHERE bh.id_booking = :id_booking
+                    ORDER BY 
+                        CASE bh.vai_tro
+                            WHEN 'HDV chính' THEN 1
+                            WHEN 'HDV phụ' THEN 2
+                            WHEN 'Trợ lý' THEN 3
+                            ELSE 4
+                        END,
+                        hdv.ho_ten ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id_booking' => $id_booking]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getBookingGuides BookingModel: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Lấy tất cả phân công HDV từ booking_hdv
+     */
+    public function getAllBookingAssignments($filters = [])
+    {
+        try {
+            // Đảm bảo bảng booking_hdv tồn tại
+            $this->ensureBookingHdvTableExists();
+            
+            // Migrate dữ liệu từ booking.id_hdv sang booking_hdv nếu chưa có
+            $this->migrateBookingHdvData();
+            
+            // Debug: Kiểm tra số lượng booking có id_hdv
+            $checkBooking = $this->conn->query("SELECT COUNT(*) as total FROM booking WHERE id_hdv IS NOT NULL AND id_hdv > 0")->fetch(PDO::FETCH_ASSOC);
+            error_log("Total bookings with id_hdv: " . ($checkBooking['total'] ?? 0));
+            
+            // Debug: Kiểm tra số lượng trong booking_hdv
+            $checkBookingHdv = $this->conn->query("SELECT COUNT(*) as total FROM booking_hdv")->fetch(PDO::FETCH_ASSOC);
+            error_log("Total records in booking_hdv: " . ($checkBookingHdv['total'] ?? 0));
+            
+            $sql = "SELECT 
+                        bh.id,
+                        bh.id_booking,
+                        bh.id_hdv,
+                        bh.vai_tro,
+                        b.ma_booking,
+                        b.ho_ten as ten_khach,
+                        b.so_dien_thoai,
+                        b.ngay_khoi_hanh,
+                        b.ngay_ket_thuc,
+                        b.trang_thai as trang_thai_booking,
+                        hdv.ho_ten as ten_hdv,
+                        hdv.email as email_hdv,
+                        hdv.so_dien_thoai as sdt_hdv,
+                        lkh.ngay_khoi_hanh as ngay_khoi_hanh_lich,
+                        lkh.gio_khoi_hanh,
+                        g.tengoi as ten_tour,
+                        g.mato as ma_tour,
+                        g.id_goi as id_tour
+                    FROM booking_hdv bh
+                    INNER JOIN booking b ON bh.id_booking = b.id
+                    LEFT JOIN huong_dan_vien hdv ON bh.id_hdv = hdv.id
+                    LEFT JOIN lich_khoi_hanh lkh ON b.id_lich_khoi_hanh = lkh.id
+                    LEFT JOIN goidulich g ON b.id_tour = g.id_goi
+                    WHERE bh.id_hdv IS NOT NULL AND bh.id_hdv > 0";
+            
+            $params = [];
+            
+            // Filter theo tên tour
+            if (!empty($filters['ten_tour'])) {
+                $sql .= " AND g.tengoi LIKE :ten_tour";
+                $params[':ten_tour'] = '%' . $filters['ten_tour'] . '%';
+            }
+            
+            // Filter theo tên HDV
+            if (!empty($filters['ten_hdv'])) {
+                $sql .= " AND hdv.ho_ten LIKE :ten_hdv";
+                $params[':ten_hdv'] = '%' . $filters['ten_hdv'] . '%';
+            }
+            
+            // Filter theo mã booking
+            if (!empty($filters['ma_booking'])) {
+                $sql .= " AND b.ma_booking LIKE :ma_booking";
+                $params[':ma_booking'] = '%' . $filters['ma_booking'] . '%';
+            }
+            
+            $sql .= " ORDER BY b.ngay_khoi_hanh DESC, hdv.ho_ten ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Nếu không có kết quả, thử migrate lại và query lại
+            if (empty($results)) {
+                // Migrate lại một lần nữa để đảm bảo
+                $this->migrateBookingHdvData();
+                
+                // Query lại
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute($params);
+                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            return $results;
+        } catch (PDOException $e) {
+            error_log("Lỗi getAllBookingAssignments BookingModel: " . $e->getMessage());
+            error_log("SQL: " . $sql);
+            error_log("Params: " . print_r($params, true));
+            return [];
+        }
+    }
+    
+    /**
      * Xóa danh sách khách của booking
      */
     private function deleteBookingDetails($id_booking)
@@ -809,10 +1214,3 @@ class BookingModel extends BaseModel
 
     
 }
-
-
-
-
-     
-  
-

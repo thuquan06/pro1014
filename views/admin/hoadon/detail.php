@@ -9,11 +9,12 @@ function safe_html($value) {
 }
 
 function getTrangThaiText($status) {
+    // Trạng thái hóa đơn mới
     switch($status) {
-        case 0: return '<span class="status-badge warning"><i class="fas fa-clock"></i> Chờ xác nhận</span>';
-        case 1: return '<span class="status-badge info"><i class="fas fa-check"></i> Đã xác nhận</span>';
-        case 2: return '<span class="status-badge success"><i class="fas fa-check-circle"></i> Hoàn thành</span>';
-        case 3: return '<span class="status-badge danger"><i class="fas fa-ban"></i> Đã hủy</span>';
+        case 0: return '<span class="status-badge warning"><i class="fas fa-file-invoice"></i> Chưa xuất</span>';
+        case 1: return '<span class="status-badge info"><i class="fas fa-file-pdf"></i> Đã xuất</span>';
+        case 2: return '<span class="status-badge success"><i class="fas fa-paper-plane"></i> Đã gửi</span>';
+        case 3: return '<span class="status-badge danger"><i class="fas fa-ban"></i> Hủy</span>';
         default: return '<span class="status-badge secondary">Không xác định</span>';
     }
 }
@@ -31,6 +32,7 @@ $ngayra = $hoadon['ngayra'] ?? '';
 $ghichu = $hoadon['ghichu'] ?? '';
 $ngaydat = $hoadon['ngaydat'] ?? '';
 $trangthai = $hoadon['trangthai'] ?? 0;
+$trang_thai_hoa_don = $hoadon['trang_thai_hoa_don'] ?? 0;
 $huy = $hoadon['huy'] ?? 0;
 $ngaycapnhat = $hoadon['ngaycapnhat'] ?? '';
 $ly_do_huy = $hoadon['ly_do_huy'] ?? '';
@@ -41,8 +43,9 @@ $giatrenho = $hoadon['giatrenho'] ?? 0;
 
 $tong_tien = $total ?? 0;
 
-if ($huy == 1) {
-    $trangthai = 3;
+// Nếu booking bị hủy (trang_thai = 5) thì hóa đơn cũng hủy
+if (($trangthai ?? 0) == 5) {
+    $trang_thai_hoa_don = 3; // Hủy
 }
 ?>
 
@@ -51,16 +54,28 @@ if ($huy == 1) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .detail-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-dark);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-title i {
+  font-size: 36px;
 }
 
 .detail-actions {
@@ -106,9 +121,15 @@ if ($huy == 1) {
 .detail-card {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.detail-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card-title {
@@ -202,9 +223,39 @@ if ($huy == 1) {
 }
 
 @media (max-width: 768px) {
+  .detail-header {
+    padding: 16px;
+  }
+  
+  .detail-title {
+    font-size: 24px;
+  }
+  
+  .detail-title i {
+    font-size: 28px;
+  }
+  
   .detail-actions {
     width: 100%;
     flex-direction: column;
+  }
+  
+  .detail-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .detail-card {
+    padding: 20px;
+  }
+  
+  .info-table th {
+    width: 35%;
+    font-size: 13px;
+  }
+  
+  .info-table td {
+    font-size: 13px;
   }
 }
 </style>
@@ -221,31 +272,34 @@ if ($huy == 1) {
       <i class="fas fa-arrow-left"></i>
       Quay lại
     </a>
+    <?php if ($trang_thai_hoa_don != 3): // Không phải trạng thái Hủy ?>
+      <?php if ($trang_thai_hoa_don == 0): // Chưa xuất - có thể xuất hóa đơn ?>
+      <button onclick="if(confirm('Xuất hóa đơn #<?php echo $id; ?>?')) { updateInvoiceStatus(<?php echo $id; ?>, 1); }" 
+              class="btn" style="background: #10b981; color: white;">
+        <i class="fas fa-file-pdf"></i>
+        Xuất hóa đơn
+      </button>
+      <?php elseif ($trang_thai_hoa_don == 1): // Đã xuất - có thể gửi email ?>
+      <a href="<?php echo BASE_URL; ?>?act=hoadon-print&id=<?php echo $id; ?>" class="btn" style="background: #3b82f6; color: white;" target="_blank">
+        <i class="fas fa-file-pdf"></i>
+        Xem hóa đơn
+      </a>
+      <button onclick="if(confirm('Gửi hóa đơn #<?php echo $id; ?> qua email?')) { updateInvoiceStatus(<?php echo $id; ?>, 2); }" 
+              class="btn" style="background: #10b981; color: white;">
+        <i class="fas fa-paper-plane"></i>
+        Gửi email
+      </button>
+      <?php elseif ($trang_thai_hoa_don == 2): // Đã gửi ?>
+      <a href="<?php echo BASE_URL; ?>?act=hoadon-print&id=<?php echo $id; ?>" class="btn" style="background: #3b82f6; color: white;" target="_blank">
+        <i class="fas fa-file-pdf"></i>
+        Xem hóa đơn
+      </a>
+      <?php endif; ?>
+    <?php endif; ?>
     <a href="<?php echo BASE_URL; ?>?act=hoadon-edit&id=<?php echo $id; ?>" class="btn btn-primary">
       <i class="fas fa-edit"></i>
       Chỉnh sửa
     </a>
-    <?php if ($huy != 1): ?>
-      <?php if ($trangthai == 0): // Chờ xác nhận ?>
-      <button onclick="if(confirm('Bạn có chắc chắn muốn xác nhận hóa đơn này?')) { 
-        window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-confirm&id=<?php echo $id; ?>';
-      }" class="btn" style="background: #3b82f6; color: white;">
-        <i class="fas fa-check"></i>
-        Xác nhận
-      </button>
-      <?php elseif ($trangthai == 1): // Đã xác nhận ?>
-      <button onclick="if(confirm('Bạn có chắc chắn muốn đánh dấu hóa đơn này là hoàn thành?')) { 
-        window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-complete&id=<?php echo $id; ?>';
-      }" class="btn" style="background: #10b981; color: white;">
-        <i class="fas fa-check-circle"></i>
-        Hoàn thành
-      </button>
-      <?php endif; ?>
-      <button onclick="showCancelModal()" class="btn" style="background: #ef4444; color: white;">
-        <i class="fas fa-ban"></i>
-        Hủy hóa đơn
-      </button>
-    <?php endif; ?>
   </div>
 </div>
 
@@ -272,8 +326,8 @@ if ($huy == 1) {
           <td><?php echo $ngaycapnhat ? date("d/m/Y H:i:s", strtotime($ngaycapnhat)) : 'Chưa cập nhật'; ?></td>
         </tr>
         <tr>
-          <th>Trạng thái:</th>
-          <td><?php echo getTrangThaiText($trangthai); ?></td>
+          <th>Trạng thái hóa đơn:</th>
+          <td><?php echo getTrangThaiText($trang_thai_hoa_don); ?></td>
         </tr>
       </table>
     </div>
@@ -346,12 +400,6 @@ if ($huy == 1) {
         <td style="text-align: center;"><strong><?php echo $trenho; ?></strong></td>
         <td style="text-align: right;"><?php echo number_format($giatrenho); ?> VNĐ</td>
         <td style="text-align: right;"><?php echo number_format($trenho * $giatrenho); ?> VNĐ</td>
-      </tr>
-      <tr>
-        <td>Em bé (dưới 2 tuổi)</td>
-        <td style="text-align: center;"><strong><?php echo $embe; ?></strong></td>
-        <td style="text-align: right;">0 VNĐ</td>
-        <td style="text-align: right;">0 VNĐ</td>
       </tr>
       <tr class="total-row">
         <td colspan="3" style="text-align: right;">TỔNG CỘNG:</td>
@@ -446,4 +494,29 @@ document.getElementById('cancelModal').addEventListener('click', function(e) {
     closeCancelModal();
   }
 });
+
+// Hàm cập nhật trạng thái hóa đơn
+function updateInvoiceStatus(id, newStatus) {
+  // newStatus: 0=Chưa xuất, 1=Đã xuất, 2=Đã gửi, 3=Hủy
+  fetch('<?php echo BASE_URL; ?>?act=hoadon-update-invoice-status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'id=' + id + '&trang_thai_hoa_don=' + newStatus
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message || 'Cập nhật trạng thái thành công!');
+      location.reload();
+    } else {
+      alert(data.message || 'Cập nhật trạng thái thất bại!');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Có lỗi xảy ra. Vui lòng thử lại.');
+  });
+}
 </script>

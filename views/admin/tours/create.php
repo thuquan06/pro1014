@@ -54,34 +54,6 @@ function getError($field) {
   max-width: 1200px;
 }
 
-/* Day Builder Styles */
-.day-item {
-  background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  transition: all 0.2s;
-}
-
-.day-item:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.day-title-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.day-title-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
 
 .form-card {
   background: white;
@@ -618,28 +590,6 @@ function getError($field) {
     </div>
 
 
-    <div class="form-group-modern" style="margin-bottom: 24px;">
-      <label>Lịch trình tour <span class="required">*</span></label>
-      
-      <!-- Day Builder Interface -->
-      <div id="itinerary-builder" style="margin-bottom: 16px;">
-        <div style="margin-bottom: 16px;">
-          <button type="button" id="add-day-btn" class="btn btn-primary" style="padding: 10px 20px;">
-            <i class="fas fa-plus"></i> Thêm ngày
-          </button>
-        </div>
-        <div id="days-container">
-          <!-- Days will be added here -->
-        </div>
-      </div>
-      
-      <!-- Hidden textarea để lưu HTML cuối cùng -->
-      <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display: none;" required><?= old('chuongtrinh') ?></textarea>
-      
-      <?php if (hasError('chuongtrinh')): ?>
-        <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('chuongtrinh') ?></span>
-      <?php endif; ?>
-    </div>
 
     <div class="form-group-modern">
       <label for="packagedetails2">Lưu ý <span class="required">*</span></label>
@@ -747,146 +697,6 @@ const ckConfig = {
     height: 350
 };
 
-// Itinerary Day Builder
-let dayCounter = 0;
-let dayEditors = {};
-
-// CKConfig cho day editors (nhỏ hơn một chút)
-const dayEditorConfig = {
-    height: 300,
-    filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
-    filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
-    filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
-    filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
-};
-
-// Hàm thêm ngày mới
-function addDay(dayTitle = '', dayContent = '') {
-    dayCounter++;
-    const dayId = 'day_' + dayCounter;
-    const editorId = 'day_editor_' + dayCounter;
-    
-    const dayHtml = `
-        <div class="day-item" id="${dayId}" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--border); border-radius: 8px; background: #f9fafb;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h4 style="margin: 0; color: var(--primary); font-size: 16px;">
-                    <i class="fas fa-calendar-day"></i> Ngày ${dayCounter}
-                </h4>
-                <button type="button" onclick="removeDay(${dayCounter})" class="btn btn-sm" style="background: #ef4444; color: white; padding: 6px 12px;">
-                    <i class="fas fa-times"></i> Xóa
-                </button>
-            </div>
-            <div style="margin-bottom: 16px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Tiêu đề ngày (tùy chọn)</label>
-                <input type="text" class="day-title-input" data-day="${dayCounter}" placeholder="Ví dụ: Khởi hành, Tham quan thành phố..." 
-                       value="${dayTitle.replace(/"/g, '&quot;')}"
-                       style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
-            </div>
-            <div>
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Nội dung</label>
-                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;">${dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('days-container').insertAdjacentHTML('beforeend', dayHtml);
-    
-    // Khởi tạo CKEditor cho ngày này
-    setTimeout(() => {
-        dayEditors[dayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
-        if (dayContent) {
-            dayEditors[dayCounter].on('instanceReady', function() {
-                this.setData(dayContent);
-            });
-        }
-    }, 200);
-}
-
-// Hàm xóa ngày
-function removeDay(dayNum) {
-    if (confirm('Bạn có chắc chắn muốn xóa ngày này?')) {
-        const dayId = 'day_' + dayNum;
-        const dayElement = document.getElementById(dayId);
-        
-        if (dayElement) {
-            // Xóa CKEditor instance
-            if (dayEditors[dayNum]) {
-                dayEditors[dayNum].destroy();
-                delete dayEditors[dayNum];
-            }
-            
-            dayElement.remove();
-            updateDayNumbers();
-        }
-    }
-}
-
-// Cập nhật số ngày sau khi xóa
-function updateDayNumbers() {
-    const dayItems = document.querySelectorAll('.day-item');
-    dayItems.forEach((item, index) => {
-        const newDayNum = index + 1;
-        const dayNumAttr = item.getAttribute('id').replace('day_', '');
-        const titleInput = item.querySelector('.day-title-input');
-        const contentTextarea = item.querySelector('.day-content-editor');
-        const header = item.querySelector('h4');
-        
-        if (header) {
-            header.innerHTML = `<i class="fas fa-calendar-day"></i> Ngày ${newDayNum}`;
-        }
-        
-        if (titleInput) {
-            titleInput.dataset.day = newDayNum;
-        }
-        
-        if (contentTextarea) {
-            contentTextarea.dataset.day = newDayNum;
-        }
-        
-        // Cập nhật onclick của nút xóa
-        const removeBtn = item.querySelector('button');
-        if (removeBtn) {
-            removeBtn.setAttribute('onclick', `removeDay(${newDayNum})`);
-        }
-    });
-    dayCounter = dayItems.length;
-}
-
-// Hàm build HTML từ các ngày
-function buildItineraryHTML() {
-    let html = '';
-    const dayItems = document.querySelectorAll('.day-item');
-    
-    dayItems.forEach((item, index) => {
-        const dayNum = index + 1;
-        const titleInput = item.querySelector('.day-title-input');
-        const contentTextarea = item.querySelector('.day-content-editor');
-        const dayNumAttr = contentTextarea ? parseInt(contentTextarea.dataset.day) : dayNum;
-        
-        const title = titleInput ? titleInput.value.trim() : '';
-        let content = '';
-        
-        // Lấy nội dung từ CKEditor
-        if (dayEditors[dayNumAttr]) {
-            content = dayEditors[dayNumAttr].getData();
-        } else if (contentTextarea) {
-            content = contentTextarea.value;
-        }
-        
-        if (content.trim()) {
-            let dayHeader = '';
-            if (title) {
-                dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
-            } else {
-                dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
-            }
-            
-            html += dayHeader + content;
-        }
-    });
-    
-    return html;
-}
 
 // Khởi tạo CKEditor cho "Lưu ý"
 CKEDITOR.replace('packagedetails2', ckConfig);
@@ -897,10 +707,6 @@ function updateCKEditorBeforeSubmit() {
     for (var instance in CKEDITOR.instances) {
         CKEDITOR.instances[instance].updateElement();
     }
-    
-    // Build itinerary HTML từ các ngày
-    const itineraryHTML = buildItineraryHTML();
-    document.getElementById('chuongtrinh-hidden').value = itineraryHTML;
     
     return true;
 }
@@ -942,96 +748,5 @@ document.addEventListener('DOMContentLoaded', function() {
         firstError.focus();
     }
     <?php endif; ?>
-    
-    // Itinerary Builder - Thêm ngày
-    const addDayBtn = document.getElementById('add-day-btn');
-    if (addDayBtn) {
-        addDayBtn.addEventListener('click', function() {
-            addDay();
-        });
-    }
-    
-    // Load dữ liệu cũ nếu có (khi có lỗi validation)
-    <?php if (!empty($oldData['chuongtrinh'])): ?>
-    const existingItinerary = <?= json_encode($oldData['chuongtrinh'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
-    if (existingItinerary && existingItinerary.trim()) {
-        parseAndLoadExistingItinerary(existingItinerary);
-    }
-    <?php endif; ?>
-    
-    // Nếu không có dữ liệu cũ, thêm 1 ngày mặc định
-    const daysContainer = document.getElementById('days-container');
-    if (daysContainer && daysContainer.children.length === 0) {
-        addDay();
-    }
 });
-
-// Hàm parse và load itinerary cũ
-function parseAndLoadExistingItinerary(html) {
-    if (!html || !html.trim()) return;
-    
-    // Tìm tất cả các marker "NGÀY X"
-    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
-    const daySections = [];
-    let match;
-    let lastIndex = 0;
-    
-    while ((match = regex.exec(html)) !== null) {
-        const dayNum = parseInt(match[1]);
-        const title = match[2] ? match[2].trim() : '';
-        const startPos = match.index;
-        
-        // Lấy nội dung của ngày này (từ sau heading đến heading tiếp theo)
-        const nextMatch = html.substring(startPos + match[0].length).match(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*\d+/i);
-        const endPos = nextMatch ? startPos + match[0].length + nextMatch.index : html.length;
-        const content = html.substring(startPos + match[0].length, endPos).trim();
-        
-        daySections.push({
-            day: dayNum,
-            title: title,
-            content: content
-        });
-        
-        lastIndex = endPos;
-    }
-    
-    // Nếu không tìm thấy marker, thử tìm trong text thuần
-    if (daySections.length === 0) {
-        const textRegex = /(?:NGÀY|Day|Ngày)\s*(\d+)(?::\s*([^\n<]+))?/gi;
-        let textMatch;
-        while ((textMatch = textRegex.exec(html)) !== null) {
-            const dayNum = parseInt(textMatch[1]);
-            const title = textMatch[2] ? textMatch[2].trim() : '';
-            const startPos = textMatch.index;
-            
-            const nextTextMatch = html.substring(startPos + textMatch[0].length).match(/(?:NGÀY|Day|Ngày)\s*\d+/i);
-            const endPos = nextTextMatch ? startPos + textMatch[0].length + nextTextMatch.index : html.length;
-            const content = html.substring(startPos + textMatch[0].length, endPos).trim();
-            
-            daySections.push({
-                day: dayNum,
-                title: title,
-                content: content
-            });
-        }
-    }
-    
-    // Nếu vẫn không tìm thấy, thêm toàn bộ nội dung vào ngày 1
-    if (daySections.length === 0) {
-        daySections.push({
-            day: 1,
-            title: '',
-            content: html
-        });
-    }
-    
-    // Sắp xếp và load các ngày
-    daySections.sort((a, b) => a.day - b.day);
-    
-    setTimeout(() => {
-        daySections.forEach(section => {
-            addDay(section.title, section.content);
-        });
-    }, 500);
-}
 </script>

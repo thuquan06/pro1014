@@ -263,11 +263,6 @@ function safe_html($value) {
         <label for="trenho">Trẻ nhỏ (2-5 tuổi)</label>
         <input type="number" name="trenho" id="trenho" class="calculate-price" value="0" min="0">
       </div>
-
-      <div class="form-group-modern">
-        <label for="embe">Em bé (dưới 2 tuổi)</label>
-        <input type="number" name="embe" id="embe" value="0" min="0">
-      </div>
     </div>
 
     <!-- Tổng tiền -->
