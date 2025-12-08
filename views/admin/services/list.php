@@ -30,11 +30,12 @@ $serviceTypes = $serviceTypes ?? [];
 }
 
 .filter-card {
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .filter-row {
@@ -51,13 +52,57 @@ $serviceTypes = $serviceTypes ?? [];
 
 .filter-group label {
   font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 12px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
   font-size: 14px;
+  background: white;
+  color: var(--text-dark);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
 .filter-group select {
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
+
+.filter-group input {
+  cursor: text;
+}
+
+.filter-group input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.filter-group select:hover,
+.filter-group input:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  background-color: white;
+  transform: translateY(-1px);
 }
 
 .services-card {
@@ -82,6 +127,14 @@ $serviceTypes = $serviceTypes ?? [];
   font-weight: 700;
   font-size: 14px;
   border-bottom: 2px solid var(--border);
+}
+
+.services-table th:last-child {
+  text-align: center;
+}
+
+.services-table td:last-child {
+  text-align: center;
 }
 
 .services-table td {
@@ -149,6 +202,65 @@ $serviceTypes = $serviceTypes ?? [];
   background: #fee2e2;
   color: #991b1b;
 }
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.btn-cancel {
+  background: #ffffff;
+  color: #6b7280;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.btn-cancel:hover {
+  background: #f9fafb;
+  color: #374151;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
 </style>
 
 <div class="services-header">
@@ -164,8 +276,25 @@ $serviceTypes = $serviceTypes ?? [];
 </div>
 
 <div class="filter-card">
-  <form method="GET" action="<?= BASE_URL ?>?act=admin-services">
+  <form method="GET" action="<?= BASE_URL ?>">
+    <input type="hidden" name="act" value="admin-services">
     <div class="filter-row">
+      <div class="filter-group">
+        <label>Tên dịch vụ</label>
+        <input type="text" 
+               name="ten_dich_vu" 
+               value="<?= htmlspecialchars($filters['ten_dich_vu'] ?? '') ?>"
+               placeholder="Nhập tên dịch vụ...">
+      </div>
+      
+      <div class="filter-group">
+        <label>Nhà cung cấp</label>
+        <input type="text" 
+               name="nha_cung_cap" 
+               value="<?= htmlspecialchars($filters['nha_cung_cap'] ?? '') ?>"
+               placeholder="Nhập nhà cung cấp...">
+      </div>
+      
       <div class="filter-group">
         <label>Loại dịch vụ</label>
         <select name="loai_dich_vu">
@@ -188,7 +317,7 @@ $serviceTypes = $serviceTypes ?? [];
       </div>
     </div>
     
-    <div style="margin-top: 16px;">
+    <div class="filter-actions">
       <button type="submit" class="btn-primary">
         <i class="fas fa-search"></i> Tìm kiếm
       </button>
@@ -239,14 +368,16 @@ $serviceTypes = $serviceTypes ?? [];
                   ? '<span class="status-badge success"><i class="fas fa-check-circle"></i> Hoạt động</span>'
                   : '<span class="status-badge danger"><i class="fas fa-ban"></i> Tạm dừng</span>' ?>
             </td>
-            <td>
-              <a href="<?= BASE_URL ?>?act=admin-service-edit&id=<?= $service['id'] ?>" class="btn-action edit">
-                <i class="fas fa-edit"></i> Sửa
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-service-delete&id=<?= $service['id'] ?>" class="btn-action delete"
-                 onclick="return confirm('Bạn có chắc muốn xóa?')">
-                <i class="fas fa-trash"></i> Xóa
-              </a>
+            <td style="text-align: center;">
+              <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: nowrap;">
+                <a href="<?= BASE_URL ?>?act=admin-service-edit&id=<?= $service['id'] ?>" class="btn-action edit">
+                  <i class="fas fa-edit"></i> Sửa
+                </a>
+                <a href="<?= BASE_URL ?>?act=admin-service-delete&id=<?= $service['id'] ?>" class="btn-action delete"
+                   onclick="return confirm('Bạn có chắc muốn xóa?')">
+                  <i class="fas fa-trash"></i> Xóa
+                </a>
+              </div>
             </td>
           </tr>
         <?php $cnt++; endforeach; ?>

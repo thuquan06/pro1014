@@ -235,14 +235,24 @@ class DeparturePlanModel extends BaseModel
     /**
      * Lấy tất cả lịch khởi hành
      */
-    public function getAllDeparturePlans()
+    public function getAllDeparturePlans($filters = [])
     {
         $sql = "SELECT dp.*, g.tengoi, g.id_goi, g.songay
                 FROM lich_khoi_hanh dp
                 LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
-                ORDER BY dp.ngay_khoi_hanh DESC, dp.gio_khoi_hanh ASC";
+                WHERE 1=1";
+        $params = [];
+        
+        // Filter theo tên tour
+        if (!empty($filters['ten_tour'])) {
+            $sql .= " AND g.tengoi LIKE :ten_tour";
+            $params[':ten_tour'] = '%' . $filters['ten_tour'] . '%';
+        }
+        
+        $sql .= " ORDER BY dp.ngay_khoi_hanh DESC, dp.gio_khoi_hanh ASC";
+        
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

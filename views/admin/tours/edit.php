@@ -8,6 +8,11 @@ function safe_value($value, $default = '') {
     return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+// Kiểm tra biến $tour có tồn tại không
+if (!isset($tour) || !$tour) {
+    die('Lỗi: Không tìm thấy thông tin tour');
+}
+
 $id_goi=safe_value($tour['id_goi']??'');
 $nuocngoai=isset($tour['nuocngoai'])?(int)$tour['nuocngoai']:0;
 $khuyenmai=isset($tour['khuyenmai'])?(int)$tour['khuyenmai']:0;
@@ -16,11 +21,9 @@ $khuyenmai_tungay=safe_value($tour['khuyenmai_tungay']??'');
 $khuyenmai_denngay=safe_value($tour['khuyenmai_denngay']??'');
 $khuyenmai_mota=safe_value($tour['khuyenmai_mota']??'');
 $quocgia=safe_value($tour['quocgia']??'Việt Nam');
-$ten_tinh=safe_value($tour['ten_tinh']??'');
 $mato=safe_value($tour['mato']??'');
 $tengoi=safe_value($tour['tengoi']??'');
 $noixuatphat=safe_value($tour['noixuatphat']??'');
-$vitri=safe_value($tour['vitri']??'');
 $giagoi=safe_value($tour['giagoi']??'');
 $giatreem=safe_value($tour['giatreem']??'');
 $giatrenho=safe_value($tour['giatrenho']??'');
@@ -464,17 +467,6 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
         <input type="text" name="quocgia" id="quocgia" value="<?=$quocgia?>" placeholder="Ví dụ: Thái Lan, Singapore...">
       </div>
 
-      <div class="form-group-modern" id="field_tinh" style="display:<?=$nuocngoai==0?'block':'none'?>">
-        <label for="ten_tinh">Tỉnh/Thành phố <span class="required">*</span></label>
-        <select name="ten_tinh" id="ten_tinh">
-          <option value="">-- Chọn tỉnh --</option>
-          <?php if(!empty($provinces)) foreach($provinces as $p): 
-              $pn = safe_value($p['ten_tinh']);
-          ?>
-              <option value="<?=$pn?>" <?=$pn==$ten_tinh?'selected':''?>><?=$pn?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
     </div>
   </div>
 
@@ -495,16 +487,9 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
       <input type="text" name="tengoi" id="tengoi" value="<?=$tengoi?>" required placeholder="Ví dụ: Du lịch Hà Nội - Hạ Long 3 ngày 2 đêm">
     </div>
 
-    <div class="form-row">
-      <div class="form-group-modern">
-        <label for="noixuatphat">Điểm khởi hành <span class="required">*</span></label>
-        <input type="text" name="noixuatphat" id="noixuatphat" value="<?=$noixuatphat?>" required placeholder="Ví dụ: TP. Hồ Chí Minh">
-      </div>
-
-      <div class="form-group-modern">
-        <label for="vitri">Điểm đến <span class="required">*</span></label>
-        <input type="text" name="vitri" id="vitri" value="<?=$vitri?>" required placeholder="Ví dụ: Vịnh Hạ Long">
-      </div>
+    <div class="form-group-modern">
+      <label for="noixuatphat">Điểm khởi hành <span class="required">*</span></label>
+      <input type="text" name="noixuatphat" id="noixuatphat" value="<?=$noixuatphat?>" required placeholder="Ví dụ: TP. Hồ Chí Minh">
     </div>
 
     <div class="form-row">
@@ -1032,17 +1017,14 @@ function updateCKEditorBeforeSubmit() {
 document.addEventListener('DOMContentLoaded', function() {
     var r1 = document.getElementById('tour_trongnuoc'),
         r2 = document.getElementById('tour_quocte'),
-        f1 = document.getElementById('field_tinh'),
         f2 = document.getElementById('field_quocgia'),
         iq = document.getElementById('quocgia');
 
     function toggle() {
         if (r2 && r2.checked) {
-            f1.style.display = 'none';
             f2.style.display = 'block';
             if (iq.value === 'Việt Nam') iq.value = '';
         } else {
-            f1.style.display = 'block';
             f2.style.display = 'none';
             iq.value = 'Việt Nam';
         }

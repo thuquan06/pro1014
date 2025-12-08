@@ -42,22 +42,37 @@ function calculatePromotionPrice($originalPrice, $tour) {
  * @return bool True nếu còn hiệu lực
  */
 function isPromotionActive($tour) {
-    // Không có khuyến mãi
-    if (empty($tour['khuyenmai']) || $tour['khuyenmai'] != 1) {
+    // Kiểm tra khuyến mãi - đơn giản và chắc chắn
+    $khuyenmai = isset($tour['khuyenmai']) ? (int)$tour['khuyenmai'] : 0;
+    
+    // Không có khuyến mãi nếu khuyenmai != 1
+    if ($khuyenmai != 1) {
         return false;
     }
 
-    // Không có ngày bắt đầu/kết thúc
-    if (empty($tour['khuyenmai_tungay']) || empty($tour['khuyenmai_denngay'])) {
+    // Kiểm tra phần trăm khuyến mãi
+    $discount = isset($tour['khuyenmai_phantram']) ? (float)$tour['khuyenmai_phantram'] : 0;
+    if ($discount <= 0) {
         return false;
+    }
+
+    // Kiểm tra thời gian khuyến mãi (nếu có)
+    $tungay = isset($tour['khuyenmai_tungay']) ? trim($tour['khuyenmai_tungay']) : '';
+    $denngay = isset($tour['khuyenmai_denngay']) ? trim($tour['khuyenmai_denngay']) : '';
+    
+    // Nếu không có ngày, coi như khuyến mãi luôn hiệu lực
+    if (empty($tungay) && empty($denngay)) {
+        return true;
     }
 
     $today = date('Y-m-d');
-    $startDate = $tour['khuyenmai_tungay'];
-    $endDate = $tour['khuyenmai_denngay'];
+    
+    // Kiểm tra ngày bắt đầu - chỉ kiểm tra nếu có giá trị
+    $checkStart = empty($tungay) || $tungay === '' || $today >= $tungay;
+    // Kiểm tra ngày kết thúc - chỉ kiểm tra nếu có giá trị
+    $checkEnd = empty($denngay) || $denngay === '' || $today <= $denngay;
 
-    // Kiểm tra ngày hiện tại có nằm trong khoảng khuyến mãi không
-    return ($today >= $startDate && $today <= $endDate);
+    return ($checkStart && $checkEnd);
 }
 
 /**

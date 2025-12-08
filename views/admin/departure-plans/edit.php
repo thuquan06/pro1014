@@ -100,6 +100,14 @@ function safe_html($value) {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+.form-group-modern select:disabled {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none;
+  cursor: not-allowed;
+}
+
 .form-group-modern textarea {
   resize: vertical;
   min-height: 100px;
@@ -214,18 +222,41 @@ function safe_html($value) {
           <label>
             Tour <span class="required">*</span>
           </label>
-          <select name="id_tour" required>
-            <option value="">-- Chọn tour --</option>
-            <?php foreach ($tours as $tour): ?>
-              <option value="<?= $tour['id_goi'] ?>" 
-                      <?= ($departurePlan['id_tour'] == $tour['id_goi']) ? 'selected' : '' ?>>
-                <?= safe_html($tour['tengoi']) ?> 
-                <?php if (!empty($tour['ngayxuatphat'])): ?>
-                  (<?= date('d/m/Y', strtotime($tour['ngayxuatphat'])) ?>)
+          <?php if ($departurePlan['id_tour']): ?>
+            <!-- Nếu đã có tour, chỉ hiển thị tour đó và disable select -->
+            <?php 
+            $currentTour = null;
+            foreach ($tours as $tour) {
+              if ($tour['id_goi'] == $departurePlan['id_tour']) {
+                $currentTour = $tour;
+                break;
+              }
+            }
+            ?>
+            <select name="id_tour" required disabled style="background: #f3f4f6; cursor: not-allowed; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: none;">
+              <option value="<?= $currentTour['id_goi'] ?? $departurePlan['id_tour'] ?>" selected>
+                <?= safe_html($currentTour['tengoi'] ?? 'Tour không tồn tại') ?> 
+                <?php if (!empty($currentTour['ngayxuatphat'])): ?>
+                  (<?= date('d/m/Y', strtotime($currentTour['ngayxuatphat'])) ?>)
                 <?php endif; ?>
               </option>
-            <?php endforeach; ?>
-          </select>
+            </select>
+            <input type="hidden" name="id_tour" value="<?= $departurePlan['id_tour'] ?>">
+          <?php else: ?>
+            <!-- Nếu chưa có tour, cho phép chọn -->
+            <select name="id_tour" required>
+              <option value="">-- Chọn tour --</option>
+              <?php foreach ($tours as $tour): ?>
+                <option value="<?= $tour['id_goi'] ?>" 
+                        <?= ($departurePlan['id_tour'] == $tour['id_goi']) ? 'selected' : '' ?>>
+                  <?= safe_html($tour['tengoi']) ?> 
+                  <?php if (!empty($tour['ngayxuatphat'])): ?>
+                    (<?= date('d/m/Y', strtotime($tour['ngayxuatphat'])) ?>)
+                  <?php endif; ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          <?php endif; ?>
         </div>
 
         <div class="form-group-modern">

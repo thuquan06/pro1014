@@ -381,83 +381,6 @@ function getError($field) {
       </div>
     </div>
     
-    <div class="form-group-modern">
-      <label>Khuyến mãi</label>
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="radio" value="1" name="khuyenmai" id="km_co" <?= (isset($oldData['khuyenmai']) && ($oldData['khuyenmai'] == '1' || $oldData['khuyenmai'] == 1)) ? 'checked' : '' ?>>
-          <label for="km_co">✅ Có khuyến mãi</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" value="0" name="khuyenmai" id="km_khong" <?= (!isset($oldData['khuyenmai']) || $oldData['khuyenmai'] == '0' || $oldData['khuyenmai'] == 0) ? 'checked' : '' ?>>
-          <label for="km_khong">❌ Không</label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chi tiết khuyến mãi (hiện khi chọn Có khuyến mãi) -->
-    <div id="promotion_details" style="display: none;">
-      <div class="form-row">
-        <div class="form-group-modern">
-          <label for="khuyenmai_phantram">Phần trăm giảm giá (%) <span class="required">*</span></label>
-          <input type="number"
-                 name="khuyenmai_phantram"
-                 id="khuyenmai_phantram"
-                 value="<?= old('khuyenmai_phantram', '0') ?>"
-                 class="<?= hasError('khuyenmai_phantram') ? 'error-field' : '' ?>"
-                 min="0"
-                 max="100"
-                 placeholder="Ví dụ: 20">
-          <?php if (hasError('khuyenmai_phantram')): ?>
-            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_phantram') ?></span>
-          <?php else: ?>
-            <small style="color: var(--text-light); font-size: 12px; margin-top: 4px; display: block;">
-              <i class="fas fa-info-circle"></i> Nhập từ 0-100%
-            </small>
-          <?php endif; ?>
-        </div>
-
-        <div class="form-group-modern">
-          <label for="khuyenmai_mota">Mô tả khuyến mãi</label>
-          <input type="text"
-                 name="khuyenmai_mota"
-                 id="khuyenmai_mota"
-                 value="<?= old('khuyenmai_mota') ?>"
-                 class="<?= hasError('khuyenmai_mota') ? 'error-field' : '' ?>"
-                 placeholder="Ví dụ: Ưu đãi mùa hè, Flash Sale...">
-          <?php if (hasError('khuyenmai_mota')): ?>
-            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_mota') ?></span>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group-modern">
-          <label for="khuyenmai_tungay">Ngày bắt đầu khuyến mãi <span class="required">*</span></label>
-          <input type="date"
-                 name="khuyenmai_tungay"
-                 id="khuyenmai_tungay"
-                 value="<?= old('khuyenmai_tungay') ?>"
-                 class="<?= hasError('khuyenmai_tungay') ? 'error-field' : '' ?>">
-          <?php if (hasError('khuyenmai_tungay')): ?>
-            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_tungay') ?></span>
-          <?php endif; ?>
-        </div>
-
-        <div class="form-group-modern">
-          <label for="khuyenmai_denngay">Ngày kết thúc khuyến mãi <span class="required">*</span></label>
-          <input type="date"
-                 name="khuyenmai_denngay"
-                 id="khuyenmai_denngay"
-                 value="<?= old('khuyenmai_denngay') ?>"
-                 class="<?= hasError('khuyenmai_denngay') ? 'error-field' : '' ?>">
-          <?php if (hasError('khuyenmai_denngay')): ?>
-            <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('khuyenmai_denngay') ?></span>
-          <?php endif; ?>
-        </div>
-      </div>
-    </div>
-
     <div class="form-row">
       <div class="form-group-modern" id="field_quocgia" style="display:none">
         <label for="quocgia">Quốc gia <span class="required">*</span></label>
@@ -472,23 +395,6 @@ function getError($field) {
         <?php endif; ?>
       </div>
 
-      <div class="form-group-modern" id="field_tinh">
-        <label for="ten_tinh">Tỉnh/Thành phố <span class="required">*</span></label>
-        <select name="ten_tinh" 
-                id="ten_tinh"
-                class="<?= hasError('ten_tinh') ? 'error-field' : '' ?>">
-          <option value="">-- Chọn tỉnh --</option>
-          <?php if(!empty($provinces)) foreach($provinces as $p): 
-              $pn = safe_html($p['ten_tinh']);
-              $selected = old('ten_tinh') == $pn ? 'selected' : '';
-          ?>
-              <option value="<?=$pn?>" <?= $selected ?>><?=$pn?></option>
-          <?php endforeach; ?>
-        </select>
-        <?php if (hasError('ten_tinh')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('ten_tinh') ?></span>
-        <?php endif; ?>
-      </div>
     </div>
   </div>
 
@@ -527,34 +433,18 @@ function getError($field) {
       <?php endif; ?>
     </div>
 
-    <div class="form-row">
-      <div class="form-group-modern">
-        <label for="noixuatphat">Điểm khởi hành <span class="required">*</span></label>
-        <input type="text" 
-               name="noixuatphat" 
-               id="noixuatphat" 
-               value="<?= old('noixuatphat') ?>"
-               class="<?= hasError('noixuatphat') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: TP. Hồ Chí Minh">
-        <?php if (hasError('noixuatphat')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('noixuatphat') ?></span>
-        <?php endif; ?>
-      </div>
-
-      <div class="form-group-modern">
-        <label for="vitri">Điểm đến <span class="required">*</span></label>
-        <input type="text" 
-               name="vitri" 
-               id="vitri" 
-               value="<?= old('vitri') ?>"
-               class="<?= hasError('vitri') ? 'error-field' : '' ?>"
-               required 
-               placeholder="Ví dụ: Vịnh Hạ Long">
-        <?php if (hasError('vitri')): ?>
-          <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('vitri') ?></span>
-        <?php endif; ?>
-      </div>
+    <div class="form-group-modern">
+      <label for="noixuatphat">Điểm khởi hành <span class="required">*</span></label>
+      <input type="text" 
+             name="noixuatphat" 
+             id="noixuatphat" 
+             value="<?= old('noixuatphat') ?>"
+             class="<?= hasError('noixuatphat') ? 'error-field' : '' ?>"
+             required 
+             placeholder="Ví dụ: TP. Hồ Chí Minh">
+      <?php if (hasError('noixuatphat')): ?>
+        <span class="field-error"><i class="fas fa-exclamation-circle"></i> <?= getError('noixuatphat') ?></span>
+      <?php endif; ?>
     </div>
 
     <div class="form-row">
@@ -1019,26 +909,19 @@ function updateCKEditorBeforeSubmit() {
 document.addEventListener('DOMContentLoaded', function() {
     var radioTrongNuoc = document.getElementById('tour_trongnuoc');
     var radioQuocTe    = document.getElementById('tour_quocte');
-    var fieldTinh      = document.getElementById('field_tinh');
     var fieldQuocGia   = document.getElementById('field_quocgia');
     var inputQuocGia   = document.getElementById('quocgia');
-    var selectTinh     = document.getElementById('ten_tinh');
 
     function toggleFields() {
         if (radioQuocTe.checked) {
-            fieldTinh.style.display = 'none';
             fieldQuocGia.style.display = 'block';
             // Không xóa giá trị nếu đã có
             if (!inputQuocGia.value) {
                 inputQuocGia.value = '';
             }
         } else {
-            fieldTinh.style.display = 'block';
             fieldQuocGia.style.display = 'none';
             // Không xóa giá trị nếu đã có
-            if (!selectTinh.value) {
-                selectTinh.value = '';
-            }
             if (!inputQuocGia.value) {
                 inputQuocGia.value = 'Việt Nam';
             }
@@ -1049,94 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
     radioTrongNuoc.addEventListener('change', toggleFields);
     radioQuocTe.addEventListener('change', toggleFields);
 
-    // Toggle promotion details
-    var radioKmCo = document.getElementById('km_co');
-    var radioKmKhong = document.getElementById('km_khong');
-    var promotionDetails = document.getElementById('promotion_details');
-    var promotionInputs = promotionDetails.querySelectorAll('input');
-
-    function togglePromotionDetails() {
-        if (radioKmCo.checked) {
-            promotionDetails.style.display = 'block';
-            // Bật required cho các trường bắt buộc
-            document.getElementById('khuyenmai_phantram').required = true;
-            document.getElementById('khuyenmai_tungay').required = true;
-            document.getElementById('khuyenmai_denngay').required = true;
-        } else {
-            promotionDetails.style.display = 'none';
-            // Tắt required khi không có khuyến mãi
-            promotionInputs.forEach(function(input) {
-                input.required = false;
-            });
-        }
-    }
-
-    togglePromotionDetails();
-    radioKmCo.addEventListener('change', togglePromotionDetails);
-    radioKmKhong.addEventListener('change', togglePromotionDetails);
-
-    // Price discount calculator
-    var inputGiaNguoiLon = document.getElementById('giagoi');
-    var inputGiaTreEm = document.getElementById('giatreem');
-    var inputGiaTreNho = document.getElementById('giatrenho');
-    var inputPhanTram = document.getElementById('khuyenmai_phantram');
-
-    function formatCurrency(value) {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(value);
-    }
-
-    function calculateDiscountedPrice(original, percent) {
-        var discount = (original * percent) / 100;
-        return original - discount;
-    }
-
-    function updatePricePreview(inputId, previewId, originalId, discountedId, badgeId) {
-        var input = document.getElementById(inputId);
-        var preview = document.getElementById(previewId);
-        var originalSpan = document.getElementById(originalId);
-        var discountedSpan = document.getElementById(discountedId);
-        var badge = document.getElementById(badgeId);
-
-        if (!input || !preview) return;
-
-        var originalPrice = parseFloat(input.value) || 0;
-        var percent = parseFloat(inputPhanTram?.value) || 0;
-
-        // Kiểm tra có khuyến mãi không
-        if (radioKmCo.checked && percent > 0 && originalPrice > 0) {
-            var discountedPrice = calculateDiscountedPrice(originalPrice, percent);
-
-            originalSpan.textContent = formatCurrency(originalPrice);
-            discountedSpan.textContent = formatCurrency(discountedPrice);
-            badge.textContent = '🔥 Giảm ' + percent + '%';
-
-            preview.classList.add('active');
-        } else {
-            preview.classList.remove('active');
-        }
-    }
-
-    function updateAllPrices() {
-        updatePricePreview('giagoi', 'preview_giagoi', 'original_giagoi', 'discounted_giagoi', 'badge_giagoi');
-        updatePricePreview('giatreem', 'preview_giatreem', 'original_giatreem', 'discounted_giatreem', 'badge_giatreem');
-        updatePricePreview('giatrenho', 'preview_giatrenho', 'original_giatrenho', 'discounted_giatrenho', 'badge_giatrenho');
-    }
-
-    // Event listeners cho các input giá
-    inputGiaNguoiLon?.addEventListener('input', updateAllPrices);
-    inputGiaTreEm?.addEventListener('input', updateAllPrices);
-    inputGiaTreNho?.addEventListener('input', updateAllPrices);
-    inputPhanTram?.addEventListener('input', updateAllPrices);
-
-    // Cập nhật khi toggle khuyến mãi
-    radioKmCo?.addEventListener('change', updateAllPrices);
-    radioKmKhong?.addEventListener('change', updateAllPrices);
-
-    // Tính lần đầu nếu có dữ liệu cũ
-    updateAllPrices();
+    // Khuyến mãi đã được thay thế bằng voucher, không cần toggle thêm
 
     // Scroll đến trường bị lỗi đầu tiên nếu có
     <?php if (!empty($errors)): ?>
