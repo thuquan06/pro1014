@@ -250,35 +250,65 @@ function getTrangThaiText($status) {
   font-size: 18px;
 }
 
-.assignments-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
 
-.assignment-item {
-  padding: 16px;
+.itinerary-day-card {
   background: #f9fafb;
   border-radius: 8px;
-  margin-bottom: 12px;
+  border-left: 4px solid #3b82f6;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.day-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  padding: 12px 16px;
+  color: white;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 700;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
-.assignment-info {
-  flex: 1;
+.day-content {
+  padding: 16px;
+  background: white;
+  line-height: 1.8;
+  color: #374151;
 }
 
-.assignment-name {
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 4px;
+.day-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 12px 0;
 }
 
-.assignment-meta {
-  font-size: 13px;
-  color: #6b7280;
+.content-scrollable {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.content-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content-scrollable::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.content-scrollable::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.content-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 </style>
 
@@ -287,7 +317,7 @@ function getTrangThaiText($status) {
   <div class="detail-header">
     <h1 class="detail-title">
       <i class="fas fa-calendar-alt" style="color: #3b82f6;"></i>
-      Chi tiết lịch khởi hành
+      Chi tiết lịch trình
     </h1>
     <div class="detail-actions">
       <a href="<?= BASE_URL ?>?act=admin-departure-plan-edit&id=<?= $departurePlan['id'] ?>" class="btn btn-primary">
@@ -439,6 +469,131 @@ function getTrangThaiText($status) {
     </div>
   </div>
 
+  <!-- Itinerary Section -->
+  <?php if (!empty($departurePlan['chuongtrinh'])): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-route"></i> Lịch trình tour
+      </div>
+    </div>
+    <div class="card-body">
+      <?php
+      // Parse lịch trình theo ngày
+      $chuongtrinh = html_entity_decode($departurePlan['chuongtrinh'], ENT_QUOTES, 'UTF-8');
+      $days = [];
+      
+      if (!empty($chuongtrinh)) {
+        // Tìm tất cả các vị trí có "NGÀY X"
+        preg_match_all('/(?:NGÀY|Day|Ngày)\s*(\d+)(?:\s*:\s*([^<\n]+))?/i', $chuongtrinh, $matches, PREG_OFFSET_CAPTURE);
+        
+        if (!empty($matches[0])) {
+          $markers = [];
+          
+          // Lấy tất cả các marker
+          for ($i = 0; $i < count($matches[0]); $i++) {
+            $dayNum = (int)$matches[1][$i][0];
+            $pos = $matches[0][$i][1];
+            $fullMatch = $matches[0][$i][0];
+            $title = isset($matches[2][$i]) ? trim(strip_tags($matches[2][$i][0])) : '';
+            
+            // Tìm vị trí kết thúc của tag HTML chứa marker (nếu có)
+            $afterText = substr($chuongtrinh, $pos, 500);
+            $endPos = $pos + strlen($fullMatch);
+            
+            // Tìm tag đóng sau marker
+            if (preg_match('/<\/[^>]+>/', $afterText, $closeTag, PREG_OFFSET_CAPTURE)) {
+              $tagEnd = $pos + $closeTag[0][1] + strlen($closeTag[0][0]);
+              if ($tagEnd > $endPos) {
+                $endPos = $tagEnd;
+              }
+            }
+            
+            // Chỉ giữ marker đầu tiên của mỗi ngày
+            if (!isset($markers[$dayNum]) || $markers[$dayNum]['pos'] > $pos) {
+              $markers[$dayNum] = [
+                'day' => $dayNum,
+                'pos' => $pos,
+                'end_pos' => $endPos,
+                'title' => $title
+              ];
+            }
+          }
+          
+          // Sắp xếp theo vị trí
+          uasort($markers, function($a, $b) {
+            return $a['pos'] - $b['pos'];
+          });
+          
+          // Chia nội dung theo các marker
+          $markerList = array_values($markers);
+          
+          for ($i = 0; $i < count($markerList); $i++) {
+            $marker = $markerList[$i];
+            $dayNum = $marker['day'];
+            
+            // Vị trí bắt đầu nội dung (sau marker)
+            $contentStart = $marker['end_pos'];
+            
+            // Vị trí kết thúc (trước marker tiếp theo hoặc cuối chuỗi)
+            $contentEnd = ($i < count($markerList) - 1) 
+              ? $markerList[$i + 1]['pos'] 
+              : strlen($chuongtrinh);
+            
+            // Lấy nội dung của ngày này
+            $dayContent = substr($chuongtrinh, $contentStart, $contentEnd - $contentStart);
+            $dayContent = trim($dayContent);
+            
+            // Loại bỏ header "NGÀY X" khỏi content nếu còn sót
+            $dayContent = preg_replace('/<[^>]*>\s*(?:NGÀY|Day|Ngày)\s*\d+[^<]*\s*<\/[^>]*>/is', '', $dayContent);
+            $dayContent = trim($dayContent);
+            
+            // Tạo title
+            $dayTitle = 'Ngày ' . $dayNum;
+            if (!empty($marker['title'])) {
+              $dayTitle .= ': ' . htmlspecialchars($marker['title']);
+            }
+            
+            // Thêm vào mảng days
+            $days[$dayNum] = [
+              'title' => $dayTitle,
+              'content' => $dayContent
+            ];
+          }
+        }
+      }
+      
+      // Nếu không tìm thấy marker, hiển thị toàn bộ trong 1 ngày
+      if (empty($days)) {
+        $days[1] = [
+          'title' => 'Ngày 1',
+          'content' => $chuongtrinh
+        ];
+      }
+      
+      // Sắp xếp theo số ngày
+      ksort($days);
+      ?>
+      
+      <div class="content-scrollable">
+        <?php foreach ($days as $dayNum => $day): ?>
+          <div class="itinerary-day-card">
+            <div class="day-header">
+              <div class="day-number">
+                <i class="fas fa-calendar-day"></i>
+                <?= $day['title'] ?>
+              </div>
+            </div>
+            <div class="day-content">
+              <?= $day['content'] ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <!-- Checklist Section -->
   <?php if ($checklist): ?>
   <div class="card">
@@ -491,52 +646,5 @@ function getTrangThaiText($status) {
   </div>
   <?php endif; ?>
 
-  <!-- Assignments Section -->
-  <?php if (!empty($assignments)): ?>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-users"></i> Phân công HDV
-      </div>
-      <a href="<?= BASE_URL ?>?act=admin-assignment-create&departure_plan_id=<?= $departurePlan['id'] ?>" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">
-        <i class="fas fa-plus"></i> Thêm phân công
-      </a>
-    </div>
-    <div class="card-body">
-      <ul class="assignments-list">
-        <?php foreach ($assignments as $assignment): ?>
-        <li class="assignment-item">
-          <div class="assignment-info">
-            <div class="assignment-name">
-              <i class="fas fa-user"></i> <?= htmlspecialchars($assignment['ho_ten'] ?? 'N/A') ?>
-            </div>
-            <div class="assignment-meta">
-              <?php if (!empty($assignment['so_dien_thoai'])): ?>
-                <i class="fas fa-phone"></i> <?= htmlspecialchars($assignment['so_dien_thoai']) ?>
-              <?php endif; ?>
-              <?php if (!empty($assignment['email'])): ?>
-                <span style="margin-left: 12px;"><i class="fas fa-envelope"></i> <?= htmlspecialchars($assignment['email']) ?></span>
-              <?php endif; ?>
-            </div>
-          </div>
-          <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;">
-            <i class="fas fa-edit"></i> Sửa
-          </a>
-        </li>
-        <?php endforeach; ?>
-      </ul>
-    </div>
-  </div>
-  <?php else: ?>
-  <div class="card">
-    <div class="card-body" style="text-align: center; padding: 40px;">
-      <i class="fas fa-users" style="font-size: 48px; color: #9ca3af; margin-bottom: 16px;"></i>
-      <p style="color: #6b7280; margin-bottom: 16px;">Chưa có phân công HDV cho lịch khởi hành này</p>
-      <a href="<?= BASE_URL ?>?act=admin-assignment-create&departure_plan_id=<?= $departurePlan['id'] ?>" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Thêm phân công
-      </a>
-    </div>
-  </div>
-  <?php endif; ?>
 </div>
 

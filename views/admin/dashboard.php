@@ -3,9 +3,9 @@
 
 // Lấy số liệu an toàn (nếu controller truyền $stats dạng mảng)
 $cnt1 = $stats['cnt1'] ?? 0;     // Hóa đơn
-$cnt2 = $stats['cnt2'] ?? 0;     // Góp ý
+$cnt2 = $stats['cnt2'] ?? 0;     // Lịch trình
 $goi  = $stats['goi']  ?? 0;     // Tour
-$cnt5 = $stats['cnt5'] ?? 0;     // Trợ giúp
+$cnt5 = $stats['cnt5'] ?? 0;     // Booking
 $blog = $stats['blog'] ?? 0;     // Blog
 ?>
 
@@ -114,9 +114,9 @@ $blog = $stats['blog'] ?? 0;     // Blog
 
   /* Màu sắc cho từng card */
   .stat-card[data-type="invoice"] { --card-color: #3b82f6; }
-  .stat-card[data-type="feedback"] { --card-color: #f59e0b; }
+  .stat-card[data-type="schedule"] { --card-color: #10b981; }
   .stat-card[data-type="tour"] { --card-color: #8b5cf6; }
-  .stat-card[data-type="support"] { --card-color: #ef4444; }
+  .stat-card[data-type="booking"] { --card-color: #f59e0b; }
   .stat-card[data-type="blog"] { --card-color: #ec4899; }
 
   /* ===== QUICK ACTIONS ===== */
@@ -246,6 +246,90 @@ $blog = $stats['blog'] ?? 0;     // Blog
   .stat-card:nth-child(3) { animation-delay: 0.3s; }
   .stat-card:nth-child(4) { animation-delay: 0.4s; }
   .stat-card:nth-child(5) { animation-delay: 0.5s; }
+
+  /* ===== PERIOD FILTER ===== */
+  .period-btn {
+    padding: 12px 24px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .period-btn:hover {
+    border-color: var(--primary);
+    background: var(--bg-light);
+    transform: translateY(-2px);
+  }
+
+  .period-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  /* ===== PERIOD STATS GRID ===== */
+  .stats-grid-period {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .period-stat-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .period-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .period-stat-label {
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .period-stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+  }
+
+  .period-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    margin-bottom: 12px;
+  }
+
+  .period-stat-card[data-type="booking"] .period-stat-icon { background: #3b82f6; }
+  .period-stat-card[data-type="hoadon"] .period-stat-icon { background: #8b5cf6; }
+  .period-stat-card[data-type="tour"] .period-stat-icon { background: #10b981; }
+  .period-stat-card[data-type="revenue"] .period-stat-icon { background: #f59e0b; }
 </style>
 
 <div class="dashboard-container">
@@ -263,6 +347,28 @@ $blog = $stats['blog'] ?? 0;     // Blog
       <div class="stat-number"><?= number_format($goi) ?></div>
       <div class="stat-label">Tour</div>
       <div class="stat-change">↗ Tổng số tour</div>
+    </a>
+
+    <a href="<?= BASE_URL ?>?act=admin-departure-plans" class="stat-card" data-type="schedule">
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+      </div>
+      <div class="stat-number"><?= number_format($cnt2) ?></div>
+      <div class="stat-label">Lịch trình</div>
+      <div class="stat-change">↗ Tổng số lịch trình</div>
+    </a>
+
+    <a href="<?= BASE_URL ?>?act=admin-bookings" class="stat-card" data-type="booking">
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+      </div>
+      <div class="stat-number"><?= number_format($cnt5) ?></div>
+      <div class="stat-label">Booking</div>
+      <div class="stat-change">↗ Tổng số booking</div>
     </a>
 
     <a href="<?= BASE_URL ?>?act=hoadon-list" class="stat-card" data-type="invoice">
@@ -285,28 +391,6 @@ $blog = $stats['blog'] ?? 0;     // Blog
       <div class="stat-number"><?= number_format($blog) ?></div>
       <div class="stat-label">Blog</div>
       <div class="stat-change">↗ Tổng số bài viết</div>
-    </a>
-
-    <a href="<?= BASE_URL ?>?act=admin" class="stat-card" data-type="feedback">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-comments"></i>
-        </div>
-      </div>
-      <div class="stat-number"><?= number_format($cnt2) ?></div>
-      <div class="stat-label">Góp ý</div>
-      <div class="stat-change">↗ Tổng số góp ý</div>
-    </a>
-
-    <a href="<?= BASE_URL ?>?act=admin" class="stat-card" data-type="support">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-life-ring"></i>
-        </div>
-      </div>
-      <div class="stat-number"><?= number_format($cnt5) ?></div>
-      <div class="stat-label">Trợ giúp</div>
-      <div class="stat-change">↗ Tổng số yêu cầu</div>
     </a>
   </div>
 
@@ -338,11 +422,37 @@ $blog = $stats['blog'] ?? 0;     // Blog
     </div>
   </div>
 
-  <!-- Chart Section -->
+  <!-- Statistics by Period -->
   <div class="chart-section">
     <h3 class="section-title">
       <i class="fas fa-chart-line"></i>
-      Thống kê tổng quan
+      Thống kê theo thời gian
+    </h3>
+    
+    <!-- Period Filter -->
+    <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+      <button class="period-btn active" data-period="day" onclick="switchPeriod('day')">
+        <i class="fas fa-calendar-day"></i> Hôm nay
+      </button>
+      <button class="period-btn" data-period="week" onclick="switchPeriod('week')">
+        <i class="fas fa-calendar-week"></i> 7 ngày qua
+      </button>
+      <button class="period-btn" data-period="month" onclick="switchPeriod('month')">
+        <i class="fas fa-calendar-alt"></i> 30 ngày qua
+      </button>
+    </div>
+
+    <!-- Statistics Cards by Period -->
+    <div class="stats-grid-period" id="periodStats">
+      <!-- Sẽ được cập nhật bởi JavaScript -->
+    </div>
+  </div>
+
+  <!-- Chart Section -->
+  <div class="chart-section">
+    <h3 class="section-title">
+      <i class="fas fa-chart-bar"></i>
+      Biểu đồ thống kê tổng quan
     </h3>
     <div class="chart-container">
       <canvas id="statsChart"></canvas>
@@ -351,36 +461,115 @@ $blog = $stats['blog'] ?? 0;     // Blog
 </div>
 
 <script>
+// Dữ liệu thống kê theo thời gian
+const periodStats = {
+  day: <?= json_encode($statsByDay ?? []) ?>,
+  week: <?= json_encode($statsByWeek ?? []) ?>,
+  month: <?= json_encode($statsByMonth ?? []) ?>
+};
+
+// Hàm format số tiền
+function formatPrice(price) {
+  return new Intl.NumberFormat('vi-VN').format(Math.round(price)) + ' đ';
+}
+
+// Hàm hiển thị thống kê theo period
+function displayPeriodStats(period) {
+  const stats = periodStats[period] || {};
+  const container = document.getElementById('periodStats');
+  
+  const periodLabels = {
+    day: 'Hôm nay',
+    week: '7 ngày qua',
+    month: '30 ngày qua'
+  };
+
+  container.innerHTML = `
+    <div class="period-stat-card" data-type="booking">
+      <div class="period-stat-icon">
+        <i class="fas fa-calendar-check"></i>
+      </div>
+      <div class="period-stat-label">Booking</div>
+      <div class="period-stat-value">${stats.booking || 0}</div>
+      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
+    </div>
+    
+    <div class="period-stat-card" data-type="hoadon">
+      <div class="period-stat-icon">
+        <i class="fas fa-file-invoice-dollar"></i>
+      </div>
+      <div class="period-stat-label">Hóa đơn</div>
+      <div class="period-stat-value">${stats.hoadon || 0}</div>
+      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
+    </div>
+    
+    <div class="period-stat-card" data-type="tour">
+      <div class="period-stat-icon">
+        <i class="fas fa-map-marked-alt"></i>
+      </div>
+      <div class="period-stat-label">Tour mới</div>
+      <div class="period-stat-value">${stats.tour || 0}</div>
+      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
+    </div>
+    
+    <div class="period-stat-card" data-type="revenue">
+      <div class="period-stat-icon">
+        <i class="fas fa-money-bill-wave"></i>
+      </div>
+      <div class="period-stat-label">Doanh thu</div>
+      <div class="period-stat-value">${formatPrice(stats.revenue || 0)}</div>
+      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
+    </div>
+  `;
+}
+
+// Hàm chuyển đổi period
+function switchPeriod(period) {
+  // Cập nhật active button
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.period === period) {
+      btn.classList.add('active');
+    }
+  });
+  
+  // Hiển thị thống kê
+  displayPeriodStats(period);
+}
+
 // Biểu đồ thống kê
 document.addEventListener('DOMContentLoaded', function() {
+  // Hiển thị thống kê mặc định (hôm nay)
+  displayPeriodStats('day');
+  
   const ctx = document.getElementById('statsChart');
   if (ctx) {
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Tour', 'Hóa đơn', 'Blog', 'Góp ý', 'Trợ giúp'],
+        labels: ['Tour', 'Lịch trình', 'Booking', 'Hóa đơn', 'Blog'],
         datasets: [{
           label: 'Số lượng',
           data: [
             <?= $goi ?>,
-            <?= $cnt1 ?>,
-            <?= $blog ?>,
             <?= $cnt2 ?>,
-            <?= $cnt5 ?>
+            <?= $cnt5 ?>,
+            <?= $cnt1 ?>,
+            <?= $blog ?>
           ],
           backgroundColor: [
             'rgba(139, 92, 246, 0.8)',
-            'rgba(59, 130, 246, 0.8)',
-            'rgba(236, 72, 153, 0.8)',
+            'rgba(16, 185, 129, 0.8)',
             'rgba(245, 158, 11, 0.8)',
-            'rgba(239, 68, 68, 0.8)'
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(236, 72, 153, 0.8)'
           ],
           borderColor: [
             'rgb(139, 92, 246)',
-            'rgb(59, 130, 246)',
-            'rgb(236, 72, 153)',
+            'rgb(16, 185, 129)',
             'rgb(245, 158, 11)',
-            'rgb(239, 68, 68)'
+            'rgb(59, 130, 246)',
+            'rgb(236, 72, 153)'
           ],
           borderWidth: 2,
           borderRadius: 8

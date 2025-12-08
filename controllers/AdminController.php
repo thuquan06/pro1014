@@ -577,7 +577,13 @@ class AdminController extends BaseController {
     public function dashboard() {
         $this->checkLogin();
         $stats = $this->dashboardModel->getStatistics();
-        $this->loadView('admin/dashboard', compact('stats'), 'admin/layout');
+        
+        // Lấy thống kê theo ngày, tuần, tháng
+        $statsByDay = $this->dashboardModel->getStatisticsByPeriod('day');
+        $statsByWeek = $this->dashboardModel->getStatisticsByPeriod('week');
+        $statsByMonth = $this->dashboardModel->getStatisticsByPeriod('month');
+        
+        $this->loadView('admin/dashboard', compact('stats', 'statsByDay', 'statsByWeek', 'statsByMonth'), 'admin/layout');
     }
 
     /* ==================== TOUR MANAGEMENT ==================== */
@@ -609,6 +615,13 @@ class AdminController extends BaseController {
         $tags = $tourChiTietModel->layTatCaTags();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Đảm bảo khuyến mãi mặc định là 0 khi tạo tour mới
+            $_POST['khuyenmai'] = 0;
+            $_POST['khuyenmai_phantram'] = 0;
+            $_POST['khuyenmai_tungay'] = null;
+            $_POST['khuyenmai_denngay'] = null;
+            $_POST['khuyenmai_mota'] = null;
+            
             $file   = $_FILES['packageimage'] ?? null;
             $result = $this->tourModel->createTour($_POST, $file);
 
@@ -648,18 +661,24 @@ class AdminController extends BaseController {
      * @param array $data
      * @return Validator
      */
-    private function validateTourData($data) {
+    private function validateTourData($data, $excludeId = null) {
         $validator = new Validator($data);
         
         // Mã tour
         $validator->required('mato', 'Mã tour là bắt buộc')
                   ->minLength('mato', 2, 'Mã tour phải có ít nhất 2 ký tự')
-                  ->maxLength('mato', 50, 'Mã tour không được quá 50 ký tự');
+                  ->maxLength('mato', 50, 'Mã tour không được quá 50 ký tự')
+                  ->custom('mato', function($value) use ($excludeId) {
+                      return !$this->tourModel->isMatoExists($value, $excludeId);
+                  }, 'Mã tour đã tồn tại. Vui lòng chọn mã tour khác.');
         
         // Tên gói tour
         $validator->required('tengoi', 'Tên gói tour là bắt buộc')
                   ->minLength('tengoi', 5, 'Tên gói tour phải có ít nhất 5 ký tự')
-                  ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự');
+                  ->maxLength('tengoi', 255, 'Tên gói tour không được quá 255 ký tự')
+                  ->custom('tengoi', function($value) use ($excludeId) {
+                      return !$this->tourModel->isTengoiExists($value, $excludeId);
+                  }, 'Tên tour đã tồn tại. Vui lòng chọn tên tour khác.');
         
         // Nơi xuất phát
         $validator->required('noixuatphat', 'Nơi xuất phát là bắt buộc')
@@ -906,7 +925,7 @@ class AdminController extends BaseController {
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ===== VALIDATE INPUT =====
-            $validator = $this->validateTourData($_POST);
+            $validator = $this->validateTourData($_POST, null); // null = tạo mới
 
             if ($validator->fails()) {
                 $error = $validator->firstError();
@@ -1019,7 +1038,7 @@ class AdminController extends BaseController {
             }
 
             // Validate input
-            $validator = $this->validateTourData($_POST);
+            $validator = $this->validateTourData($_POST, $id); // $id = loại trừ tour hiện tại khi update
 
             if ($validator->fails()) {
                 $_SESSION['error'] = $validator->firstError();
@@ -1030,6 +1049,8 @@ class AdminController extends BaseController {
             
             // Đảm bảo các trường bắt buộc được lấy từ POST
             $validated['quocgia'] = sanitizeInput($_POST['quocgia'] ?? 'Việt Nam');
+            $validated['khuyenmai'] = 0;
+            // Khuyến mãi luôn được set về 0/null khi sửa tour
             $validated['khuyenmai'] = 0;
             $validated['khuyenmai_phantram'] = 0;
             $validated['khuyenmai_tungay'] = null;
@@ -1276,6 +1297,35 @@ class AdminController extends BaseController {
      * @return Validator
      */
     private function validateDeparturePlanData($data) {
+        // Normalize giờ trước khi validate (input type="time" có thể trả về HH:mm:SS hoặc có khoảng trắng)
+        if (isset($data['gio_khoi_hanh']) && !empty($data['gio_khoi_hanh'])) {
+            $data['gio_khoi_hanh'] = trim($data['gio_khoi_hanh']);
+            // Nếu có format HH:mm:SS, chỉ lấy HH:mm
+            if (strlen($data['gio_khoi_hanh']) > 5) {
+                $data['gio_khoi_hanh'] = substr($data['gio_khoi_hanh'], 0, 5);
+            }
+            // Đảm bảo format đúng HH:mm (thêm số 0 phía trước nếu cần)
+            if (preg_match('/^(\d{1,2}):(\d{2})$/', $data['gio_khoi_hanh'], $matches)) {
+                $hour = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                $minute = $matches[2];
+                $data['gio_khoi_hanh'] = $hour . ':' . $minute;
+            }
+        }
+        
+        if (isset($data['gio_tap_trung']) && !empty($data['gio_tap_trung'])) {
+            $data['gio_tap_trung'] = trim($data['gio_tap_trung']);
+            // Nếu có format HH:mm:SS, chỉ lấy HH:mm
+            if (strlen($data['gio_tap_trung']) > 5) {
+                $data['gio_tap_trung'] = substr($data['gio_tap_trung'], 0, 5);
+            }
+            // Đảm bảo format đúng HH:mm (thêm số 0 phía trước nếu cần)
+            if (preg_match('/^(\d{1,2}):(\d{2})$/', $data['gio_tap_trung'], $matches)) {
+                $hour = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
+                $minute = $matches[2];
+                $data['gio_tap_trung'] = $hour . ':' . $minute;
+            }
+        }
+        
         $validator = new Validator($data);
         
         // Tour ID
@@ -1300,11 +1350,11 @@ class AdminController extends BaseController {
                   ->minLength('diem_tap_trung', 5, 'Điểm tập trung phải có ít nhất 5 ký tự')
                   ->maxLength('diem_tap_trung', 255, 'Điểm tập trung không được quá 255 ký tự');
         
-        // Số chỗ còn trống
-        $validator->required('so_cho_con_trong', 'Số chỗ còn trống là bắt buộc')
-                  ->integer('so_cho_con_trong', 'Số chỗ còn trống phải là số nguyên')
-                  ->min('so_cho_con_trong', 0, 'Số chỗ còn trống phải lớn hơn hoặc bằng 0')
-                  ->max('so_cho_con_trong', 1000, 'Số chỗ còn trống không được quá 1000');
+        // Số chỗ còn trống - tự động tính từ so_cho - so_cho_da_dat, không bắt buộc nhập
+        if (isset($data['so_cho_con_lai']) && $data['so_cho_con_lai'] !== '') {
+            $validator->integer('so_cho_con_lai', 'Số chỗ còn lại phải là số nguyên')
+                      ->min('so_cho_con_lai', 0, 'Số chỗ còn lại phải lớn hơn hoặc bằng 0');
+        }
         
         // Phương tiện
         $validator->required('phuong_tien', 'Phương tiện là bắt buộc')
@@ -1356,6 +1406,13 @@ class AdminController extends BaseController {
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Tính toán so_cho_con_lai nếu chưa có (từ so_cho - so_cho_da_dat)
+            if (!isset($_POST['so_cho_con_lai']) || $_POST['so_cho_con_lai'] === '') {
+                $so_cho = isset($_POST['so_cho']) && $_POST['so_cho'] !== '' ? (int)$_POST['so_cho'] : 0;
+                $so_cho_da_dat = isset($_POST['so_cho_da_dat']) && $_POST['so_cho_da_dat'] !== '' ? (int)$_POST['so_cho_da_dat'] : 0;
+                $_POST['so_cho_con_lai'] = max(0, $so_cho - $so_cho_da_dat);
+            }
+            
             // ===== VALIDATE INPUT =====
             $validator = $this->validateDeparturePlanData($_POST);
             
@@ -1442,6 +1499,13 @@ class AdminController extends BaseController {
                 $this->redirect(BASE_URL . '?act=admin-departure-plans');
             }
 
+            // Tính toán so_cho_con_lai nếu chưa có (từ so_cho - so_cho_da_dat)
+            if (!isset($_POST['so_cho_con_lai']) || $_POST['so_cho_con_lai'] === '') {
+                $so_cho = isset($_POST['so_cho']) && $_POST['so_cho'] !== '' ? (int)$_POST['so_cho'] : 0;
+                $so_cho_da_dat = isset($_POST['so_cho_da_dat']) && $_POST['so_cho_da_dat'] !== '' ? (int)$_POST['so_cho_da_dat'] : 0;
+                $_POST['so_cho_con_lai'] = max(0, $so_cho - $so_cho_da_dat);
+            }
+            
             // ===== VALIDATE INPUT =====
             $validator = $this->validateDeparturePlanData($_POST);
             
@@ -1460,6 +1524,13 @@ class AdminController extends BaseController {
             $validated = $validator->validated();
             $validated['trang_thai'] = isset($_POST['trang_thai']) ? (int)$_POST['trang_thai'] : 1;
             
+            // Đảm bảo so_cho_con_lai được thêm vào validated data
+            if (isset($_POST['so_cho_con_lai']) && $_POST['so_cho_con_lai'] !== '') {
+                $validated['so_cho_con_lai'] = (int)$_POST['so_cho_con_lai'];
+            } elseif (isset($validated['so_cho']) && isset($validated['so_cho_da_dat'])) {
+                $validated['so_cho_con_lai'] = max(0, (int)$validated['so_cho'] - (int)$validated['so_cho_da_dat']);
+            }
+            
             // ===== UPDATE DATABASE =====
             $result = $this->departurePlanModel->updateDeparturePlan($id, $validated);
             $redirectTourId = $validated['id_tour'] ?? null;
@@ -1467,7 +1538,9 @@ class AdminController extends BaseController {
             if ($result) {
                 $_SESSION['success'] = 'Cập nhật lịch khởi hành thành công!';
             } else {
-                $_SESSION['error'] = 'Không thể cập nhật lịch khởi hành';
+                // Log chi tiết lỗi để debug
+                error_log("Lỗi cập nhật lịch khởi hành ID: $id | Data: " . json_encode($validated));
+                $_SESSION['error'] = 'Không thể cập nhật lịch khởi hành. Vui lòng kiểm tra lại thông tin.';
             }
 
             // Redirect về trang list với tour_id nếu có
@@ -1573,12 +1646,7 @@ class AdminController extends BaseController {
             }
         }
         
-        // Lấy danh sách phân công HDV cho lịch khởi hành này
-        require_once './models/AssignmentModel.php';
-        $assignmentModel = new AssignmentModel();
-        $assignments = $assignmentModel->getAssignmentsByDeparturePlanID($id);
-        
-        $this->loadView('admin/departure-plans/detail', compact('departurePlan', 'tour', 'checklist', 'checklistItems', 'completionPercentage', 'assignments'), 'admin/layout');
+        $this->loadView('admin/departure-plans/detail', compact('departurePlan', 'tour', 'checklist', 'checklistItems', 'completionPercentage'), 'admin/layout');
     }
 
     /* ==================== PRETRIP CHECKLIST MANAGEMENT ==================== */
@@ -1971,7 +2039,7 @@ class AdminController extends BaseController {
     /* ==================== ASSIGNMENT MANAGEMENT ==================== */
 
     /**
-     * Danh sách phân công HDV
+     * Danh sách phân công HDV (từ booking_hdv)
      * Route: ?act=admin-assignments
      */
     public function listAssignments() {
@@ -1984,7 +2052,11 @@ class AdminController extends BaseController {
         if (!empty($_GET['ten_hdv'])) {
             $filters['ten_hdv'] = trim($_GET['ten_hdv']);
         }
+        if (!empty($_GET['ma_booking'])) {
+            $filters['ma_booking'] = trim($_GET['ma_booking']);
+        }
 
+        // Sử dụng AssignmentModel với bảng phan_cong_hdv như ban đầu
         $assignments = $this->assignmentModel->getAllAssignments($filters);
         $this->loadView('admin/assignments/list', compact('assignments', 'filters'), 'admin/layout');
     }
@@ -2289,8 +2361,24 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-bookings');
         }
 
+        // Lấy danh sách khách chi tiết nếu là nhóm/đoàn
+        $bookingDetails = [];
+        if (in_array($booking['loai_booking'] ?? 1, [3, 4])) {
+            $bookingDetails = $this->bookingModel->getBookingDetails($id);
+        }
+
+        // Lấy danh sách HDV của booking
+        $bookingGuides = $this->bookingModel->getBookingGuides($id);
+
+        // Lấy thông tin chi tiết lịch trình
+        $departurePlan = null;
+        if (!empty($booking['id_lich_khoi_hanh'])) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($booking['id_lich_khoi_hanh']);
+        }
+
         $statusList = BookingModel::getStatusList();
-        $this->loadView('admin/bookings/detail', compact('booking', 'statusList'), 'admin/layout');
+        $bookingTypeList = BookingModel::getBookingTypeList();
+        $this->loadView('admin/bookings/detail', compact('booking', 'statusList', 'bookingTypeList', 'bookingDetails', 'bookingGuides', 'departurePlan'), 'admin/layout');
     }
 
     /**
@@ -2307,7 +2395,8 @@ class AdminController extends BaseController {
                 $tours = $this->tourModel->getAllTours();
                 $selectedTourId = $_POST['id_tour'] ?? null;
                 $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
                 return;
             }
 
@@ -2317,7 +2406,8 @@ class AdminController extends BaseController {
                 $tours = $this->tourModel->getAllTours();
                 $selectedTourId = $_POST['id_tour'] ?? null;
                 $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
                 return;
             }
 
@@ -2327,7 +2417,8 @@ class AdminController extends BaseController {
                 $tours = $this->tourModel->getAllTours();
                 $selectedTourId = $_POST['id_tour'] ?? null;
                 $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
                 return;
             }
 
@@ -2337,8 +2428,46 @@ class AdminController extends BaseController {
                 $tours = $this->tourModel->getAllTours();
                 $selectedTourId = $_POST['id_tour'] ?? null;
                 $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
                 return;
+            }
+
+            // Validate danh sách HDV
+            if (!empty($_POST['danh_sach_hdv']) && is_array($_POST['danh_sach_hdv'])) {
+                $hdvIds = [];
+                foreach ($_POST['danh_sach_hdv'] as $index => $hdv) {
+                    if (empty($hdv['id_hdv'])) {
+                        $_SESSION['error'] = "Vui lòng chọn HDV cho hàng thứ " . ($index + 1);
+                        $tours = $this->tourModel->getAllTours();
+                        $selectedTourId = $_POST['id_tour'] ?? null;
+                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
+                        return;
+                    }
+                    if (empty($hdv['vai_tro'])) {
+                        $_SESSION['error'] = "Vui lòng chọn vai trò cho HDV ở hàng thứ " . ($index + 1);
+                        $tours = $this->tourModel->getAllTours();
+                        $selectedTourId = $_POST['id_tour'] ?? null;
+                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
+                        return;
+                    }
+                    // Kiểm tra trùng HDV
+                    $hdvId = (int)$hdv['id_hdv'];
+                    if (in_array($hdvId, $hdvIds)) {
+                        $_SESSION['error'] = "HDV đã được chọn ở nhiều hàng. Mỗi HDV chỉ có thể được chọn một lần.";
+                        $tours = $this->tourModel->getAllTours();
+                        $selectedTourId = $_POST['id_tour'] ?? null;
+                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
+                        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
+                        return;
+                    }
+                    $hdvIds[] = $hdvId;
+                }
             }
 
             // Validate danh sách khách cho nhóm/đoàn
@@ -2458,11 +2587,13 @@ class AdminController extends BaseController {
                 $tours = $this->tourModel->getAllTours();
                 $selectedTourId = $_POST['id_tour'] ?? null;
                 $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
             }
         } else {
             $tours = $this->tourModel->getAllTours();
-            $this->loadView('admin/bookings/create', compact('tours'), 'admin/layout');
+            $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+            $this->loadView('admin/bookings/create', compact('tours', 'guides'), 'admin/layout');
         }
     }
 
@@ -2485,12 +2616,16 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-bookings');
         }
 
+        // Lấy danh sách HDV của booking
+        $bookingGuides = $this->bookingModel->getBookingGuides($id);
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Validate số điện thoại
             if (!BookingModel::validatePhone($_POST['so_dien_thoai'])) {
                 $_SESSION['error'] = 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 số bắt đầu bằng 0';
                 $statusList = BookingModel::getStatusList();
-                $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides'), 'admin/layout');
                 return;
             }
 
@@ -2498,7 +2633,9 @@ class AdminController extends BaseController {
             if (!empty($_POST['email']) && !BookingModel::validateEmail($_POST['email'])) {
                 $_SESSION['error'] = 'Email không hợp lệ';
                 $statusList = BookingModel::getStatusList();
-                $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $bookingGuides = $this->bookingModel->getBookingGuides($id);
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides', 'bookingGuides'), 'admin/layout');
                 return;
             }
 
@@ -2572,11 +2709,15 @@ class AdminController extends BaseController {
             } else {
                 $_SESSION['error'] = $result['message'] ?? 'Không thể cập nhật booking';
                 $statusList = BookingModel::getStatusList();
-                $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $bookingGuides = $this->bookingModel->getBookingGuides($id);
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides', 'bookingGuides'), 'admin/layout');
             }
         } else {
             $statusList = BookingModel::getStatusList();
-            $this->loadView('admin/bookings/edit', compact('booking', 'statusList'), 'admin/layout');
+            $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+            $bookingGuides = $this->bookingModel->getBookingGuides($id);
+            $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides', 'bookingGuides'), 'admin/layout');
         }
     }
 
@@ -2627,6 +2768,32 @@ class AdminController extends BaseController {
     }
 
     /**
+     * Lấy lịch trình từ tour (AJAX)
+     * Route: ?act=admin-get-tour-itinerary&id=X
+     */
+    public function getTourItinerary() {
+        $this->checkLogin();
+        header('Content-Type: application/json');
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            echo json_encode(['success' => false, 'message' => 'ID tour không hợp lệ']);
+            return;
+        }
+        
+        $tour = $this->tourModel->getTourByID($id);
+        if (!$tour) {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy tour']);
+            return;
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'chuongtrinh' => $tour['chuongtrinh'] ?? ''
+        ]);
+    }
+
+    /**
      * Lấy danh sách lịch khởi hành theo tour (AJAX)
      * Route: ?act=admin-get-departure-plans&tour_id=X
      */
@@ -2641,6 +2808,33 @@ class AdminController extends BaseController {
 
         $plans = $this->departurePlanModel->getDeparturePlansByTourID($tourId);
         echo json_encode(['success' => true, 'plans' => $plans]);
+    }
+
+    /**
+     * Lấy vai trò của HDV từ phân công cho lịch khởi hành (AJAX)
+     * Route: ?act=admin-get-guide-roles&departure_plan_id=X
+     */
+    public function getGuideRoles() {
+        $this->checkLogin();
+        
+        $departurePlanId = $_GET['departure_plan_id'] ?? null;
+        if (!$departurePlanId) {
+            echo json_encode(['success' => false, 'message' => 'Lịch khởi hành không hợp lệ']);
+            return;
+        }
+
+        require_once './models/AssignmentModel.php';
+        $assignmentModel = new AssignmentModel();
+        $assignments = $assignmentModel->getAssignmentsByDeparturePlanID($departurePlanId);
+        
+        $roles = [];
+        foreach ($assignments as $assignment) {
+            if (!empty($assignment['id_hdv'])) {
+                $roles[$assignment['id_hdv']] = $assignment['vai_tro'] ?? 'HDV chính';
+            }
+        }
+        
+        echo json_encode(['success' => true, 'roles' => $roles]);
     }
 
     /**
@@ -2842,4 +3036,4 @@ class AdminController extends BaseController {
         }
     }
 }
-    
+   

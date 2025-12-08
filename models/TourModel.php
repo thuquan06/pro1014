@@ -59,7 +59,7 @@ class TourModel extends BaseModel
                 ':giatreem'     => $data['giatreem'],
                 ':giatrenho'    => $data['giatrenho'],
                 ':chitietgoi'   => $data['chitietgoi'],
-                ':chuongtrinh'  => $data['chuongtrinh'],
+                ':chuongtrinh'  => $data['chuongtrinh'] ?? '',
                 ':luuy'         => $data['luuy'],
                 ':songay'       => $data['songay'],
                 ':ngayxuatphat' => $data['ngayxuatphat'] ?? null,
@@ -82,6 +82,60 @@ class TourModel extends BaseModel
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Kiểm tra mã tour đã tồn tại chưa
+     * @param string $mato Mã tour cần kiểm tra
+     * @param int|null $excludeId ID tour cần loại trừ (khi update)
+     * @return bool true nếu đã tồn tại, false nếu chưa tồn tại
+     */
+    public function isMatoExists($mato, $excludeId = null)
+    {
+        if (empty($mato)) {
+            return false;
+        }
+        
+        $sql = "SELECT COUNT(*) FROM goidulich WHERE mato = :mato";
+        $params = [':mato' => $mato];
+        
+        if ($excludeId !== null) {
+            $sql .= " AND id_goi != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $count = $stmt->fetchColumn();
+        
+        return $count > 0;
+    }
+
+    /**
+     * Kiểm tra tên tour đã tồn tại chưa
+     * @param string $tengoi Tên tour cần kiểm tra
+     * @param int|null $excludeId ID tour cần loại trừ (khi update)
+     * @return bool true nếu đã tồn tại, false nếu chưa tồn tại
+     */
+    public function isTengoiExists($tengoi, $excludeId = null)
+    {
+        if (empty($tengoi)) {
+            return false;
+        }
+        
+        $sql = "SELECT COUNT(*) FROM goidulich WHERE tengoi = :tengoi";
+        $params = [':tengoi' => $tengoi];
+        
+        if ($excludeId !== null) {
+            $sql .= " AND id_goi != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $count = $stmt->fetchColumn();
+        
+        return $count > 0;
     }
 
     public function deleteTour($id)
@@ -265,3 +319,4 @@ class TourModel extends BaseModel
         }
     }
 }
+      

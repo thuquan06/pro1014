@@ -559,21 +559,45 @@ $statusList = $statusList ?? [];
                   <a href="<?= BASE_URL ?>?act=admin-booking-edit&id=<?= $booking['id'] ?>" class="btn-action edit" title="Sửa">
                     <i class="fas fa-edit"></i>
                   </a>
+                  <?php 
+                  // Chỉ hiển thị nút xóa nếu booking ở trạng thái "Chờ xử lý" (0) hoặc "Đã hủy" (5)
+                  $trangThai = (int)($booking['trang_thai'] ?? 0);
+                  if ($trangThai == 0 || $trangThai == 5): 
+                  ?>
                   <a href="<?= BASE_URL ?>?act=admin-booking-delete&id=<?= $booking['id'] ?>" 
                      class="btn-action delete" 
                      title="Xóa"
                      onclick="return confirm('Bạn có chắc muốn xóa booking này? Số chỗ sẽ được cộng lại vào lịch khởi hành.')">
                     <i class="fas fa-trash"></i>
                   </a>
+                  <?php endif; ?>
                 </div>
                 <div class="action-buttons-row-bottom">
                   <div class="status-dropdown">
                     <select onchange="quickChangeStatus(<?= $booking['id'] ?>, this.value)" title="Đổi trạng thái">
-                      <?php foreach ($statusList as $key => $label): ?>
+                      <?php 
+                      // Quy trình: 0 (Chờ xử lý) -> 2 (Đã đặt cọc) -> 3 (Đã thanh toán) -> 4 (Đã hoàn thành)
+                      // Có thể hủy (5) từ bất kỳ trạng thái nào
+                      // Có thể quay lại từ hủy (5) về các trạng thái hợp lệ
+                      $currentStatus = (int)($booking['trang_thai'] ?? 0);
+                      $allowedTransitions = [
+                        0 => [0, 2, 5], // Chờ xử lý -> Đã đặt cọc hoặc Hủy
+                        2 => [2, 3, 5], // Đã đặt cọc -> Đã thanh toán hoặc Hủy
+                        3 => [3, 4],    // Đã thanh toán -> chỉ có thể Đã hoàn thành (không cho hủy)
+                        4 => [4],       // Đã hoàn thành -> không thể thay đổi trạng thái
+                        5 => [0, 2, 5], // Hủy -> có thể quay lại Chờ xử lý hoặc Đã đặt cọc
+                      ];
+                      $allowedStatuses = $allowedTransitions[$currentStatus] ?? array_keys($statusList);
+                      foreach ($statusList as $key => $label): 
+                        if (in_array($key, $allowedStatuses)):
+                      ?>
                         <option value="<?= $key ?>" <?= ($booking['trang_thai'] == $key) ? 'selected' : '' ?>>
                           <?= safe_html($label) ?>
                         </option>
-                      <?php endforeach; ?>
+                      <?php 
+                        endif;
+                      endforeach; 
+                      ?>
                     </select>
                   </div>
                 </div>

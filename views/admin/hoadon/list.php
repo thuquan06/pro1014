@@ -9,11 +9,12 @@ function safe_html($value) {
 }
 
 function getTrangThaiText($status) {
+    // Trạng thái hóa đơn mới
     switch($status) {
-        case 0: return '<span class="status-badge warning"><i class="fas fa-clock"></i> Chờ xác nhận</span>';
-        case 1: return '<span class="status-badge info"><i class="fas fa-check"></i> Đã xác nhận</span>';
-        case 2: return '<span class="status-badge success"><i class="fas fa-check-circle"></i> Hoàn thành</span>';
-        case 3: return '<span class="status-badge danger"><i class="fas fa-ban"></i> Đã hủy</span>';
+        case 0: return '<span class="status-badge warning"><i class="fas fa-file-invoice"></i> Chưa xuất</span>';
+        case 1: return '<span class="status-badge info"><i class="fas fa-file-pdf"></i> Đã xuất</span>';
+        case 2: return '<span class="status-badge success"><i class="fas fa-paper-plane"></i> Đã gửi</span>';
+        case 3: return '<span class="status-badge danger"><i class="fas fa-ban"></i> Hủy</span>';
         default: return '<span class="status-badge secondary">Không xác định</span>';
     }
 }
@@ -24,22 +25,35 @@ function getTrangThaiText($status) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px;
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .invoice-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-dark);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invoice-title i {
+  font-size: 36px;
 }
 
 .invoice-actions {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .filter-select {
@@ -67,11 +81,18 @@ function getTrangThaiText($status) {
 .stat-box {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .stat-icon {
@@ -106,8 +127,9 @@ function getTrangThaiText($status) {
 .invoice-card {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .invoice-table {
@@ -120,7 +142,7 @@ function getTrangThaiText($status) {
 }
 
 .invoice-table th {
-  padding: 14px 16px;
+  padding: 16px;
   text-align: center;
   font-weight: 600;
   font-size: 13px;
@@ -136,6 +158,14 @@ function getTrangThaiText($status) {
   font-size: 14px;
   color: var(--text-dark);
   text-align: center;
+}
+
+.invoice-table td.tour-cell {
+  max-width: 250px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .invoice-table tbody tr:hover {
@@ -237,6 +267,47 @@ function getTrangThaiText($status) {
   color: var(--text-light);
   margin-top: 4px;
 }
+
+@media (max-width: 768px) {
+  .invoice-header {
+    padding: 16px;
+  }
+  
+  .invoice-title {
+    font-size: 24px;
+  }
+  
+  .invoice-title i {
+    font-size: 28px;
+  }
+  
+  .invoice-actions {
+    width: 100%;
+  }
+  
+  .filter-select {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .invoice-table {
+    font-size: 12px;
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    padding: 10px 8px;
+  }
+  
+  .btn-action {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
 </style>
 
 <!-- Page Header -->
@@ -249,10 +320,10 @@ function getTrangThaiText($status) {
   <div class="invoice-actions">
     <select id="filterStatus" class="filter-select">
       <option value="">Tất cả trạng thái</option>
-      <option value="0" <?php echo (isset($filter_status) && $filter_status == '0') ? 'selected' : ''; ?>>Chờ xác nhận</option>
-      <option value="1" <?php echo (isset($filter_status) && $filter_status == '1') ? 'selected' : ''; ?>>Đã xác nhận</option>
-      <option value="2" <?php echo (isset($filter_status) && $filter_status == '2') ? 'selected' : ''; ?>>Hoàn thành</option>
-      <option value="3" <?php echo (isset($filter_status) && $filter_status == '3') ? 'selected' : ''; ?>>Đã hủy</option>
+      <option value="0" <?php echo (isset($filter_status) && $filter_status == '0') ? 'selected' : ''; ?>>Chưa xuất</option>
+      <option value="1" <?php echo (isset($filter_status) && $filter_status == '1') ? 'selected' : ''; ?>>Đã xuất</option>
+      <option value="2" <?php echo (isset($filter_status) && $filter_status == '2') ? 'selected' : ''; ?>>Đã gửi</option>
+      <option value="3" <?php echo (isset($filter_status) && $filter_status == '3') ? 'selected' : ''; ?>>Hủy</option>
     </select>
     
     <a href="<?php echo BASE_URL; ?>?act=hoadon-create" class="btn btn-primary">
@@ -276,31 +347,31 @@ function getTrangThaiText($status) {
   
   <div class="stat-box">
     <div class="stat-icon orange">
-      <i class="fas fa-clock"></i>
+      <i class="fas fa-file-invoice"></i>
     </div>
     <div class="stat-info">
-      <h4><?php echo $statistics['cho_xacnhan'] ?? 0; ?></h4>
-      <p>Chờ xác nhận</p>
+      <h4><?php echo $statistics['chua_xuat'] ?? 0; ?></h4>
+      <p>Chưa xuất</p>
     </div>
   </div>
   
   <div class="stat-box">
     <div class="stat-icon cyan">
-      <i class="fas fa-check"></i>
+      <i class="fas fa-file-pdf"></i>
     </div>
     <div class="stat-info">
-      <h4><?php echo $statistics['da_xacnhan'] ?? 0; ?></h4>
-      <p>Đã xác nhận</p>
+      <h4><?php echo $statistics['da_xuat'] ?? 0; ?></h4>
+      <p>Đã xuất</p>
     </div>
   </div>
   
   <div class="stat-box">
     <div class="stat-icon green">
-      <i class="fas fa-check-circle"></i>
+      <i class="fas fa-paper-plane"></i>
     </div>
     <div class="stat-info">
-      <h4><?php echo $statistics['hoan_thanh'] ?? 0; ?></h4>
-      <p>Hoàn thành</p>
+      <h4><?php echo $statistics['da_gui'] ?? 0; ?></h4>
+      <p>Đã gửi</p>
     </div>
   </div>
 </div>
@@ -335,24 +406,33 @@ function getTrangThaiText($status) {
           $ngayvao = $hd['ngayvao'] ?? '';
           $ngayra = $hd['ngayra'] ?? '';
           $ngaydat = $hd['ngaydat'] ?? '';
-          $trangthai = $hd['trangthai'] ?? 0;
-          $huy = $hd['huy'] ?? 0;
-          
-          $total_people = $nguoilon + $treem + $trenho + $embe;
-          
-          if ($huy == 1) {
-            $trangthai = 3;
+          // Sử dụng trạng thái hóa đơn mới
+          $trangthai = $hd['trang_thai_hoa_don'] ?? 0;
+          // Nếu booking bị hủy (trang_thai = 5) thì hóa đơn cũng hủy
+          if (($hd['trangthai'] ?? 0) == 5) {
+            $trangthai = 3; // Hủy
           }
+          
+          $total_people = $nguoilon + $treem + $trenho;
       ?>		
         <tr>
           <td><strong>#<?php echo safe_html($id); ?></strong></td>
           <td style="text-align: left;"><?php echo safe_html($email); ?></td>
-          <td style="text-align: left;"><?php echo safe_html($ten_goi); ?></td>
+          <td class="tour-cell" title="<?php echo safe_html($ten_goi); ?>">
+            <?php 
+            $ten_goi_display = safe_html($ten_goi);
+            if (mb_strlen($ten_goi_display) > 40) {
+              echo mb_substr($ten_goi_display, 0, 40) . '...';
+            } else {
+              echo $ten_goi_display;
+            }
+            ?>
+          </td>
           <td>
             <strong><?php echo $total_people; ?></strong>
             <div class="people-info">
               NL:<?php echo $nguoilon; ?> TE:<?php echo $treem; ?><br>
-              TNH:<?php echo $trenho; ?> EB:<?php echo $embe; ?>
+              TNH:<?php echo $trenho; ?>
             </div>
           </td>
           <td><?php echo $ngayvao ? date("d/m/Y", strtotime($ngayvao)) : '-'; ?></td>
@@ -364,20 +444,24 @@ function getTrangThaiText($status) {
                class="btn-action view" title="Xem chi tiết">
               <i class="fas fa-eye"></i>
             </a>
+            <a href="<?php echo BASE_URL; ?>?act=hoadon-print&id=<?php echo $id; ?>" 
+               class="btn-action" style="background: #10b981; color: white;" title="Xuất hóa đơn" target="_blank">
+              <i class="fas fa-file-pdf"></i>
+            </a>
             <a href="<?php echo BASE_URL; ?>?act=hoadon-edit&id=<?php echo $id; ?>" 
                class="btn-action edit" title="Chỉnh sửa">
               <i class="fas fa-edit"></i>
             </a>
-            <?php if ($huy != 1): ?>
-              <?php if ($trangthai == 0): // Chờ xác nhận ?>
-              <button onclick="if(confirm('Xác nhận hóa đơn #<?php echo $id; ?>?')) { window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-confirm&id=<?php echo $id; ?>'; }" 
-                      class="btn-action refresh" title="Xác nhận">
-                <i class="fas fa-check"></i>
+            <?php if ($trangthai != 3): // Không phải trạng thái Hủy ?>
+              <?php if ($trangthai == 0): // Chưa xuất - có thể xuất hóa đơn ?>
+              <button onclick="if(confirm('Xuất hóa đơn #<?php echo $id; ?>?')) { updateInvoiceStatus(<?php echo $id; ?>, 1); }" 
+                      class="btn-action refresh" title="Xuất hóa đơn">
+                <i class="fas fa-file-pdf"></i> Xuất
               </button>
-              <?php elseif ($trangthai == 1): // Đã xác nhận ?>
-              <button onclick="if(confirm('Đánh dấu hoàn thành hóa đơn #<?php echo $id; ?>?')) { window.location.href = '<?php echo BASE_URL; ?>?act=hoadon-complete&id=<?php echo $id; ?>'; }" 
-                      class="btn-action refresh" title="Hoàn thành" style="background: #10b981; color: white;">
-                <i class="fas fa-check-circle"></i>
+              <?php elseif ($trangthai == 1): // Đã xuất - có thể gửi email ?>
+              <button onclick="if(confirm('Gửi hóa đơn #<?php echo $id; ?> qua email?')) { updateInvoiceStatus(<?php echo $id; ?>, 2); }" 
+                      class="btn-action refresh" title="Gửi email" style="background: #10b981; color: white;">
+                <i class="fas fa-paper-plane"></i> Gửi
               </button>
               <?php endif; ?>
             <?php endif; ?>
@@ -434,32 +518,39 @@ $(document).ready(function() {
   });
 });
 
+// Hàm cập nhật trạng thái hóa đơn
+function updateInvoiceStatus(id, newStatus) {
+  // newStatus: 0=Chưa xuất, 1=Đã xuất, 2=Đã gửi, 3=Hủy
+  fetch('<?php echo BASE_URL; ?>?act=hoadon-update-invoice-status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'id=' + id + '&trang_thai_hoa_don=' + newStatus
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message || 'Cập nhật trạng thái thành công!');
+      location.reload();
+    } else {
+      alert(data.message || 'Cập nhật trạng thái thất bại!');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Có lỗi xảy ra. Vui lòng thử lại.');
+  });
+}
+
 // Hàm cập nhật trạng thái (giữ lại để tương thích nếu cần)
 function updateStatus(id) {
-  var newStatus = prompt("Nhập trạng thái mới:\n0 = Chờ xác nhận\n1 = Đã xác nhận\n2 = Hoàn thành");
+  var newStatus = prompt("Nhập trạng thái mới:\n0 = Chưa xuất\n1 = Đã xuất\n2 = Đã gửi\n3 = Hủy");
   
   if (newStatus !== null && newStatus !== '') {
     newStatus = parseInt(newStatus);
-    if (newStatus >= 0 && newStatus <= 2) {
-      fetch('<?php echo BASE_URL; ?>?act=hoadon-update-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'id=' + id + '&trangthai=' + newStatus
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert(data.message);
-          location.reload();
-        } else {
-          alert(data.message);
-        }
-      })
-      .catch(error => {
-        alert('Có lỗi xảy ra: ' + error);
-      });
+    if (newStatus >= 0 && newStatus <= 3) {
+      updateInvoiceStatus(id, newStatus);
     } else {
       alert('Trạng thái không hợp lệ!');
     }

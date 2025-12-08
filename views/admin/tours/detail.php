@@ -1,49 +1,5 @@
 <?php
-// Check for active promotion - Logic đơn giản và chắc chắn
-$coKhuyenMai = false;
-$phantram = 0;
-
-// Lấy giá trị từ tour
-$khuyenmai = $tour['khuyenmai'] ?? 0;
-$khuyenmai_phantram = isset($tour['khuyenmai_phantram']) ? (float)$tour['khuyenmai_phantram'] : 0;
-
-// Kiểm tra khuyến mãi - chấp nhận nhiều format
-// Chuyển về int để so sánh chắc chắn
-$khuyenmaiInt = (int)$khuyenmai;
-
-// Biến để đánh dấu khuyến mãi đã hết hạn
-$khuyenMaiHetHan = false;
-
-// Nếu khuyến mãi = 1 và có phần trăm > 0
-if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
-    // Kiểm tra thời gian (nếu có)
-    $tungay = isset($tour['khuyenmai_tungay']) ? trim($tour['khuyenmai_tungay']) : '';
-    $denngay = isset($tour['khuyenmai_denngay']) ? trim($tour['khuyenmai_denngay']) : '';
-    $today = date('Y-m-d');
-    
-    // Nếu không có ngày, khuyến mãi luôn hiệu lực
-    if (empty($tungay) && empty($denngay)) {
-        $coKhuyenMai = true;
-        $phantram = $khuyenmai_phantram;
-    } else {
-        // Kiểm tra ngày - chỉ kiểm tra nếu có giá trị
-        $checkStart = empty($tungay) || $tungay === '' || $today >= $tungay;
-        // Cho phép hiển thị nếu ngày kết thúc >= hôm nay (bao gồm cả hôm nay)
-        $checkEnd = empty($denngay) || $denngay === '' || $today <= $denngay;
-        
-        // Nếu cả hai điều kiện đều đúng
-        if ($checkStart && $checkEnd) {
-            $coKhuyenMai = true;
-            $phantram = $khuyenmai_phantram;
-        } else {
-            // Khuyến mãi đã hết hạn
-            $khuyenMaiHetHan = true;
-            // Vẫn hiển thị giá giảm nhưng có cảnh báo
-            $coKhuyenMai = true;
-            $phantram = $khuyenmai_phantram;
-        }
-    }
-}
+// Không còn khuyến mãi, chỉ hiển thị giá gốc
 ?>
 
 <style>
@@ -83,15 +39,20 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
 }
 
 .btn-outline {
-  background: #f9fafb;
-  color: #1f2937;
-  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: 2px solid #667eea;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
 }
 
 .btn-outline:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-  color: #1f2937;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  border-color: #764ba2;
+  color: white;
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
 }
 
 .card {
@@ -341,56 +302,6 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
   color: #6b7280;
 }
 
-.itinerary-day-card {
-  background: #f9fafb;
-  border-radius: 8px;
-  border-left: 4px solid #3b82f6;
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-
-.day-header {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  padding: 12px 16px;
-  color: white;
-}
-
-.day-number {
-  font-size: 16px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.day-content {
-  padding: 16px;
-  background: white;
-  line-height: 1.8;
-  color: #374151;
-}
-
-.day-content img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin: 12px 0;
-}
-
-.day-content h3 {
-  color: #3b82f6;
-  font-size: 15px;
-  margin: 12px 0 8px 0;
-}
-
-.day-content p {
-  margin-bottom: 12px;
-}
-
-.day-content ul, .day-content ol {
-  margin-left: 20px;
-  margin-bottom: 12px;
-}
 
 .content-scrollable {
   max-height: 400px;
@@ -441,11 +352,11 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
       <?= htmlspecialchars($tour['tengoi'] ?? 'Chi tiết tour') ?>
     </h1>
     <div class="header-left-actions">
-      <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-outline">
-        <i class="fas fa-images"></i> Thư viện
+      <a href="<?= BASE_URL ?>?act=tour-gallery&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-outline" style="margin-right: 12px; padding: 10px 20px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fas fa-images" style="font-size: 16px;"></i> <strong>Thư viện</strong>
       </a>
-      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-outline">
-        <i class="fas fa-file-contract"></i> Chính sách
+      <a href="<?= BASE_URL ?>?act=tour-chinhsach&id_goi=<?= $tour['id_goi'] ?>" class="btn btn-outline" style="margin-right: 12px; padding: 10px 20px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fas fa-file-contract" style="font-size: 16px;"></i> <strong>Chính sách</strong>
       </a>
       <a href="<?= BASE_URL ?>?act=admin-tour-edit&id=<?= $tour['id_goi'] ?>" class="btn btn-primary">
         <i class="fas fa-edit"></i> Sửa
@@ -515,182 +426,24 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
               <i class="fas fa-money-bill-wave" style="color: #3b82f6; margin-right: 8px;"></i>Giá
             </h3>
             
-            <?php if ($coKhuyenMai): ?>
-            <div class="price-row" style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 16px;">
-              <span class="price-label">Khuyến mãi</span>
-              <span class="price-value" style="color: <?= $khuyenMaiHetHan ? '#9ca3af' : '#ef4444' ?>; font-weight: 700;">
-                <i class="fas fa-tag"></i> Giảm <?= $phantram ?>%
-                <?php if ($khuyenMaiHetHan): ?>
-                  <br><span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-block; margin-top: 4px;">
-                    <i class="fas fa-exclamation-triangle"></i> Đã hết hạn (<?= !empty($tour['khuyenmai_denngay']) ? date('d/m/Y', strtotime($tour['khuyenmai_denngay'])) : 'N/A' ?>)
-                  </span>
-                <?php elseif (!empty($tour['khuyenmai_denngay'])): ?>
-                  <br><small style="font-weight: 400; color: #6b7280;">
-                    Đến: <?= date('d/m/Y', strtotime($tour['khuyenmai_denngay'])) ?>
-                  </small>
-                <?php endif; ?>
-              </span>
-            </div>
-            <?php endif; ?>
-            
-            <?php 
-            // Debug info - hiển thị tạm thời để kiểm tra
-            // Thêm &debug=1 vào URL để xem thông tin debug
-            if (isset($_GET['debug']) && $_GET['debug'] == '1'): 
-            ?>
-              <div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin-bottom: 15px; border-radius: 6px; font-size: 13px; font-family: monospace;">
-                <strong style="color: #856404; font-size: 14px;">🔍 DEBUG INFO - Kiểm tra khuyến mãi:</strong><br><br>
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr style="background: #fff3cd;">
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><strong>Field</strong></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><strong>Giá trị</strong></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><strong>Type</strong></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px; border: 1px solid #ffc107;">khuyenmai</td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= var_export($tour['khuyenmai'] ?? 'null', true) ?></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= gettype($tour['khuyenmai'] ?? null) ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px; border: 1px solid #ffc107;">khuyenmai_phantram</td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= var_export($tour['khuyenmai_phantram'] ?? 'null', true) ?></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= gettype($tour['khuyenmai_phantram'] ?? null) ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px; border: 1px solid #ffc107;">khuyenmai_tungay</td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= var_export($tour['khuyenmai_tungay'] ?? 'null', true) ?></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= gettype($tour['khuyenmai_tungay'] ?? null) ?></td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 5px; border: 1px solid #ffc107;">khuyenmai_denngay</td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= var_export($tour['khuyenmai_denngay'] ?? 'null', true) ?></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><?= gettype($tour['khuyenmai_denngay'] ?? null) ?></td>
-                  </tr>
-                  <tr style="background: #d4edda;">
-                    <td style="padding: 5px; border: 1px solid #ffc107;"><strong>Kết quả kiểm tra:</strong></td>
-                    <td style="padding: 5px; border: 1px solid #ffc107;" colspan="2">
-                      <strong>coKhuyenMai:</strong> <?= $coKhuyenMai ? '<span style="color: green;">TRUE ✓</span>' : '<span style="color: red;">FALSE ✗</span>' ?><br>
-                      <strong>phantram:</strong> <?= $phantram ?><br>
-                      <strong>Today:</strong> <?= date('Y-m-d') ?>
-                    </td>
-                  </tr>
-                </table>
-                <br>
-                <div style="background: #d1ecf1; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                  <strong>📝 SQL Query để kiểm tra trong phpMyAdmin:</strong><br>
-                  <code style="background: white; padding: 5px; display: block; margin-top: 5px;">
-                    SELECT id_goi, tengoi, khuyenmai, khuyenmai_phantram, khuyenmai_tungay, khuyenmai_denngay, giagoi, giatreem, giatrenho<br>
-                    FROM goidulich<br>
-                    WHERE id_goi = <?= $tour['id_goi'] ?? 'YOUR_TOUR_ID' ?>;
-                  </code>
-                </div>
-              </div>
-            <?php endif; ?>
-            
             <div class="price-row">
               <span class="price-label"><i class="fas fa-user"></i> Người lớn</span>
-              <span class="price-value">
-                <?php 
-                $giaNguoiLon = (float)($tour['giagoi'] ?? 0);
-                
-                // Tính giá sau giảm nếu có khuyến mãi
-                if ($coKhuyenMai && $phantram > 0 && $giaNguoiLon > 0) {
-                  $giaSauGiam = round($giaNguoiLon * (100 - $phantram) / 100);
-                  
-                  // Luôn hiển thị giá giảm nếu có khuyến mãi
-                  if ($giaSauGiam < $giaNguoiLon) {
-                    if ($khuyenMaiHetHan): 
-                      // Khi hết hạn: giá gốc trước, giá sau giảm bị gạch sau
-                ?>
-                  <span class="price-original" style="color: #1f2937; font-size: 16px; font-weight: 700; text-decoration: none;"><?= number_format($giaNguoiLon, 0, ',', '.') ?> đ</span>
-                  <span class="price-sale" style="color: #9ca3af; text-decoration: line-through; font-size: 14px; margin-left: 8px;"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
-                  <span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; font-weight: 600;">
-                    <i class="fas fa-exclamation-circle"></i> Hết hạn
-                  </span>
-                <?php else: 
-                      // Khi còn hiệu lực: chỉ hiển thị giá sau giảm nổi bật
-                ?>
-                  <span class="price-sale" style="color: #ef4444; font-size: 16px; font-weight: 700;"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
-                  <span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; font-weight: 700;">-<?= number_format($phantram, 0) ?>%</span>
-                <?php endif; ?>
-                <?php 
-                  } else {
-                    // Nếu giá sau giảm >= giá gốc (không hợp lý), vẫn hiển thị giá gốc
-                    echo number_format($giaNguoiLon, 0, ',', '.') . ' đ';
-                  }
-                } else {
-                  // Không có khuyến mãi hoặc phần trăm = 0
-                  echo number_format($giaNguoiLon, 0, ',', '.') . ' đ';
-                }
-                ?>
+              <span class="price-value" style="color: #1f2937; font-size: 16px; font-weight: 700;">
+                <?= number_format((float)($tour['giagoi'] ?? 0), 0, ',', '.') ?> đ
               </span>
             </div>
             
             <div class="price-row">
               <span class="price-label"><i class="fas fa-child"></i> Trẻ em (6-11 tuổi)</span>
-              <span class="price-value">
-                <?php 
-                $giaTreEm = (float)($tour['giatreem'] ?? 0);
-                // Tính giá sau giảm nếu có khuyến mãi
-                if ($coKhuyenMai && $phantram > 0 && $giaTreEm > 0) {
-                  $giaSauGiam = round($giaTreEm * (100 - $phantram) / 100);
-                  if ($giaSauGiam < $giaTreEm) {
-                    if ($khuyenMaiHetHan): 
-                      // Khi hết hạn: giá gốc trước, giá sau giảm bị gạch sau
-                ?>
-                  <span class="price-original" style="color: #1f2937; font-size: 16px; font-weight: 700; text-decoration: none;"><?= number_format($giaTreEm, 0, ',', '.') ?> đ</span>
-                  <span class="price-sale" style="color: #9ca3af; text-decoration: line-through; font-size: 14px; margin-left: 8px;"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
-                  <span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; font-weight: 600;">
-                    <i class="fas fa-exclamation-circle"></i> Hết hạn
-                  </span>
-                <?php else: 
-                      // Khi còn hiệu lực: chỉ hiển thị giá sau giảm nổi bật
-                ?>
-                  <span class="price-sale" style="color: #ef4444; font-size: 16px; font-weight: 700;"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
-                  <span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; font-weight: 700;">-<?= number_format($phantram, 0) ?>%</span>
-                <?php endif; ?>
-                <?php 
-                    } else {
-                      echo number_format($giaTreEm, 0, ',', '.') . ' đ';
-                    }
-                } else {
-                  echo number_format($giaTreEm, 0, ',', '.') . ' đ';
-                }
-                ?>
+              <span class="price-value" style="color: #1f2937; font-size: 16px; font-weight: 700;">
+                <?= number_format((float)($tour['giatreem'] ?? 0), 0, ',', '.') ?> đ
               </span>
             </div>
             
             <div class="price-row">
               <span class="price-label"><i class="fas fa-baby"></i> Trẻ nhỏ (2-5 tuổi)</span>
-              <span class="price-value">
-                <?php 
-                $giaTreNho = (float)($tour['giatrenho'] ?? 0);
-                // Tính giá sau giảm nếu có khuyến mãi
-                if ($coKhuyenMai && $phantram > 0 && $giaTreNho > 0) {
-                  $giaSauGiam = round($giaTreNho * (100 - $phantram) / 100);
-                  if ($giaSauGiam < $giaTreNho) {
-                    if ($khuyenMaiHetHan): 
-                      // Khi hết hạn: giá gốc trước, giá sau giảm bị gạch sau
-                ?>
-                  <span class="price-original" style="color: #1f2937; font-size: 16px; font-weight: 700; text-decoration: none;"><?= number_format($giaTreNho, 0, ',', '.') ?> đ</span>
-                  <span class="price-sale" style="color: #9ca3af; text-decoration: line-through; font-size: 14px; margin-left: 8px;"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
-                  <span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px; font-weight: 600;">
-                    <i class="fas fa-exclamation-circle"></i> Hết hạn
-                  </span>
-                <?php else: 
-                      // Khi còn hiệu lực: chỉ hiển thị giá sau giảm nổi bật
-                ?>
-                  <span class="price-sale" style="color: #ef4444; font-size: 16px; font-weight: 700;"><?= number_format($giaSauGiam, 0, ',', '.') ?> đ</span>
-                  <span style="background: #ef4444; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; font-weight: 700;">-<?= number_format($phantram, 0) ?>%</span>
-                <?php endif; ?>
-                <?php 
-                    } else {
-                      echo number_format($giaTreNho, 0, ',', '.') . ' đ';
-                    }
-                } else {
-                  echo number_format($giaTreNho, 0, ',', '.') . ' đ';
-                }
-                ?>
+              <span class="price-value" style="color: #1f2937; font-size: 16px; font-weight: 700;">
+                <?= number_format((float)($tour['giatrenho'] ?? 0), 0, ',', '.') ?> đ
               </span>
             </div>
           </div>
@@ -744,6 +497,63 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
     </div>
   </div>
   <?php endif; ?>
+
+  <!-- Hướng dẫn viên -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-user-tie"></i> Hướng dẫn viên
+      </div>
+      <a href="<?= BASE_URL ?>?act=admin-assignment-create&tour_id=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary">
+        <i class="fas fa-plus"></i> Thêm phân công
+      </a>
+    </div>
+    <div style="padding: 4px 0;">
+      <?php if (!empty($assignments)): ?>
+        <div style="display: grid; gap: 12px;">
+          <?php foreach ($assignments as $assignment): ?>
+            <div style="background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                  <i class="fas fa-user" style="color: #3b82f6; font-size: 16px;"></i>
+                  <strong style="font-size: 15px; color: #1f2937;"><?= htmlspecialchars($assignment['ho_ten'] ?? 'N/A') ?></strong>
+                  <?php if (isset($assignment['vai_tro'])): ?>
+                    <span style="background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                      <?= htmlspecialchars($assignment['vai_tro']) ?>
+                    </span>
+                  <?php endif; ?>
+                </div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; color: #6b7280; font-size: 13px;">
+                  <?php if (!empty($assignment['so_dien_thoai'])): ?>
+                    <span><i class="fas fa-phone"></i> <?= htmlspecialchars($assignment['so_dien_thoai']) ?></span>
+                  <?php endif; ?>
+                  <?php if (!empty($assignment['email'])): ?>
+                    <span><i class="fas fa-envelope"></i> <?= htmlspecialchars($assignment['email']) ?></span>
+                  <?php endif; ?>
+                  <?php if (!empty($assignment['ngay_khoi_hanh'])): ?>
+                    <span><i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($assignment['ngay_khoi_hanh'])) ?></span>
+                  <?php endif; ?>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" class="btn btn-sm btn-secondary">
+                  <i class="fas fa-edit"></i> Sửa
+                </a>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <div style="text-align: center; padding: 30px; color: #9ca3af;">
+          <i class="fas fa-user-tie" style="font-size: 36px; margin-bottom: 12px; opacity: 0.5;"></i>
+          <p style="margin: 0; font-size: 14px;">Chưa có phân công HDV cho tour này</p>
+          <a href="<?= BASE_URL ?>?act=admin-assignment-create&tour_id=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary" style="margin-top: 12px;">
+            <i class="fas fa-plus"></i> Tạo phân công đầu tiên
+          </a>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
 
   <!-- Categories & Tags -->
   <div class="card">
@@ -820,129 +630,6 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
   </div>
   <?php endif; ?>
 
-  <!-- Itinerary -->
-  <?php if (!empty($tour['chuongtrinh'])): ?>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-route"></i> Lịch trình tour
-      </div>
-    </div>
-    <?php
-    // Parse lịch trình theo ngày - tách thành các ngày riêng biệt
-    $chuongtrinh = html_entity_decode($tour['chuongtrinh'], ENT_QUOTES, 'UTF-8');
-    $days = [];
-    
-    if (!empty($chuongtrinh)) {
-      // Tìm tất cả các vị trí có "NGÀY X" (không phân biệt format)
-      preg_match_all('/(?:NGÀY|Day|Ngày)\s*(\d+)(?:\s*:\s*([^<\n]+))?/i', $chuongtrinh, $matches, PREG_OFFSET_CAPTURE);
-      
-      if (!empty($matches[0])) {
-        $markers = [];
-        
-        // Lấy tất cả các marker
-        for ($i = 0; $i < count($matches[0]); $i++) {
-          $dayNum = (int)$matches[1][$i][0];
-          $pos = $matches[0][$i][1];
-          $fullMatch = $matches[0][$i][0];
-          $title = isset($matches[2][$i]) ? trim(strip_tags($matches[2][$i][0])) : '';
-          
-          // Tìm vị trí kết thúc của tag HTML chứa marker (nếu có)
-          $afterText = substr($chuongtrinh, $pos, 500);
-          $endPos = $pos + strlen($fullMatch);
-          
-          // Tìm tag đóng sau marker
-          if (preg_match('/<\/[^>]+>/', $afterText, $closeTag, PREG_OFFSET_CAPTURE)) {
-            $tagEnd = $pos + $closeTag[0][1] + strlen($closeTag[0][0]);
-            if ($tagEnd > $endPos) {
-              $endPos = $tagEnd;
-            }
-          }
-          
-          // Chỉ giữ marker đầu tiên của mỗi ngày
-          if (!isset($markers[$dayNum]) || $markers[$dayNum]['pos'] > $pos) {
-            $markers[$dayNum] = [
-              'day' => $dayNum,
-              'pos' => $pos,
-              'end_pos' => $endPos,
-              'title' => $title
-            ];
-          }
-        }
-        
-        // Sắp xếp theo vị trí
-        uasort($markers, function($a, $b) {
-          return $a['pos'] - $b['pos'];
-        });
-        
-        // Chia nội dung theo các marker
-        $markerList = array_values($markers);
-        
-        for ($i = 0; $i < count($markerList); $i++) {
-          $marker = $markerList[$i];
-          $dayNum = $marker['day'];
-          
-          // Vị trí bắt đầu nội dung (sau marker)
-          $contentStart = $marker['end_pos'];
-          
-          // Vị trí kết thúc (trước marker tiếp theo hoặc cuối chuỗi)
-          $contentEnd = ($i < count($markerList) - 1) 
-            ? $markerList[$i + 1]['pos'] 
-            : strlen($chuongtrinh);
-          
-          // Lấy nội dung của ngày này
-          $dayContent = substr($chuongtrinh, $contentStart, $contentEnd - $contentStart);
-          $dayContent = trim($dayContent);
-          
-          // Loại bỏ header "NGÀY X" khỏi content nếu còn sót
-          $dayContent = preg_replace('/<[^>]*>\s*(?:NGÀY|Day|Ngày)\s*\d+[^<]*\s*<\/[^>]*>/is', '', $dayContent);
-          $dayContent = trim($dayContent);
-          
-          // Tạo title
-          $dayTitle = 'Ngày ' . $dayNum;
-          if (!empty($marker['title'])) {
-            $dayTitle .= ': ' . htmlspecialchars($marker['title']);
-          }
-          
-          // Thêm vào mảng days
-          $days[$dayNum] = [
-            'title' => $dayTitle,
-            'content' => $dayContent
-          ];
-        }
-      }
-    }
-    
-    // Nếu không tìm thấy marker, hiển thị toàn bộ trong 1 ngày
-    if (empty($days)) {
-      $days[1] = [
-        'title' => 'Ngày 1',
-        'content' => $chuongtrinh
-      ];
-    }
-    
-    // Sắp xếp theo số ngày
-    ksort($days);
-    
-    // Hiển thị các ngày - mỗi ngày một card riêng
-    ?>
-    <div class="content-scrollable">
-      <?php foreach ($days as $dayNum => $day): ?>
-        <div class="itinerary-day-card">
-          <div class="day-header">
-            <div class="day-number">
-              <i class="fas fa-calendar-day"></i>
-              <?= $day['title'] ?>
-            </div>
-          </div>
-          <div class="day-content">
-            <?= $day['content'] ?>
-          </div>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  </div>
-  <?php endif; ?>
 
 
   <!-- Notes -->
@@ -959,3 +646,4 @@ if ($khuyenmaiInt == 1 && $khuyenmai_phantram > 0) {
   </div>
   <?php endif; ?>
 </div>
+

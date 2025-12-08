@@ -42,16 +42,19 @@ $filters = $filters ?? [];
 }
 
 .filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 16px;
   margin-bottom: 16px;
+  align-items: flex-end;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .filter-group label {
@@ -113,6 +116,7 @@ $filters = $filters ?? [];
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .btn-primary {
@@ -312,6 +316,11 @@ $filters = $filters ?? [];
   color: #991b1b;
 }
 
+.status-badge.warning {
+  background: #fef3c7;
+  color: #78350f;
+}
+
 .role-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -386,14 +395,9 @@ $filters = $filters ?? [];
 <!-- Page Header -->
 <div class="assignments-header">
   <h1 class="assignments-title">
-    <i class="fas fa-calendar-plus" style="color: var(--primary);"></i>
-    Quản lý Phân công HDV
+    <i class="fas fa-user-tie" style="color: var(--primary);"></i>
+    Danh sách Phân công HDV
   </h1>
-  
-  <a href="<?= BASE_URL ?>?act=admin-assignment-create" class="btn-primary">
-    <i class="fas fa-plus"></i>
-    Phân công HDV mới
-  </a>
 </div>
 
 <!-- Filter Section -->
@@ -416,6 +420,7 @@ $filters = $filters ?? [];
                value="<?= htmlspecialchars($filters['ten_hdv'] ?? '') ?>"
                placeholder="Nhập tên HDV...">
       </div>
+      
     </div>
     
     <div class="filter-actions">
@@ -437,13 +442,11 @@ $filters = $filters ?? [];
       <thead>
         <tr>
           <th>STT</th>
+          <th>Lịch khởi hành</th>
           <th>HDV</th>
           <th>Tour</th>
-          <th>Lịch khởi hành</th>
+          <th>Ngày khởi hành</th>
           <th>Vai trò</th>
-          <th>Ngày bắt đầu</th>
-          <th>Ngày kết thúc</th>
-          <th>Lương</th>
           <th>Trạng thái</th>
           <th>Thao tác</th>
         </tr>
@@ -456,22 +459,35 @@ $filters = $filters ?? [];
           <tr>
             <td><?= $cnt ?></td>
             <td>
+              <?php if ($assignment['id_lich_khoi_hanh']): ?>
+                <a href="<?= BASE_URL ?>?act=admin-departure-plan-detail&id=<?= $assignment['id_lich_khoi_hanh'] ?>" 
+                   style="color: #3b82f6; font-weight: 600; text-decoration: none;">
+                  Lịch #<?= $assignment['id_lich_khoi_hanh'] ?>
+                </a>
+              <?php else: ?>
+                <span style="color: var(--text-light);">-</span>
+              <?php endif; ?>
+            </td>
+            <td>
               <strong><?= safe_html($assignment['ho_ten'] ?? 'N/A') ?></strong>
               <?php if ($assignment['email']): ?>
                 <br><small style="color: var(--text-light);"><?= safe_html($assignment['email']) ?></small>
+              <?php endif; ?>
+              <?php if ($assignment['so_dien_thoai']): ?>
+                <br><small style="color: var(--text-light);"><?= safe_html($assignment['so_dien_thoai']) ?></small>
               <?php endif; ?>
             </td>
             <td>
               <strong><?= safe_html($assignment['ten_tour'] ?? 'N/A') ?></strong>
               <?php if ($assignment['id_tour']): ?>
-                <br><small style="color: var(--text-light);">ID: <?= $assignment['id_tour'] ?></small>
+                <br><small style="color: var(--text-light);">ID: <?= safe_html($assignment['id_tour']) ?></small>
               <?php endif; ?>
             </td>
             <td>
               <?php if ($assignment['ngay_khoi_hanh']): ?>
-                <?= formatDate($assignment['ngay_khoi_hanh']) ?>
+                <strong><?= formatDate($assignment['ngay_khoi_hanh']) ?></strong>
                 <?php if ($assignment['gio_khoi_hanh']): ?>
-                  <br><small><?= date('H:i', strtotime($assignment['gio_khoi_hanh'])) ?></small>
+                  <br><small style="color: var(--text-light);"><?= date('H:i', strtotime($assignment['gio_khoi_hanh'])) ?></small>
                 <?php endif; ?>
               <?php else: ?>
                 <span style="color: var(--text-light);">-</span>
@@ -480,9 +496,9 @@ $filters = $filters ?? [];
             <td>
               <?php
               $roleClass = 'main';
-              if (strpos($assignment['vai_tro'], 'phụ') !== false) {
+              if (strpos($assignment['vai_tro'] ?? '', 'phụ') !== false) {
                 $roleClass = 'sub';
-              } elseif (strpos($assignment['vai_tro'], 'Trợ lý') !== false) {
+              } elseif (strpos($assignment['vai_tro'] ?? '', 'Trợ lý') !== false) {
                 $roleClass = 'assistant';
               }
               ?>
@@ -490,40 +506,28 @@ $filters = $filters ?? [];
                 <?= safe_html($assignment['vai_tro'] ?? 'HDV chính') ?>
               </span>
             </td>
-            <td><strong><?= formatDate($assignment['ngay_bat_dau']) ?></strong></td>
-            <td><strong><?= formatDate($assignment['ngay_ket_thuc']) ?></strong></td>
             <td>
-              <?php if ($assignment['luong']): ?>
-                <strong><?= number_format($assignment['luong'], 0, ',', '.') ?></strong> VNĐ
-              <?php else: ?>
-                <span style="color: var(--text-light);">-</span>
-              <?php endif; ?>
-            </td>
-            <td>
-              <?= ($assignment['trang_thai'] == 1) 
-                  ? '<span class="status-badge success"><i class="fas fa-check-circle"></i> Đã phân công</span>'
-                  : '<span class="status-badge danger"><i class="fas fa-ban"></i> Đã hủy</span>' ?>
+              <?php
+              $trangThai = (int)($assignment['trang_thai'] ?? 1);
+              $statusText = $trangThai == 1 ? 'Hoạt động' : 'Tạm dừng';
+              $statusClass = $trangThai == 1 ? 'success' : 'danger';
+              ?>
+              <span class="status-badge <?= $statusClass ?>">
+                <i class="fas fa-circle"></i> <?= $statusText ?>
+              </span>
             </td>
             <td style="text-align: center;">
-              <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: center; flex-wrap: nowrap;">
-                <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" 
-                   class="btn-action edit" 
-                   title="Sửa">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <a href="<?= BASE_URL ?>?act=admin-assignment-toggle&id=<?= $assignment['id'] ?>" 
-                   class="btn-action <?= $assignment['trang_thai'] == 1 ? 'danger' : 'success' ?>" 
-                   title="Đổi trạng thái"
-                   onclick="return confirm('Bạn có chắc muốn đổi trạng thái?')">
-                  <i class="fas fa-toggle-<?= $assignment['trang_thai'] == 1 ? 'on' : 'off' ?>"></i>
-                </a>
-                <a href="<?= BASE_URL ?>?act=admin-assignment-delete&id=<?= $assignment['id'] ?>" 
-                   class="btn-action delete" 
-                   title="Xóa"
-                   onclick="return confirm('Bạn có chắc muốn xóa phân công này?')">
-                  <i class="fas fa-trash"></i>
-                </a>
-              </div>
+              <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" 
+                 class="btn-action edit" 
+                 title="Chỉnh sửa">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="<?= BASE_URL ?>?act=admin-assignment-delete&id=<?= $assignment['id'] ?>" 
+                 class="btn-action delete" 
+                 title="Xóa"
+                 onclick="return confirm('Bạn có chắc muốn xóa phân công này?')">
+                <i class="fas fa-trash"></i>
+              </a>
             </td>
           </tr>
         <?php $cnt++; endforeach; ?>
@@ -534,12 +538,20 @@ $filters = $filters ?? [];
     <div class="empty-state">
       <i class="fas fa-calendar-times"></i>
       <p>Không tìm thấy phân công nào</p>
-      <a href="<?= BASE_URL ?>?act=admin-assignment-create" class="btn-primary" style="margin-top: 16px; display: inline-block;">
-        <i class="fas fa-plus"></i> Tạo phân công đầu tiên
-      </a>
+      <p style="margin-top: 8px; color: var(--text-light); font-size: 14px;">
+        Phân công HDV được quản lý trong booking. Vui lòng tạo booking để phân công HDV.
+      </p>
     </div>
   <?php endif; ?>
 </div>
+
+
+
+
+
+
+
+
 
 
 

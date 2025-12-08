@@ -192,7 +192,7 @@ function safe_html($value) {
 <div class="departure-form-header">
   <h1 class="departure-form-title">
     <i class="fas fa-calendar-plus" style="color: var(--primary);"></i>
-    Tạo Lịch khởi hành mới
+    Tạo lịch trình mới
   </h1>
 </div>
 
@@ -312,9 +312,8 @@ function safe_html($value) {
         <input type="date" 
                name="ngay_khoi_hanh" 
                id="ngay_khoi_hanh"
-               value="<?= safe_html($_POST['ngay_khoi_hanh'] ?? ($selectedTour && !empty($selectedTour['ngayxuatphat']) ? date('Y-m-d', strtotime($selectedTour['ngayxuatphat'])) : '')) ?>" 
+               value="<?= safe_html($_POST['ngay_khoi_hanh'] ?? '') ?>" 
                required>
-        <span class="help-text">Chọn ngày khởi hành (sẽ tự động điền từ ngày xuất phát của tour)</span>
       </div>
 
       <div class="form-group-modern">
@@ -324,8 +323,7 @@ function safe_html($value) {
         <input type="date" 
                name="ngay_ket_thuc" 
                id="ngay_ket_thuc"
-               value="<?= safe_html($_POST['ngay_ket_thuc'] ?? ($selectedTour && !empty($selectedTour['ngayve']) ? date('Y-m-d', strtotime($selectedTour['ngayve'])) : '')) ?>">
-        <span class="help-text">Ngày kết thúc tour (sẽ tự động tính nếu có số ngày)</span>
+               value="<?= safe_html($_POST['ngay_ket_thuc'] ?? '') ?>">
       </div>
     </div>
 
@@ -337,9 +335,8 @@ function safe_html($value) {
         <input type="time" 
                name="gio_khoi_hanh" 
                id="gio_khoi_hanh"
-               value="<?= safe_html($_POST['gio_khoi_hanh'] ?? ($selectedTour && !empty($selectedTour['giodi']) ? substr($selectedTour['giodi'], 0, 5) : '')) ?>" 
+               value="<?= safe_html($_POST['gio_khoi_hanh'] ?? '') ?>" 
                required>
-        <span class="help-text">Chọn giờ khởi hành (sẽ tự động điền từ giờ xuất phát của tour)</span>
       </div>
     </div>
 
@@ -421,10 +418,9 @@ function safe_html($value) {
         <input type="text" 
                name="phuong_tien" 
                id="phuong_tien"
-               value="<?= safe_html($_POST['phuong_tien'] ?? ($selectedTour && !empty($selectedTour['phuongtien']) ? $selectedTour['phuongtien'] : '')) ?>" 
+               value="<?= safe_html($_POST['phuong_tien'] ?? '') ?>" 
                placeholder="Ví dụ: Xe khách, Máy bay"
                required>
-        <span class="help-text">Phương tiện di chuyển (sẽ tự động điền từ tour nếu có)</span>
       </div>
     </div>
 
@@ -495,6 +491,29 @@ function safe_html($value) {
         <span class="help-text">Các ghi chú về vận hành, lưu ý đặc biệt cho tour này</span>
       </div>
     </div>
+
+    <div class="form-row">
+      <div class="form-group-modern full-width">
+        <label>
+          Lịch trình tour
+        </label>
+        
+        <!-- Day Builder Interface -->
+        <div id="itinerary-builder" style="margin-bottom: 16px;">
+          <div style="margin-bottom: 16px;">
+            <button type="button" id="add-day-btn" class="btn btn-primary" style="padding: 10px 20px;">
+              <i class="fas fa-plus"></i> Thêm ngày
+            </button>
+          </div>
+          <div id="days-container">
+            <!-- Days will be added here -->
+          </div>
+        </div>
+        
+        <!-- Hidden textarea để lưu HTML cuối cùng -->
+        <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display: none;"><?= safe_html($_POST['chuongtrinh'] ?? '') ?></textarea>
+      </div>
+    </div>
   </div>
 
   <!-- Form Actions -->
@@ -505,7 +524,7 @@ function safe_html($value) {
     </a>
     <button type="submit" class="btn-submit">
       <i class="fas fa-save"></i>
-      Tạo lịch khởi hành
+      Tạo lịch trình
     </button>
   </div>
 </form>
@@ -513,151 +532,23 @@ function safe_html($value) {
 <script>
 function loadTourDepartureDate() {
   const tourSelect = document.getElementById('id_tour');
-  const ngayKhoiHanhInput = document.getElementById('ngay_khoi_hanh');
-  const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
-  const gioKhoiHanhInput = document.getElementById('gio_khoi_hanh');
-  const phuongTienInput = document.getElementById('phuong_tien');
   const soChoInput = document.getElementById('so_cho');
   const giaNguoiLonInput = document.getElementById('gia_nguoi_lon');
   const giaTreEmInput = document.getElementById('gia_tre_em');
   const giaTreNhoInput = document.getElementById('gia_tre_nho');
   
-  if (!tourSelect || !ngayKhoiHanhInput) {
+  if (!tourSelect) {
     return;
   }
   
   const selectedOption = tourSelect.options[tourSelect.selectedIndex];
-  const ngayXuatPhat = selectedOption.getAttribute('data-ngay-xuat-phat');
-  const ngayKetThuc = selectedOption.getAttribute('data-ngay-ket-thuc');
-  const soNgay = selectedOption.getAttribute('data-so-ngay');
-  const gioXuatPhat = selectedOption.getAttribute('data-gio-xuat-phat');
-  const phuongTien = selectedOption.getAttribute('data-phuong-tien');
   const soCho = selectedOption.getAttribute('data-so-cho');
   const giaNguoiLon = selectedOption.getAttribute('data-gia-nguoi-lon');
   const giaTreEm = selectedOption.getAttribute('data-gia-tre-em');
   const giaTreNho = selectedOption.getAttribute('data-gia-tre-nho');
   
-  // Xử lý ngày khởi hành
-  if (ngayXuatPhat && ngayXuatPhat.trim() !== '') {
-    // Tự động điền ngày xuất phát vào field ngày khởi hành
-    ngayKhoiHanhInput.value = ngayXuatPhat;
-    
-    // Cập nhật help text để thông báo đã tự động điền
-    const helpTextNgay = ngayKhoiHanhInput.nextElementSibling;
-    if (helpTextNgay && helpTextNgay.classList.contains('help-text')) {
-      const originalText = helpTextNgay.textContent || 'Chọn ngày khởi hành';
-      helpTextNgay.textContent = 'Đã tự động điền từ ngày xuất phát của tour';
-      helpTextNgay.style.color = '#10b981';
-      
-      // Reset về text gốc sau 3 giây
-      setTimeout(() => {
-        helpTextNgay.textContent = originalText;
-        helpTextNgay.style.color = '';
-      }, 3000);
-    }
-  } else {
-    // Nếu tour không có ngày xuất phát, xóa giá trị
-    ngayKhoiHanhInput.value = '';
-    
-    // Cập nhật help text để cảnh báo
-    const helpTextNgay = ngayKhoiHanhInput.nextElementSibling;
-    if (helpTextNgay && helpTextNgay.classList.contains('help-text')) {
-      helpTextNgay.textContent = 'Tour này chưa có ngày xuất phát. Vui lòng nhập thủ công.';
-      helpTextNgay.style.color = '#ef4444';
-      
-      setTimeout(() => {
-        helpTextNgay.textContent = 'Chọn ngày khởi hành';
-        helpTextNgay.style.color = '';
-      }, 3000);
-    }
-  }
   
-  // Xử lý giờ khởi hành
-  if (gioKhoiHanhInput) {
-    if (gioXuatPhat && gioXuatPhat.trim() !== '') {
-      // Tự động điền giờ xuất phát vào field giờ khởi hành
-      gioKhoiHanhInput.value = gioXuatPhat;
-      
-      // Cập nhật help text để thông báo đã tự động điền
-      const helpTextGio = gioKhoiHanhInput.nextElementSibling;
-      if (helpTextGio && helpTextGio.classList.contains('help-text')) {
-        const originalText = helpTextGio.textContent || 'Chọn giờ khởi hành';
-        helpTextGio.textContent = 'Đã tự động điền từ giờ xuất phát của tour';
-        helpTextGio.style.color = '#10b981';
-        
-        // Reset về text gốc sau 3 giây
-        setTimeout(() => {
-          helpTextGio.textContent = originalText;
-          helpTextGio.style.color = '';
-        }, 3000);
-      }
-    } else {
-      // Nếu tour không có giờ xuất phát, xóa giá trị
-      gioKhoiHanhInput.value = '';
-      
-      // Cập nhật help text để cảnh báo
-      const helpTextGio = gioKhoiHanhInput.nextElementSibling;
-      if (helpTextGio && helpTextGio.classList.contains('help-text')) {
-        helpTextGio.textContent = 'Tour này chưa có giờ xuất phát. Vui lòng nhập thủ công.';
-        helpTextGio.style.color = '#ef4444';
-        
-        setTimeout(() => {
-          helpTextGio.textContent = 'Chọn giờ khởi hành';
-          helpTextGio.style.color = '';
-        }, 3000);
-      }
-    }
-  }
-  
-  // Xử lý phương tiện
-  if (phuongTienInput) {
-    if (phuongTien && phuongTien.trim() !== '') {
-      // Tự động điền phương tiện từ tour
-      phuongTienInput.value = phuongTien;
-      
-      // Cập nhật help text để thông báo đã tự động điền
-      const helpTextPhuongTien = phuongTienInput.nextElementSibling;
-      if (helpTextPhuongTien && helpTextPhuongTien.classList.contains('help-text')) {
-        const originalText = helpTextPhuongTien.textContent || 'Phương tiện di chuyển';
-        helpTextPhuongTien.textContent = 'Đã tự động điền từ phương tiện của tour';
-        helpTextPhuongTien.style.color = '#10b981';
-        
-        // Reset về text gốc sau 3 giây
-        setTimeout(() => {
-          helpTextPhuongTien.textContent = originalText;
-          helpTextPhuongTien.style.color = '';
-        }, 3000);
-      }
-    } else {
-      // Nếu tour không có phương tiện, xóa giá trị
-      phuongTienInput.value = '';
-      
-      // Cập nhật help text để cảnh báo
-      const helpTextPhuongTien = phuongTienInput.nextElementSibling;
-      if (helpTextPhuongTien && helpTextPhuongTien.classList.contains('help-text')) {
-        helpTextPhuongTien.textContent = 'Tour này chưa có phương tiện. Vui lòng nhập thủ công.';
-        helpTextPhuongTien.style.color = '#ef4444';
-        
-        setTimeout(() => {
-          helpTextPhuongTien.textContent = 'Phương tiện di chuyển (sẽ tự động điền từ tour nếu có)';
-          helpTextPhuongTien.style.color = '';
-        }, 3000);
-      }
-    }
-  }
 
-  // Xử lý ngày kết thúc
-  if (ngayKetThucInput) {
-    if (ngayKetThuc && ngayKetThuc.trim() !== '') {
-      ngayKetThucInput.value = ngayKetThuc;
-    } else if (ngayXuatPhat && ngayXuatPhat.trim() !== '' && soNgay && parseInt(soNgay) > 0) {
-      // Tính ngày kết thúc từ ngày khởi hành + số ngày
-      const startDate = new Date(ngayXuatPhat);
-      startDate.setDate(startDate.getDate() + parseInt(soNgay) - 1);
-      const endDateStr = startDate.toISOString().split('T')[0];
-      ngayKetThucInput.value = endDateStr;
-    }
-  }
 
   // Xử lý số chỗ
   if (soChoInput && soCho && soCho !== '') {
@@ -698,34 +589,282 @@ function calculateRemainingSeats() {
   soChoConLaiInput.value = soChoConLai > 0 ? soChoConLai : '';
 }
 
-// Tự động load ngày xuất phát khi trang được tải (nếu đã có tour được chọn)
-document.addEventListener('DOMContentLoaded', function() {
-  const tourSelect = document.getElementById('id_tour');
-  if (tourSelect && tourSelect.value) {
-    loadTourDepartureDate();
-  }
-  
-  // Lắng nghe sự kiện thay đổi ngày khởi hành để tự động tính ngày kết thúc
-  const ngayKhoiHanhInput = document.getElementById('ngay_khoi_hanh');
-  if (ngayKhoiHanhInput) {
-    ngayKhoiHanhInput.addEventListener('change', function() {
-      const tourSelect = document.getElementById('id_tour');
-      const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
-      if (tourSelect && tourSelect.value && ngayKetThucInput) {
-        const selectedOption = tourSelect.options[tourSelect.selectedIndex];
-        const soNgay = selectedOption.getAttribute('data-so-ngay');
-        const ngayKhoiHanh = this.value;
+</script>
+
+<!-- Itinerary Builder -->
+<script src="assets/ckeditor/ckeditor.js"></script>
+<script>
+// Itinerary Day Builder
+let dayCounter = 0;
+let dayEditors = {};
+
+// CKConfig cho day editors
+const dayEditorConfig = {
+    height: 300,
+    filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
+    filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
+    filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
+    filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
+};
+
+// Hàm thêm ngày mới
+function addDay(dayTitle = '', dayContent = '') {
+    dayCounter++;
+    const dayId = 'day_' + dayCounter;
+    const editorId = 'day_editor_' + dayCounter;
+    
+    const dayHtml = `
+        <div class="day-item" id="${dayId}" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--border); border-radius: 8px; background: #f9fafb;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="margin: 0; color: var(--primary); font-size: 16px;">
+                    <i class="fas fa-calendar-day"></i> Ngày ${dayCounter}
+                </h4>
+                <button type="button" onclick="removeDay(${dayCounter})" class="btn btn-sm" style="background: #ef4444; color: white; padding: 6px 12px;">
+                    <i class="fas fa-times"></i> Xóa
+                </button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Tiêu đề ngày (tùy chọn)</label>
+                <input type="text" class="day-title-input" data-day="${dayCounter}" placeholder="Ví dụ: Khởi hành, Tham quan thành phố..." 
+                       value="${dayTitle.replace(/"/g, '&quot;')}"
+                       style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Nội dung</label>
+                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;">${dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+            </div>
+        </div>
+    `;
+    
+    const daysContainer = document.getElementById('days-container');
+    if (daysContainer) {
+        daysContainer.insertAdjacentHTML('beforeend', dayHtml);
         
-        if (soNgay && parseInt(soNgay) > 0 && ngayKhoiHanh) {
-          const startDate = new Date(ngayKhoiHanh);
-          startDate.setDate(startDate.getDate() + parseInt(soNgay) - 1);
-          const endDateStr = startDate.toISOString().split('T')[0];
-          if (!ngayKetThucInput.value || ngayKetThucInput.value === '') {
-            ngayKetThucInput.value = endDateStr;
-          }
+        // Khởi tạo CKEditor cho ngày này
+        setTimeout(() => {
+            dayEditors[dayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
+            if (dayContent) {
+                dayEditors[dayCounter].on('instanceReady', function() {
+                    this.setData(dayContent);
+                });
+            }
+        }, 200);
+    }
+}
+
+// Hàm xóa ngày
+function removeDay(dayNum) {
+    if (confirm('Bạn có chắc chắn muốn xóa ngày này?')) {
+        const dayId = 'day_' + dayNum;
+        const dayElement = document.getElementById(dayId);
+        
+        if (dayElement) {
+            // Xóa CKEditor instance
+            if (dayEditors[dayNum]) {
+                dayEditors[dayNum].destroy();
+                delete dayEditors[dayNum];
+            }
+            
+            dayElement.remove();
+            updateDayNumbers();
         }
-      }
+    }
+}
+
+// Cập nhật số ngày sau khi xóa
+function updateDayNumbers() {
+    const dayItems = document.querySelectorAll('.day-item');
+    dayItems.forEach((item, index) => {
+        const newDayNum = index + 1;
+        const dayNumAttr = item.getAttribute('id').replace('day_', '');
+        const titleInput = item.querySelector('.day-title-input');
+        const contentTextarea = item.querySelector('.day-content-editor');
+        const header = item.querySelector('h4');
+        
+        if (header) {
+            header.innerHTML = `<i class="fas fa-calendar-day"></i> Ngày ${newDayNum}`;
+        }
+        
+        if (titleInput) {
+            titleInput.dataset.day = newDayNum;
+        }
+        
+        if (contentTextarea) {
+            contentTextarea.dataset.day = newDayNum;
+        }
+        
+        // Cập nhật onclick của nút xóa
+        const removeBtn = item.querySelector('button');
+        if (removeBtn) {
+            removeBtn.setAttribute('onclick', `removeDay(${newDayNum})`);
+        }
     });
-  }
+    dayCounter = dayItems.length;
+}
+
+// Hàm build HTML từ các ngày
+function buildItineraryHTML() {
+    let html = '';
+    const dayItems = document.querySelectorAll('.day-item');
+    
+    dayItems.forEach((item, index) => {
+        const dayNum = index + 1;
+        const titleInput = item.querySelector('.day-title-input');
+        const contentTextarea = item.querySelector('.day-content-editor');
+        const dayNumAttr = contentTextarea ? parseInt(contentTextarea.dataset.day) : dayNum;
+        
+        const title = titleInput ? titleInput.value.trim() : '';
+        let content = '';
+        
+        // Lấy nội dung từ CKEditor
+        if (dayEditors[dayNumAttr]) {
+            content = dayEditors[dayNumAttr].getData();
+        } else if (contentTextarea) {
+            content = contentTextarea.value;
+        }
+        
+        if (content.trim()) {
+            let dayHeader = '';
+            if (title) {
+                dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
+            } else {
+                dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
+            }
+            
+            html += dayHeader + content;
+        }
+    });
+    
+    return html;
+}
+
+// Hàm parse và load itinerary từ HTML
+function parseAndLoadExistingItinerary(html) {
+    if (!html || !html.trim()) return;
+    
+    // Xóa tất cả ngày hiện tại
+    Object.keys(dayEditors).forEach(dayNum => {
+        if (dayEditors[dayNum]) {
+            dayEditors[dayNum].destroy();
+        }
+    });
+    dayEditors = {};
+    dayCounter = 0;
+    const daysContainer = document.getElementById('days-container');
+    if (daysContainer) {
+        daysContainer.innerHTML = '';
+    }
+    
+    // Tìm tất cả các marker "NGÀY X"
+    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
+    const daySections = [];
+    let match;
+    let lastIndex = 0;
+    
+    while ((match = regex.exec(html)) !== null) {
+        const dayNum = parseInt(match[1]);
+        const dayTitle = match[2] ? match[2].trim() : '';
+        const startPos = match.index;
+        
+        if (lastIndex < startPos) {
+            // Nội dung trước ngày đầu tiên
+        }
+        
+        // Tìm vị trí kết thúc của ngày này (bắt đầu của ngày tiếp theo hoặc cuối chuỗi)
+        const nextMatch = regex.exec(html);
+        regex.lastIndex = match.index + match[0].length; // Reset để tìm tiếp
+        
+        const endPos = nextMatch ? nextMatch.index : html.length;
+        const dayContent = html.substring(startPos + match[0].length, endPos).trim();
+        
+        daySections.push({
+            dayNum: dayNum,
+            title: dayTitle,
+            content: dayContent
+        });
+        
+        lastIndex = endPos;
+    }
+    
+    // Nếu không tìm thấy format "NGÀY X", thử parse theo cách khác
+    if (daySections.length === 0) {
+        // Thử tìm các thẻ h1-h6 có chứa "NGÀY" hoặc "DAY"
+        const altRegex = /<h[1-6][^>]*>([^<]*NGÀY[^<]*|DAY[^<]*)<\/h[1-6]>/gi;
+        let altMatch;
+        let altLastIndex = 0;
+        
+        while ((altMatch = altRegex.exec(html)) !== null) {
+            const startPos = altMatch.index;
+            const nextMatch = altRegex.exec(html);
+            altRegex.lastIndex = altMatch.index + altMatch[0].length;
+            
+            const endPos = nextMatch ? nextMatch.index : html.length;
+            const dayContent = html.substring(startPos + altMatch[0].length, endPos).trim();
+            
+            if (dayContent) {
+                daySections.push({
+                    dayNum: daySections.length + 1,
+                    title: '',
+                    content: dayContent
+                });
+            }
+        }
+    }
+    
+    // Load các ngày
+    if (daySections.length > 0) {
+        daySections.forEach(section => {
+            addDay(section.title, section.content);
+        });
+    } else if (html.trim()) {
+        // Nếu không parse được, thêm toàn bộ nội dung vào 1 ngày
+        addDay('', html);
+    }
+}
+
+
+// Khởi tạo khi DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Itinerary Builder - Thêm ngày
+    const addDayBtn = document.getElementById('add-day-btn');
+    if (addDayBtn) {
+        addDayBtn.addEventListener('click', function() {
+            addDay();
+        });
+    }
+    
+    // Load dữ liệu cũ nếu có (khi có lỗi validation)
+    <?php if (!empty($_POST['chuongtrinh'])): ?>
+    const existingItinerary = <?= json_encode($_POST['chuongtrinh'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
+    if (existingItinerary && existingItinerary.trim()) {
+        parseAndLoadExistingItinerary(existingItinerary);
+    }
+    <?php endif; ?>
+    
+    // Nếu không có dữ liệu cũ, thêm 1 ngày mặc định
+    const daysContainer = document.getElementById('days-container');
+    if (daysContainer && daysContainer.children.length === 0) {
+        addDay();
+    }
+    
+    // Cập nhật hidden field trước khi submit
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Cập nhật tất cả editor instances
+            for (var instance in CKEDITOR.instances) {
+                CKEDITOR.instances[instance].updateElement();
+            }
+            
+            // Build itinerary HTML từ các ngày
+            const itineraryHTML = buildItineraryHTML();
+            const hiddenField = document.getElementById('chuongtrinh-hidden');
+            if (hiddenField) {
+                hiddenField.value = itineraryHTML;
+            }
+        });
+    }
 });
 </script>
+
+    

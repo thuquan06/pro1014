@@ -19,6 +19,7 @@ $ngayvao = $hoadon['ngayvao'] ?? '';
 $ngayra = $hoadon['ngayra'] ?? '';
 $ghichu = $hoadon['ghichu'] ?? '';
 $trangthai = $hoadon['trangthai'] ?? 0;
+$trang_thai_hoa_don = $hoadon['trang_thai_hoa_don'] ?? 0;
 $huy = $hoadon['huy'] ?? 0;
 ?>
 
@@ -27,22 +28,42 @@ $huy = $hoadon['huy'] ?? 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+  gap: 20px;
 }
 
 .invoice-form-title {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--text-dark);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.invoice-form-title i {
+  font-size: 36px;
 }
 
 .form-card {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.form-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -187,8 +208,34 @@ $huy = $hoadon['huy'] ?? 0;
 }
 
 @media (max-width: 768px) {
+  .invoice-form-header {
+    padding: 16px;
+  }
+  
+  .invoice-form-title {
+    font-size: 24px;
+  }
+  
+  .invoice-form-title i {
+    font-size: 28px;
+  }
+  
   .form-row {
     grid-template-columns: 1fr;
+  }
+  
+  .form-card {
+    padding: 20px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions .btn-submit,
+  .form-actions .btn-cancel {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>
@@ -308,11 +355,6 @@ $huy = $hoadon['huy'] ?? 0;
         <input type="number" name="trenho" id="trenho" class="calculate-price" 
                value="<?php echo $trenho; ?>" min="0">
       </div>
-
-      <div class="form-group-modern">
-        <label for="embe">Em bé (dưới 2 tuổi)</label>
-        <input type="number" name="embe" id="embe" value="<?php echo $embe; ?>" min="0">
-      </div>
     </div>
 
     <!-- Tổng tiền -->
@@ -335,12 +377,14 @@ $huy = $hoadon['huy'] ?? 0;
     </div>
 
     <div class="form-group-modern">
-      <label for="trangthai">Trạng thái</label>
-      <select name="trangthai" id="trangthai">
-        <option value="0" <?php echo ($trangthai == 0) ? 'selected' : ''; ?>>Chờ xác nhận</option>
-        <option value="1" <?php echo ($trangthai == 1) ? 'selected' : ''; ?>>Đã xác nhận</option>
-        <option value="2" <?php echo ($trangthai == 2) ? 'selected' : ''; ?>>Hoàn thành</option>
+      <label for="trang_thai_hoa_don">Trạng thái hóa đơn</label>
+      <select name="trang_thai_hoa_don" id="trang_thai_hoa_don">
+        <option value="0" <?php echo ($trang_thai_hoa_don == 0) ? 'selected' : ''; ?>>Chưa xuất</option>
+        <option value="1" <?php echo ($trang_thai_hoa_don == 1) ? 'selected' : ''; ?>>Đã xuất</option>
+        <option value="2" <?php echo ($trang_thai_hoa_don == 2) ? 'selected' : ''; ?>>Đã gửi</option>
+        <option value="3" <?php echo ($trang_thai_hoa_don == 3) ? 'selected' : ''; ?>>Hủy</option>
       </select>
+      <small class="form-hint">Trạng thái của hóa đơn (PDF/email)</small>
     </div>
 
     <div class="form-actions">

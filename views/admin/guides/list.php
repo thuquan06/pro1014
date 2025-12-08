@@ -43,16 +43,19 @@ $filters = $filters ?? [];
 }
 
 .filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 16px;
   margin-bottom: 16px;
+  align-items: flex-end;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .filter-group label {
@@ -72,6 +75,7 @@ $filters = $filters ?? [];
 .filter-actions {
   display: flex;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .btn-primary {

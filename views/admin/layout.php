@@ -1382,7 +1382,7 @@ $msg   = $msg   ?? null;
         <div class="nav-item">
           <a href="?act=admin-departure-plans" class="nav-link">
             <i class="fas fa-calendar-alt"></i>
-            <span>Lịch khởi hành</span>
+            <span>Quản lý lịch trình</span>
           </a>
         </div>
         <div class="nav-item">
@@ -1399,8 +1399,8 @@ $msg   = $msg   ?? null;
         </div>
         <div class="nav-item">
           <a href="?act=admin-assignments" class="nav-link">
-            <i class="fas fa-calendar-plus"></i>
-            <span>Phân công HDV</span>
+            <i class="fas fa-list-check"></i>
+            <span>Danh sách phân công HDV</span>
           </a>
         </div>
       </div>
@@ -1440,11 +1440,11 @@ $msg   = $msg   ?? null;
       </div>
       
       <div class="nav-section">
-        <div class="nav-section-title">Đơn hàng</div>
+        <div class="nav-section-title">Quản lý Hóa đơn</div>
         <div class="nav-item">
           <a href="?act=hoadon-list" class="nav-link">
             <i class="fas fa-file-invoice-dollar"></i>
-            <span>Hóa đơn</span>
+            <span>Danh sách Hóa đơn</span>
           </a>
         </div>
       </div>

@@ -366,7 +366,7 @@ if (!isset($filters)) {
     <?php else: ?>
       <h1 class="departure-title">
         <i class="fas fa-calendar-alt" style="color: var(--primary);"></i>
-        Quản lý Lịch khởi hành
+        Quản lý lịch trình
       </h1>
     <?php endif; ?>
   </div>
@@ -374,7 +374,7 @@ if (!isset($filters)) {
   <div class="departure-actions">
     <a href="<?= BASE_URL ?>?act=admin-departure-plan-create<?= $tourId ? '&id_tour=' . $tourId : '' ?>" class="btn-primary">
       <i class="fas fa-plus"></i>
-      Tạo lịch khởi hành
+      Tạo lịch trình
     </a>
   </div>
 </div>
@@ -495,17 +495,17 @@ if (!isset($filters)) {
   <?php else: ?>
     <div class="empty-state">
       <i class="fas fa-calendar-times"></i>
-      <h3>Chưa có lịch khởi hành</h3>
+      <h3>Chưa có lịch trình</h3>
       <p>
         <?php if ($tour): ?>
-          Tour này chưa có lịch khởi hành. Hãy tạo lịch khởi hành đầu tiên.
+          Tour này chưa có lịch trình. Hãy tạo lịch trình đầu tiên.
         <?php else: ?>
-          Bắt đầu tạo lịch khởi hành đầu tiên cho tour của bạn
+          Bắt đầu tạo lịch trình đầu tiên cho tour của bạn
         <?php endif; ?>
       </p>
       <a href="<?= BASE_URL ?>?act=admin-departure-plan-create<?= $tourId ? '&id_tour=' . $tourId : '' ?>" class="btn-primary">
         <i class="fas fa-plus"></i>
-        Tạo lịch khởi hành
+        Tạo lịch trình
       </a>
     </div>
   <?php endif; ?>

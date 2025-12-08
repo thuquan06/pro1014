@@ -11,6 +11,7 @@ function safe_html($value) {
 $tours = $tours ?? [];
 $departurePlans = $departurePlans ?? [];
 $selectedTourId = $selectedTourId ?? null;
+$guides = $guides ?? [];
 $errors = $errors ?? [];
 ?>
 
@@ -355,7 +356,7 @@ $errors = $errors ?? [];
       
       <div class="form-group-modern">
         <label>Lịch khởi hành <span class="required">*</span></label>
-        <select name="id_lich_khoi_hanh" id="id_lich_khoi_hanh" required onchange="calculateTotal()">
+        <select name="id_lich_khoi_hanh" id="id_lich_khoi_hanh" required onchange="calculateTotal(); updateGuideRoles(); updateVaiTroFromAssignment();">
           <option value="">-- Chọn lịch khởi hành --</option>
           <?php foreach ($departurePlans as $plan): ?>
             <option value="<?= $plan['id'] ?>" 
@@ -374,6 +375,17 @@ $errors = $errors ?? [];
         <?php if (isset($errors['id_lich_khoi_hanh'])): ?>
           <div class="error-text"><?= safe_html($errors['id_lich_khoi_hanh']) ?></div>
         <?php endif; ?>
+      </div>
+      
+      <div class="form-group-modern full-width">
+        <label>Hướng dẫn viên</label>
+        <div id="hdv-list" style="display: grid; gap: 12px;">
+          <!-- HDV sẽ được thêm vào đây -->
+        </div>
+        <button type="button" onclick="addHdvRow()" class="btn btn-sm btn-secondary" style="margin-top: 8px;">
+          <i class="fas fa-plus"></i> Thêm HDV
+        </button>
+        <div class="help-text">Thêm hướng dẫn viên được phân công cho booking này</div>
       </div>
     </div>
     
@@ -530,8 +542,8 @@ $errors = $errors ?? [];
       <div class="form-group-modern">
         <label><i class="fas fa-ticket-alt"></i> Mã voucher</label>
         <div style="display:flex;gap:8px;">
-          <input type="text" name="voucher_code" id="voucher_code" placeholder="Nhập mã voucher" value="<?= safe_html($_POST['voucher_code'] ?? '') ?>" style="flex:1;">
-          <button type="button" class="btn btn-secondary" onclick="applyVoucher()">Áp dụng</button>
+          <input type="text" name="voucher_code" id="voucher_code" placeholder="Nhập mã voucher" value="<?= safe_html($_POST['voucher_code'] ?? '') ?>" style="flex:1;" onkeypress="if(event.key === 'Enter') { event.preventDefault(); applyVoucher(); }">
+          <button type="button" class="btn btn-secondary" onclick="applyVoucher()" id="applyVoucherBtn">Áp dụng</button>
         </div>
         <div id="voucherMessage" class="help-text"></div>
       </div>
@@ -539,9 +551,21 @@ $errors = $errors ?? [];
       <div class="form-group-modern">
         <label><i class="fas fa-calculator"></i> Tổng tiền</label>
         <div class="total-price-display-modern">
-          <span id="tongTien" class="price-value">0 đ</span>
+          <div id="tongTienContainer">
+            <div id="tongTienGoc" style="display: none;">
+              <span style="font-size: 14px; color: #6b7280; text-decoration: line-through;">0 đ</span>
+            </div>
+            <span id="tongTien" class="price-value">0 đ</span>
+            <div id="voucherDiscount" style="display: none; margin-top: 8px;">
+              <span style="color: #059669; font-size: 14px;">
+                <i class="fas fa-tag"></i> Giảm: <span id="soTienGiam">0 đ</span>
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="help-text" id="tongTienNote">Tổng tiền trước khi áp voucher. Voucher sẽ được kiểm tra khi tạo booking.</div>
+        <div class="help-text" id="tongTienNote">Tổng tiền sau khi áp voucher (nếu có)</div>
+        <input type="hidden" name="voucher_id" id="voucher_id" value="">
+        <input type="hidden" name="voucher_discount" id="voucher_discount" value="0">
       </div>
       
       <div class="form-group-modern">
@@ -626,6 +650,8 @@ function loadDeparturePlans() {
     });
 }
 
+let currentVoucher = null;
+
 function calculateTotal() {
   const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
   const selectedOption = lichKhoiHanhSelect.options[lichKhoiHanhSelect.selectedIndex];
@@ -633,6 +659,8 @@ function calculateTotal() {
   
   if (!selectedOption || !selectedOption.value) {
     document.getElementById('tongTien').textContent = '0 đ';
+    document.getElementById('tongTienGoc').style.display = 'none';
+    document.getElementById('voucherDiscount').style.display = 'none';
     seatInfo.style.display = 'none';
     return;
   }
@@ -647,9 +675,49 @@ function calculateTotal() {
   const soTreNho = parseInt(document.getElementById('so_tre_nho').value) || 0;
   
   const tongSoNguoi = soNguoiLon + soTreEm + soTreNho;
-  const tongTien = (soNguoiLon * giaNguoiLon) + (soTreEm * giaTreEm) + (soTreNho * giaTreNho);
+  const tongTienGoc = (soNguoiLon * giaNguoiLon) + (soTreEm * giaTreEm) + (soTreNho * giaTreNho);
   
-  document.getElementById('tongTien').textContent = tongTien.toLocaleString('vi-VN') + ' đ';
+  // Áp dụng voucher nếu có
+  let tongTienCuoi = tongTienGoc;
+  let soTienGiam = 0;
+  
+  if (currentVoucher && tongTienGoc > 0) {
+    // Kiểm tra min_order_amount
+    const minOrder = parseFloat(currentVoucher.min_order_amount) || 0;
+    if (tongTienGoc >= minOrder) {
+      if (currentVoucher.discount_type === 'percent') {
+        soTienGiam = tongTienGoc * (parseFloat(currentVoucher.discount_value) / 100);
+      } else {
+        soTienGiam = parseFloat(currentVoucher.discount_value);
+      }
+      soTienGiam = Math.min(soTienGiam, tongTienGoc); // Không giảm quá tổng tiền
+      tongTienCuoi = Math.max(0, tongTienGoc - soTienGiam);
+      
+      // Hiển thị tổng tiền gốc và số tiền giảm
+      document.getElementById('tongTienGoc').style.display = 'block';
+      document.getElementById('tongTienGoc').querySelector('span').textContent = tongTienGoc.toLocaleString('vi-VN') + ' đ';
+      document.getElementById('voucherDiscount').style.display = 'block';
+      document.getElementById('soTienGiam').textContent = soTienGiam.toLocaleString('vi-VN') + ' đ';
+      document.getElementById('tongTien').style.color = '#059669';
+      document.getElementById('tongTien').style.fontWeight = '700';
+    } else {
+      // Tổng tiền chưa đạt mức tối thiểu
+      currentVoucher = null;
+      document.getElementById('voucher_id').value = '';
+      document.getElementById('voucher_discount').value = '0';
+      document.getElementById('voucherMessage').textContent = 'Tổng tiền chưa đạt mức tối thiểu để áp dụng voucher';
+      document.getElementById('voucherMessage').style.color = '#ef4444';
+    }
+  } else {
+    // Không có voucher hoặc tổng tiền = 0
+    document.getElementById('tongTienGoc').style.display = 'none';
+    document.getElementById('voucherDiscount').style.display = 'none';
+    document.getElementById('tongTien').style.color = '';
+    document.getElementById('tongTien').style.fontWeight = '';
+  }
+  
+  document.getElementById('tongTien').textContent = tongTienCuoi.toLocaleString('vi-VN') + ' đ';
+  document.getElementById('voucher_discount').value = soTienGiam;
   
   // Hiển thị thông tin số chỗ
   if (tongSoNguoi > 0) {
@@ -672,13 +740,58 @@ function calculateTotal() {
 function applyVoucher() {
   const code = (document.getElementById('voucher_code')?.value || '').trim();
   const msg = document.getElementById('voucherMessage');
+  
   if (!code) {
     msg.textContent = 'Vui lòng nhập mã voucher.';
     msg.style.color = '#ef4444';
+    currentVoucher = null;
+    document.getElementById('voucher_id').value = '';
+    document.getElementById('voucher_discount').value = '0';
+    calculateTotal(); // Tính lại tổng tiền
     return;
   }
-  msg.textContent = 'Voucher sẽ được kiểm tra khi bạn lưu booking.';
+  
+  // Hiển thị loading
+  msg.textContent = 'Đang kiểm tra voucher...';
   msg.style.color = '#6b7280';
+  
+  // Gọi AJAX để kiểm tra voucher
+  const baseUrl = '<?= BASE_URL ?>';
+  fetch(`${baseUrl}?act=admin-check-voucher&code=${encodeURIComponent(code)}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        currentVoucher = data.voucher;
+        document.getElementById('voucher_id').value = data.voucher.id;
+        const discountText = data.voucher.discount_type === 'percent' 
+          ? data.voucher.discount_value + '%' 
+          : parseFloat(data.voucher.discount_value).toLocaleString('vi-VN') + ' đ';
+        msg.textContent = `✓ Voucher hợp lệ! Giảm ${discountText}`;
+        msg.style.color = '#059669';
+        calculateTotal(); // Tính lại tổng tiền với voucher
+      } else {
+        currentVoucher = null;
+        document.getElementById('voucher_id').value = '';
+        document.getElementById('voucher_discount').value = '0';
+        msg.textContent = data.message || 'Voucher không hợp lệ';
+        msg.style.color = '#ef4444';
+        calculateTotal(); // Tính lại tổng tiền không có voucher
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      currentVoucher = null;
+      document.getElementById('voucher_id').value = '';
+      document.getElementById('voucher_discount').value = '0';
+      msg.textContent = 'Có lỗi xảy ra khi kiểm tra voucher. Vui lòng thử lại.';
+      msg.style.color = '#ef4444';
+      calculateTotal();
+    });
 }
 
 // Tính tổng tiền khi trang được tải
@@ -799,49 +912,427 @@ function updateGuestList() {
     toggleGuestList();
   }
 }
-</script>
 
-
-        <label>Số điện thoại</label>
-        <input type="tel" name="danh_sach_khach[${index}][so_dien_thoai]" placeholder="Nhập số điện thoại">
-      </div>
-      <div class="form-group-modern">
-        <input type="hidden" name="danh_sach_khach[${index}][loai_khach]" value="${loaiKhach}">
-      </div>
-    </div>
-  `;
+// Cập nhật vai trò của HDV khi chọn lịch khởi hành
+function updateGuideRoles() {
+  const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
+  const hdvSelect = document.getElementById('id_hdv');
+  const departurePlanId = lichKhoiHanhSelect.value;
   
-  return row;
-}
-
-// Cập nhật danh sách khách khi thay đổi số lượng
-function updateGuestList() {
-  const loaiBooking = document.getElementById('loai_booking').value;
-  if (loaiBooking == '3' || loaiBooking == '4') {
-    toggleGuestList();
+  if (!departurePlanId) {
+    // Nếu chưa chọn lịch khởi hành, hiển thị tên HDV không có vai trò
+    Array.from(hdvSelect.options).forEach(option => {
+      if (option.value && option.dataset.guideId) {
+        const guideName = option.textContent.split(' - ')[0];
+        option.textContent = guideName;
+      }
+    });
+    return;
   }
-}
-</script>
-
-
-        <label>Số điện thoại</label>
-        <input type="tel" name="danh_sach_khach[${index}][so_dien_thoai]" placeholder="Nhập số điện thoại">
-      </div>
-      <div class="form-group-modern">
-        <input type="hidden" name="danh_sach_khach[${index}][loai_khach]" value="${loaiKhach}">
-      </div>
-    </div>
-  `;
   
-  return row;
+  // Lấy vai trò từ phân công
+  fetch(`<?= BASE_URL ?>?act=admin-get-guide-roles&departure_plan_id=${departurePlanId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.roles) {
+        const roles = data.roles;
+        Array.from(hdvSelect.options).forEach(option => {
+          if (option.value && option.dataset.guideId) {
+            const guideId = parseInt(option.dataset.guideId);
+            const guideName = option.textContent.split(' - ')[0];
+            if (roles[guideId]) {
+              option.textContent = `${guideName} - ${roles[guideId]}`;
+            } else {
+              option.textContent = guideName;
+            }
+          }
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error loading guide roles:', error);
+    });
 }
 
-// Cập nhật danh sách khách khi thay đổi số lượng
-function updateGuestList() {
-  const loaiBooking = document.getElementById('loai_booking').value;
-  if (loaiBooking == '3' || loaiBooking == '4') {
-    toggleGuestList();
+// Tự động điền vai trò khi chọn HDV và lịch khởi hành
+function updateVaiTroFromAssignment() {
+  const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
+  const hdvSelect = document.getElementById('id_hdv');
+  const vaiTroSelect = document.getElementById('vai_tro');
+  const departurePlanId = lichKhoiHanhSelect.value;
+  const guideId = hdvSelect.value;
+  
+  if (!departurePlanId || !guideId) {
+    return;
   }
+  
+  // Lấy vai trò từ phân công
+  fetch(`<?= BASE_URL ?>?act=admin-get-guide-roles&departure_plan_id=${departurePlanId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.roles) {
+        const roles = data.roles;
+        const role = roles[parseInt(guideId)];
+        if (role) {
+          vaiTroSelect.value = role;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error loading guide role:', error);
+    });
 }
-</script>
 
+// Gọi updateVaiTroFromAssignment khi updateGuideRoles hoàn thành
+const originalUpdateGuideRoles = updateGuideRoles;
+updateGuideRoles = function() {
+  originalUpdateGuideRoles();
+  // Đợi một chút để đảm bảo updateGuideRoles hoàn thành
+  setTimeout(updateVaiTroFromAssignment, 100);
+};
+
+// Quản lý danh sách HDV
+let hdvRowIndex = 0;
+
+// Đảm bảo hàm được định nghĩa trong scope global
+// Lấy danh sách HDV đã được chọn trong các row hiện tại
+function getSelectedHdvIds(excludeRow = null) {
+  const selectedIds = [];
+  const hdvRows = document.querySelectorAll('.hdv-row');
+  hdvRows.forEach(function(row) {
+    if (row === excludeRow) return; // Bỏ qua row đang xét
+    const hdvSelect = row.querySelector('select[name*="[id_hdv]"]');
+    if (hdvSelect && hdvSelect.value && hdvSelect.value !== '') {
+      const hdvId = parseInt(hdvSelect.value);
+      if (!isNaN(hdvId) && hdvId > 0) {
+        selectedIds.push(hdvId);
+      }
+    }
+  });
+  return selectedIds;
+}
+
+// Lấy danh sách vai trò đã được chọn trong các row hiện tại
+function getSelectedRoles(excludeRow = null) {
+  const selectedRoles = [];
+  const hdvRows = document.querySelectorAll('.hdv-row');
+  hdvRows.forEach(function(row) {
+    if (row === excludeRow) return; // Bỏ qua row đang xét
+    const roleSelect = row.querySelector('select[name*="[vai_tro]"]');
+    if (roleSelect && roleSelect.value && roleSelect.value !== '') {
+      selectedRoles.push(roleSelect.value);
+    }
+  });
+  return selectedRoles;
+}
+
+// Cập nhật các dropdown HDV để disable các HDV đã chọn (nhưng vẫn hiển thị)
+function updateHdvDropdowns() {
+  const selectedIds = getSelectedHdvIds();
+  const hdvRows = document.querySelectorAll('.hdv-row');
+  const guides = <?= json_encode(array_map(function($g) { return ['id' => $g['id'], 'ho_ten' => htmlspecialchars($g['ho_ten'] ?? '', ENT_QUOTES, 'UTF-8')]; }, $guides ?? [])) ?>;
+  
+  hdvRows.forEach(function(row) {
+    const hdvSelect = row.querySelector('select[name*="[id_hdv]"]');
+    if (!hdvSelect) return;
+    
+    const currentValue = hdvSelect.value;
+    const currentSelectedId = currentValue && currentValue !== '' ? parseInt(currentValue) : null;
+    
+    // Xóa tất cả options trừ option đầu tiên
+    while (hdvSelect.options.length > 1) {
+      hdvSelect.remove(1);
+    }
+    
+    // Thêm lại tất cả các HDV, disable các HDV đã chọn ở row khác (nhưng vẫn hiển thị)
+    if (guides && guides.length > 0) {
+      guides.forEach(function(guide) {
+        const guideId = parseInt(guide.id);
+        if (isNaN(guideId) || guideId <= 0) return;
+        
+        const option = document.createElement('option');
+        option.value = guide.id;
+        option.setAttribute('data-guide-id', guide.id);
+        option.textContent = guide.ho_ten;
+        
+        // Disable nếu đã được chọn ở row khác (nhưng không phải row hiện tại)
+        const isSelected = selectedIds.includes(guideId);
+        const isCurrentRow = currentSelectedId !== null && guideId === currentSelectedId;
+        
+        if (isSelected && !isCurrentRow) {
+          option.disabled = true;
+          option.textContent += ' (Đã chọn)';
+        } else {
+          option.disabled = false;
+        }
+        
+        if (isCurrentRow) {
+          option.selected = true;
+        }
+        
+        hdvSelect.appendChild(option);
+      });
+    }
+  });
+  
+  // Cập nhật cả dropdown vai trò
+  updateRoleDropdowns();
+}
+
+// Cập nhật các dropdown vai trò để disable các vai trò đã chọn (nhưng vẫn hiển thị)
+function updateRoleDropdowns() {
+  const selectedRoles = getSelectedRoles();
+  const hdvRows = document.querySelectorAll('.hdv-row');
+  const roleOptions = [
+    { value: 'HDV chính', label: 'HDV chính' },
+    { value: 'HDV phụ', label: 'HDV phụ' },
+    { value: 'Trợ lý', label: 'Trợ lý' }
+  ];
+  
+  hdvRows.forEach(function(row) {
+    const roleSelect = row.querySelector('select[name*="[vai_tro]"]');
+    if (!roleSelect) return;
+    
+    const currentValue = roleSelect.value;
+    
+    // Xóa tất cả options trừ option đầu tiên
+    while (roleSelect.options.length > 1) {
+      roleSelect.remove(1);
+    }
+    
+    // Thêm lại tất cả các vai trò, disable các vai trò đã chọn ở row khác (nhưng vẫn hiển thị)
+    roleOptions.forEach(function(role) {
+      const option = document.createElement('option');
+      option.value = role.value;
+      option.textContent = role.label;
+      
+      // Disable nếu đã được chọn ở row khác (nhưng không phải row hiện tại)
+      const isSelected = selectedRoles.includes(role.value);
+      const isCurrentRow = currentValue === role.value;
+      
+      if (isSelected && !isCurrentRow) {
+        option.disabled = true;
+        option.textContent += ' (Đã chọn)';
+      } else {
+        option.disabled = false;
+      }
+      
+      if (isCurrentRow) {
+        option.selected = true;
+      }
+      
+      roleSelect.appendChild(option);
+    });
+  });
+}
+
+// Cập nhật các dropdown vai trò để disable các vai trò đã chọn (nhưng vẫn hiển thị)
+function updateRoleDropdowns() {
+  const selectedRoles = getSelectedRoles();
+  const hdvRows = document.querySelectorAll('.hdv-row');
+  const roleOptions = [
+    { value: 'HDV chính', label: 'HDV chính' },
+    { value: 'HDV phụ', label: 'HDV phụ' },
+    { value: 'Trợ lý', label: 'Trợ lý' }
+  ];
+  
+  hdvRows.forEach(function(row) {
+    const roleSelect = row.querySelector('select[name*="[vai_tro]"]');
+    if (!roleSelect) return;
+    
+    const currentValue = roleSelect.value;
+    
+    // Xóa tất cả options trừ option đầu tiên
+    while (roleSelect.options.length > 1) {
+      roleSelect.remove(1);
+    }
+    
+    // Thêm lại tất cả các vai trò, disable các vai trò đã chọn ở row khác (nhưng vẫn hiển thị)
+    roleOptions.forEach(function(role) {
+      const option = document.createElement('option');
+      option.value = role.value;
+      option.textContent = role.label;
+      
+      // Disable nếu đã được chọn ở row khác (nhưng không phải row hiện tại)
+      const isSelected = selectedRoles.includes(role.value);
+      const isCurrentRow = currentValue === role.value;
+      
+      if (isSelected && !isCurrentRow) {
+        option.disabled = true;
+        option.textContent += ' (Đã chọn)';
+      } else {
+        option.disabled = false;
+      }
+      
+      if (isCurrentRow) {
+        option.selected = true;
+      }
+      
+      roleSelect.appendChild(option);
+    });
+  });
+}
+
+window.addHdvRow = function(hdvId = '', vaiTro = '') {
+  const hdvList = document.getElementById('hdv-list');
+  if (!hdvList) {
+    console.error('Không tìm thấy element hdv-list');
+    alert('Lỗi: Không tìm thấy phần tử hdv-list');
+    return;
+  }
+  
+  const row = document.createElement('div');
+  row.className = 'hdv-row';
+  row.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;';
+  row.dataset.index = hdvRowIndex++;
+  
+  const hdvSelect = document.createElement('select');
+  hdvSelect.name = `danh_sach_hdv[${row.dataset.index}][id_hdv]`;
+  hdvSelect.className = 'form-control';
+  hdvSelect.style.cssText = 'padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;';
+  hdvSelect.innerHTML = '<option value="">-- Chọn HDV --</option>';
+  
+  // Lấy danh sách HDV đã được chọn (trừ row hiện tại)
+  const selectedIds = getSelectedHdvIds(row);
+  
+  // Thêm tất cả các option HDV từ danh sách guides, disable các HDV đã chọn (nhưng vẫn hiển thị)
+  const guides = <?= json_encode(array_map(function($g) { return ['id' => $g['id'], 'ho_ten' => htmlspecialchars($g['ho_ten'] ?? '', ENT_QUOTES, 'UTF-8')]; }, $guides ?? [])) ?>;
+  if (guides && guides.length > 0) {
+    guides.forEach(function(guide) {
+      const guideId = parseInt(guide.id);
+      if (isNaN(guideId) || guideId <= 0) return;
+      
+      const option = document.createElement('option');
+      option.value = guide.id;
+      option.setAttribute('data-guide-id', guide.id);
+      option.textContent = guide.ho_ten;
+      
+      // Disable nếu đã được chọn ở row khác (nhưng không phải HDV đang set cho row này)
+      const isSelected = selectedIds.includes(guideId);
+      const isCurrentHdv = hdvId && parseInt(hdvId) === guideId;
+      
+      if (isSelected && !isCurrentHdv) {
+        option.disabled = true;
+        option.textContent += ' (Đã chọn)';
+      } else {
+        option.disabled = false;
+      }
+      
+      hdvSelect.appendChild(option);
+    });
+  }
+  
+  if (hdvId) hdvSelect.value = hdvId;
+  hdvSelect.onchange = function() { 
+    updateVaiTroForRow(this);
+    updateHdvDropdowns(); // Cập nhật lại các dropdown khi chọn HDV
+  };
+  
+  const vaiTroSelect = document.createElement('select');
+  vaiTroSelect.name = `danh_sach_hdv[${row.dataset.index}][vai_tro]`;
+  vaiTroSelect.className = 'form-control';
+  vaiTroSelect.style.cssText = 'padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px;';
+  vaiTroSelect.innerHTML = '<option value="">-- Chọn vai trò --</option>';
+  
+  // Vai trò sẽ được thêm bởi updateRoleDropdowns
+  if (vaiTro) vaiTroSelect.value = vaiTro;
+  vaiTroSelect.onchange = function() {
+    updateRoleDropdowns(); // Cập nhật lại các dropdown vai trò khi thay đổi
+  };
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn btn-sm btn-danger';
+  removeBtn.style.cssText = 'padding: 10px 16px;';
+  removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+  removeBtn.onclick = function() { 
+    row.remove();
+    updateHdvDropdowns(); // Cập nhật lại các dropdown khi xóa row (bao gồm cả vai trò)
+  };
+  
+  row.appendChild(hdvSelect);
+  row.appendChild(vaiTroSelect);
+  row.appendChild(removeBtn);
+  hdvList.appendChild(row);
+  
+  console.log('Đã thêm hàng HDV:', row);
+};
+
+function updateVaiTroForRow(selectElement) {
+  const row = selectElement.closest('.hdv-row');
+  const vaiTroSelect = row.querySelector('select[name*="[vai_tro]"]');
+  const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
+  const departurePlanId = lichKhoiHanhSelect.value;
+  const guideId = selectElement.value;
+  
+  if (!departurePlanId || !guideId) {
+    return;
+  }
+  
+  fetch(`<?= BASE_URL ?>?act=admin-get-guide-roles&departure_plan_id=${departurePlanId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.roles) {
+        const role = data.roles[parseInt(guideId)];
+        if (role) {
+          vaiTroSelect.value = role;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error loading guide role:', error);
+    });
+}
+
+// Validate form trước khi submit
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+  const hdvRows = document.querySelectorAll('.hdv-row');
+  const hdvIds = [];
+  let hasError = false;
+  let errorMessage = '';
+
+  hdvRows.forEach(function(row, index) {
+    const hdvSelect = row.querySelector('select[name*="[id_hdv]"]');
+    const vaiTroSelect = row.querySelector('select[name*="[vai_tro]"]');
+    
+    if (hdvSelect && hdvSelect.value) {
+      if (!vaiTroSelect || !vaiTroSelect.value) {
+        hasError = true;
+        errorMessage = `Vui lòng chọn vai trò cho HDV ở hàng thứ ${index + 1}`;
+        return;
+      }
+      
+      // Kiểm tra trùng HDV
+      const hdvId = parseInt(hdvSelect.value);
+      if (hdvIds.includes(hdvId)) {
+        hasError = true;
+        errorMessage = 'HDV đã được chọn ở nhiều hàng. Mỗi HDV chỉ có thể được chọn một lần.';
+        return;
+      }
+      hdvIds.push(hdvId);
+    } else if (vaiTroSelect && vaiTroSelect.value) {
+      // Nếu có vai trò nhưng không có HDV
+      hasError = true;
+      errorMessage = `Vui lòng chọn HDV cho hàng thứ ${index + 1}`;
+      return;
+    }
+  });
+
+  if (hasError) {
+    e.preventDefault();
+    alert(errorMessage);
+    return false;
+  }
+});
+
+// Khởi tạo một hàng HDV mặc định khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+  <?php if (isset($_POST['danh_sach_hdv']) && is_array($_POST['danh_sach_hdv'])): ?>
+    <?php foreach ($_POST['danh_sach_hdv'] as $hdv): ?>
+      addHdvRow('<?= addslashes($hdv['id_hdv'] ?? '') ?>', '<?= addslashes($hdv['vai_tro'] ?? '') ?>');
+    <?php endforeach; ?>
+  <?php elseif (isset($_POST['id_hdv']) && !empty($_POST['id_hdv'])): ?>
+    addHdvRow('<?= addslashes($_POST['id_hdv']) ?>', '<?= addslashes($_POST['vai_tro'] ?? '') ?>');
+  <?php endif; ?>
+});
+</script>
