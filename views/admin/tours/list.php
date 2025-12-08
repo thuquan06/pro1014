@@ -463,13 +463,20 @@ function safe_html($value) {
               </td>
               <td>
                 <?php
-                $diemDen = [];
-                if (!empty($tour['quocgia']) && $tour['quocgia'] !== 'Việt Nam') {
-                  $diemDen[] = $tour['quocgia'];
-                } elseif (isset($tour['nuocngoai']) && $tour['nuocngoai'] == 1) {
-                  $diemDen[] = 'Nước ngoài';
+                $nuocNgoai = isset($tour['nuocngoai']) ? (int)$tour['nuocngoai'] : 0;
+                $quocGiaRaw = $tour['quocgia'] ?? '';
+                $quocGia = trim($quocGiaRaw);
+
+                // Xác định nội địa: flag nuocngoai = 0 hoặc quocgia là Việt Nam
+                $isDomestic = $nuocNgoai === 0 || stripos($quocGia, 'việt nam') !== false;
+
+                if ($isDomestic) {
+                  $locationDisplay = 'Trong nước';
+                } else {
+                  $locationDisplay = $quocGia !== '' ? $quocGia : 'Nước ngoài';
                 }
-                echo !empty($diemDen) ? safe_html(implode(' - ', $diemDen)) : '-';
+
+                echo safe_html($locationDisplay);
                 ?>
               </td>
               <td>
