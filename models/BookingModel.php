@@ -78,6 +78,17 @@ class BookingModel extends BaseModel
             if (!in_array('tien_dat_coc', $columns)) {
                 $this->conn->exec("ALTER TABLE booking ADD COLUMN `tien_dat_coc` DECIMAL(15,2) DEFAULT 0 COMMENT 'Số tiền đặt cọc' AFTER `tong_tien`");
             }
+
+            // Thêm cột voucher nếu chưa có
+            if (!in_array('voucher_id', $columns)) {
+                $this->conn->exec("ALTER TABLE booking ADD COLUMN `voucher_id` INT(11) NULL DEFAULT NULL COMMENT 'ID voucher áp dụng' AFTER `id_tour`");
+            }
+            if (!in_array('voucher_code', $columns)) {
+                $this->conn->exec("ALTER TABLE booking ADD COLUMN `voucher_code` VARCHAR(50) NULL DEFAULT NULL COMMENT 'Mã voucher' AFTER `voucher_id`");
+            }
+            if (!in_array('voucher_discount', $columns)) {
+                $this->conn->exec("ALTER TABLE booking ADD COLUMN `voucher_discount` DECIMAL(15,2) DEFAULT 0 COMMENT 'Số tiền giảm' AFTER `tong_tien`");
+            }
             
             // Thêm cột ngay_thanh_toan nếu chưa có
             if (!in_array('ngay_thanh_toan', $columns)) {
@@ -324,12 +335,14 @@ class BookingModel extends BaseModel
 
             // Tạo booking
             $sql = "INSERT INTO booking (
-                        ma_booking, id_lich_khoi_hanh, id_tour, ho_ten, so_dien_thoai, email, dia_chi,
-                        so_nguoi_lon, so_tre_em, so_tre_nho, loai_booking, tong_tien, tien_dat_coc,
+                        ma_booking, id_lich_khoi_hanh, id_tour, voucher_id, voucher_code,
+                        ho_ten, so_dien_thoai, email, dia_chi,
+                        so_nguoi_lon, so_tre_em, so_tre_nho, loai_booking, tong_tien, voucher_discount, tien_dat_coc,
                         trang_thai, ghi_chu, nguoi_tao, ngay_dat
                     ) VALUES (
-                        :ma_booking, :id_lich_khoi_hanh, :id_tour, :ho_ten, :so_dien_thoai, :email, :dia_chi,
-                        :so_nguoi_lon, :so_tre_em, :so_tre_nho, :loai_booking, :tong_tien, :tien_dat_coc,
+                        :ma_booking, :id_lich_khoi_hanh, :id_tour, :voucher_id, :voucher_code,
+                        :ho_ten, :so_dien_thoai, :email, :dia_chi,
+                        :so_nguoi_lon, :so_tre_em, :so_tre_nho, :loai_booking, :tong_tien, :voucher_discount, :tien_dat_coc,
                         :trang_thai, :ghi_chu, :nguoi_tao, NOW()
                     )";
             
@@ -338,6 +351,8 @@ class BookingModel extends BaseModel
                 ':ma_booking' => $ma_booking,
                 ':id_lich_khoi_hanh' => $data['id_lich_khoi_hanh'],
                 ':id_tour' => $id_tour,
+                ':voucher_id' => $data['voucher_id'] ?? null,
+                ':voucher_code' => $data['voucher_code'] ?? null,
                 ':ho_ten' => $data['ho_ten'],
                 ':so_dien_thoai' => $data['so_dien_thoai'],
                 ':email' => $data['email'] ?? null,
@@ -346,7 +361,8 @@ class BookingModel extends BaseModel
                 ':so_tre_em' => $data['so_tre_em'] ?? 0,
                 ':so_tre_nho' => $data['so_tre_nho'] ?? 0,
                 ':loai_booking' => $loai_booking,
-                ':tong_tien' => $tong_tien,
+                ':tong_tien' => $data['tong_tien_override'] ?? $tong_tien,
+                ':voucher_discount' => $data['voucher_discount'] ?? 0,
                 ':tien_dat_coc' => $data['tien_dat_coc'] ?? 0,
                 ':trang_thai' => 0, // Mặc định: Chờ xử lý (Đã tạo bởi Admin)
                 ':ghi_chu' => $data['ghi_chu'] ?? null,
@@ -404,15 +420,22 @@ class BookingModel extends BaseModel
                 }
             }
 
-            // Tính lại tổng tiền nếu thay đổi số khách
+            // Tính lại tổng tiền nếu thay đổi số khách hoặc voucher
             $tong_tien = $oldBooking['tong_tien'];
-            if (isset($data['so_nguoi_lon']) || isset($data['so_tre_em']) || isset($data['so_tre_nho'])) {
+            $needRecalculate = isset($data['so_nguoi_lon']) || isset($data['so_tre_em']) || isset($data['so_tre_nho']);
+            $voucherChanged = isset($data['voucher_id']) || isset($data['voucher_code']);
+            
+            if ($needRecalculate || $voucherChanged) {
                 $tong_tien = $this->calculateTotal(
                     $oldBooking['id_lich_khoi_hanh'],
                     $data['so_nguoi_lon'] ?? $oldBooking['so_nguoi_lon'] ?? 0,
                     $data['so_tre_em'] ?? $oldBooking['so_tre_em'] ?? 0,
                     $data['so_tre_nho'] ?? $oldBooking['so_tre_nho'] ?? 0
                 );
+                
+                // Áp dụng voucher nếu có
+                $voucherDiscount = (float)($data['voucher_discount'] ?? 0);
+                $tong_tien = max(0, $tong_tien - $voucherDiscount);
             }
 
             // Xử lý ngày thanh toán
@@ -432,6 +455,11 @@ class BookingModel extends BaseModel
             }
             // Các trạng thái khác: ngay_thanh_toan = null
 
+            // Xử lý voucher
+            $voucherId = isset($data['voucher_id']) ? ($data['voucher_id'] ?: null) : $oldBooking['voucher_id'];
+            $voucherCode = isset($data['voucher_code']) ? ($data['voucher_code'] ?: null) : $oldBooking['voucher_code'];
+            $voucherDiscount = isset($data['voucher_discount']) ? (float)($data['voucher_discount'] ?? 0) : ($oldBooking['voucher_discount'] ?? 0);
+            
             // Cập nhật booking
             $sql = "UPDATE booking SET
                         ho_ten = :ho_ten,
@@ -442,6 +470,9 @@ class BookingModel extends BaseModel
                         so_tre_em = :so_tre_em,
                         so_tre_nho = :so_tre_nho,
                         tong_tien = :tong_tien,
+                        voucher_id = :voucher_id,
+                        voucher_code = :voucher_code,
+                        voucher_discount = :voucher_discount,
                         tien_dat_coc = :tien_dat_coc,
                         trang_thai = :trang_thai,
                         ngay_thanh_toan = :ngay_thanh_toan,
@@ -458,6 +489,9 @@ class BookingModel extends BaseModel
                 ':so_tre_em' => $data['so_tre_em'] ?? $oldBooking['so_tre_em'] ?? 0,
                 ':so_tre_nho' => $data['so_tre_nho'] ?? $oldBooking['so_tre_nho'] ?? 0,
                 ':tong_tien' => $tong_tien,
+                ':voucher_id' => $voucherId,
+                ':voucher_code' => $voucherCode,
+                ':voucher_discount' => $voucherDiscount,
                 ':tien_dat_coc' => $data['tien_dat_coc'] ?? $oldBooking['tien_dat_coc'] ?? 0,
                 ':trang_thai' => $newTrangThai,
                 ':ngay_thanh_toan' => $ngay_thanh_toan,
@@ -772,5 +806,13 @@ class BookingModel extends BaseModel
             return false;
         }
     }
+
+    
 }
+
+
+
+
+     
+  
 

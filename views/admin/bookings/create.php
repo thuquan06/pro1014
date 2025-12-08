@@ -528,10 +528,20 @@ $errors = $errors ?? [];
     
     <div class="form-row">
       <div class="form-group-modern">
+        <label><i class="fas fa-ticket-alt"></i> Mã voucher</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" name="voucher_code" id="voucher_code" placeholder="Nhập mã voucher" value="<?= safe_html($_POST['voucher_code'] ?? '') ?>" style="flex:1;">
+          <button type="button" class="btn btn-secondary" onclick="applyVoucher()">Áp dụng</button>
+        </div>
+        <div id="voucherMessage" class="help-text"></div>
+      </div>
+      
+      <div class="form-group-modern">
         <label><i class="fas fa-calculator"></i> Tổng tiền</label>
         <div class="total-price-display-modern">
           <span id="tongTien" class="price-value">0 đ</span>
         </div>
+        <div class="help-text" id="tongTienNote">Tổng tiền trước khi áp voucher. Voucher sẽ được kiểm tra khi tạo booking.</div>
       </div>
       
       <div class="form-group-modern">
@@ -659,6 +669,18 @@ function calculateTotal() {
   }
 }
 
+function applyVoucher() {
+  const code = (document.getElementById('voucher_code')?.value || '').trim();
+  const msg = document.getElementById('voucherMessage');
+  if (!code) {
+    msg.textContent = 'Vui lòng nhập mã voucher.';
+    msg.style.color = '#ef4444';
+    return;
+  }
+  msg.textContent = 'Voucher sẽ được kiểm tra khi bạn lưu booking.';
+  msg.style.color = '#6b7280';
+}
+
 // Tính tổng tiền khi trang được tải
 document.addEventListener('DOMContentLoaded', function() {
   calculateTotal();
@@ -758,6 +780,50 @@ function createGuestRow(index, loaiKhachLabel, loaiKhach) {
     </div>
     <div class="form-row">
       <div class="form-group-modern">
+        <label>Số điện thoại</label>
+        <input type="tel" name="danh_sach_khach[${index}][so_dien_thoai]" placeholder="Nhập số điện thoại">
+      </div>
+      <div class="form-group-modern">
+        <input type="hidden" name="danh_sach_khach[${index}][loai_khach]" value="${loaiKhach}">
+      </div>
+    </div>
+  `;
+  
+  return row;
+}
+
+// Cập nhật danh sách khách khi thay đổi số lượng
+function updateGuestList() {
+  const loaiBooking = document.getElementById('loai_booking').value;
+  if (loaiBooking == '3' || loaiBooking == '4') {
+    toggleGuestList();
+  }
+}
+</script>
+
+
+        <label>Số điện thoại</label>
+        <input type="tel" name="danh_sach_khach[${index}][so_dien_thoai]" placeholder="Nhập số điện thoại">
+      </div>
+      <div class="form-group-modern">
+        <input type="hidden" name="danh_sach_khach[${index}][loai_khach]" value="${loaiKhach}">
+      </div>
+    </div>
+  `;
+  
+  return row;
+}
+
+// Cập nhật danh sách khách khi thay đổi số lượng
+function updateGuestList() {
+  const loaiBooking = document.getElementById('loai_booking').value;
+  if (loaiBooking == '3' || loaiBooking == '4') {
+    toggleGuestList();
+  }
+}
+</script>
+
+
         <label>Số điện thoại</label>
         <input type="tel" name="danh_sach_khach[${index}][so_dien_thoai]" placeholder="Nhập số điện thoại">
       </div>

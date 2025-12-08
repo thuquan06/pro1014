@@ -29,7 +29,7 @@ class TourModel extends BaseModel
                 throw new PDOException("Ảnh (hinhanh) đang NULL vì chưa upload được.");
             }
 
-            $sql = "INSERT INTO goidulich (
+        $sql = "INSERT INTO goidulich (
                         khuyenmai, khuyenmai_phantram, khuyenmai_tungay, khuyenmai_denngay, khuyenmai_mota,
                         nuocngoai, quocgia, mato, tengoi,
                         noixuatphat, giagoi, giatreem, giatrenho,

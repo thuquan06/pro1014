@@ -180,6 +180,30 @@ try {
             (new AdminController())->viewDeparturePlanDetail();
             break;
 
+        // --- Voucher Management ---
+        case 'admin-vouchers':
+            (new AdminController())->listVouchers();
+            break;
+        case 'admin-voucher-create':
+            (new AdminController())->createVoucher();
+            break;
+        case 'admin-voucher-edit':
+            (new AdminController())->editVoucher();
+            break;
+        case 'admin-voucher-delete':
+            (new AdminController())->deleteVoucher();
+            break;
+        case 'admin-voucher-change-status':
+            $adminController->changeVoucherStatus();
+            break;
+        case 'admin-voucher-toggle':
+            (new AdminController())->toggleVoucher();
+            break;
+        case 'admin-check-voucher':
+            require_once './models/VoucherModel.php';
+            (new AdminController())->checkVoucher();
+            break;
+
         // ==================== PRETRIP CHECKLIST ====================
         case 'admin-pretrip-checklists':
             require_once './models/PretripChecklistModel.php';
@@ -790,3 +814,4 @@ try {
         echo "<pre>" . htmlspecialchars($e->getTraceAsString()) . "</pre>";
     }
 }
+

@@ -465,6 +465,46 @@ if (!$booking) {
     </div>
   </div>
 
+  <!-- Mã giảm giá -->
+  <div class="form-card">
+    <div class="card-header">
+      <i class="fas fa-ticket-alt"></i>
+      <h3>Mã giảm giá</h3>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group-modern full-width">
+        <label><i class="fas fa-ticket-alt"></i> Mã voucher</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" 
+                 name="voucher_code" 
+                 id="voucher_code" 
+                 placeholder="Nhập mã voucher" 
+                 value="<?= safe_html($booking['voucher_code'] ?? '') ?>"
+                 style="flex:1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="applyVoucher()" style="padding: 12px 24px;">Áp dụng</button>
+          <?php if (!empty($booking['voucher_code'])): ?>
+            <button type="button" class="btn btn-danger" onclick="removeVoucher()" style="padding: 12px 24px;">Xóa voucher</button>
+          <?php endif; ?>
+        </div>
+        <div id="voucherMessage" class="help-text">
+          <?php if (!empty($booking['voucher_code'])): ?>
+            <span style="color: #059669;">
+              <i class="fas fa-check-circle"></i> Đã áp dụng voucher: <strong><?= safe_html($booking['voucher_code']) ?></strong>
+              <?php if (!empty($booking['voucher_discount']) && $booking['voucher_discount'] > 0): ?>
+                - Giảm: <?= formatPrice($booking['voucher_discount']) ?>
+              <?php endif; ?>
+            </span>
+          <?php else: ?>
+            <span style="color: #6b7280;">Nhập mã voucher để áp dụng giảm giá</span>
+          <?php endif; ?>
+        </div>
+        <input type="hidden" name="voucher_id" id="voucher_id" value="<?= safe_html($booking['voucher_id'] ?? '') ?>">
+        <input type="hidden" name="voucher_discount" id="voucher_discount" value="<?= safe_html($booking['voucher_discount'] ?? '0') ?>">
+      </div>
+    </div>
+  </div>
+
   <!-- Thông tin thanh toán -->
   <div class="form-card payment-info-card">
     <div class="card-header">
@@ -476,8 +516,13 @@ if (!$booking) {
       <div class="form-group-modern">
         <label><i class="fas fa-calculator"></i> Tổng tiền</label>
         <div class="total-price-display-modern">
-          <span class="price-value"><?= formatPrice($booking['tong_tien']) ?></span>
+          <span class="price-value" id="tongTienDisplay"><?= formatPrice($booking['tong_tien']) ?></span>
         </div>
+        <?php if (!empty($booking['voucher_discount']) && $booking['voucher_discount'] > 0): ?>
+          <div class="help-text" style="color: #059669;">
+            <i class="fas fa-info-circle"></i> Tổng tiền sau khi giảm giá
+          </div>
+        <?php endif; ?>
       </div>
       
       <div class="form-group-modern">
@@ -534,4 +579,88 @@ if (!$booking) {
     </button>
   </div>
 </form>
+
+<script>
+// Giá trị tổng tiền gốc (trước khi giảm giá)
+const tongTienGoc = <?= $booking['tong_tien'] + ($booking['voucher_discount'] ?? 0) ?>;
+
+function applyVoucher() {
+  const code = (document.getElementById('voucher_code')?.value || '').trim().toUpperCase();
+  const msg = document.getElementById('voucherMessage');
+  
+  if (!code) {
+    msg.innerHTML = '<span style="color: #ef4444;"><i class="fas fa-exclamation-circle"></i> Vui lòng nhập mã voucher.</span>';
+    return;
+  }
+  
+  // Gọi API kiểm tra voucher
+  fetch('<?= BASE_URL ?>?act=admin-check-voucher&code=' + encodeURIComponent(code))
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.voucher) {
+        const voucher = data.voucher;
+        const discount = parseFloat(voucher.discount_value || 0);
+        let discountAmount = 0;
+        
+        if (voucher.discount_type === 'percent') {
+          discountAmount = (tongTienGoc * discount) / 100;
+        } else {
+          discountAmount = discount;
+        }
+        
+        // Cập nhật thông tin voucher
+        document.getElementById('voucher_id').value = voucher.id;
+        document.getElementById('voucher_discount').value = discountAmount;
+        
+        // Cập nhật tổng tiền
+        const tongTienMoi = Math.max(0, tongTienGoc - discountAmount);
+        document.getElementById('tongTienDisplay').textContent = formatPrice(tongTienMoi);
+        
+        // Hiển thị thông báo
+        msg.innerHTML = '<span style="color: #059669;"><i class="fas fa-check-circle"></i> Đã áp dụng voucher: <strong>' + code + '</strong> - Giảm: ' + formatPrice(discountAmount) + '</span>';
+        
+        // Hiển thị nút xóa voucher
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-danger';
+        removeBtn.style.cssText = 'padding: 12px 24px;';
+        removeBtn.textContent = 'Xóa voucher';
+        removeBtn.onclick = removeVoucher;
+        
+        const voucherInput = document.getElementById('voucher_code');
+        const applyBtn = voucherInput.nextElementSibling;
+        if (!applyBtn.nextElementSibling || applyBtn.nextElementSibling.textContent !== 'Xóa voucher') {
+          applyBtn.parentNode.insertBefore(removeBtn, applyBtn.nextSibling);
+        }
+      } else {
+        msg.innerHTML = '<span style="color: #ef4444;"><i class="fas fa-times-circle"></i> ' + (data.message || 'Mã voucher không hợp lệ hoặc đã hết hạn') + '</span>';
+        document.getElementById('voucher_id').value = '';
+        document.getElementById('voucher_discount').value = '0';
+        document.getElementById('tongTienDisplay').textContent = formatPrice(tongTienGoc);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      msg.innerHTML = '<span style="color: #ef4444;"><i class="fas fa-exclamation-circle"></i> Có lỗi xảy ra. Vui lòng thử lại.</span>';
+    });
+}
+
+function removeVoucher() {
+  document.getElementById('voucher_code').value = '';
+  document.getElementById('voucher_id').value = '';
+  document.getElementById('voucher_discount').value = '0';
+  document.getElementById('tongTienDisplay').textContent = formatPrice(tongTienGoc);
+  document.getElementById('voucherMessage').innerHTML = '<span style="color: #6b7280;">Nhập mã voucher để áp dụng giảm giá</span>';
+  
+  // Xóa nút xóa voucher
+  const removeBtn = document.querySelector('button.btn-danger');
+  if (removeBtn && removeBtn.textContent === 'Xóa voucher') {
+    removeBtn.remove();
+  }
+}
+
+function formatPrice(price) {
+  return new Intl.NumberFormat('vi-VN').format(Math.round(price)) + ' đ';
+}
+</script>
 

@@ -428,7 +428,6 @@ function safe_html($value) {
         </thead>
         <tbody>
           <?php
-          // Load price helper để tính giá khuyến mãi
           require_once './commons/price_helper.php';
 
           $cnt = 1;
@@ -440,19 +439,6 @@ function safe_html($value) {
             $giatreem = $tour['giatreem'] ?? 0;
             $giatrenho = $tour['giatrenho'] ?? 0;
             $trangthai = $tour['trangthai'] ?? 0;
-
-            // Tính giá sau khuyến mãi
-            $coKhuyenMai = isPromotionActive($tour);
-            $giaNguoiLonSauKM = calculatePromotionPrice($giagoi, $tour);
-            $giaTreEmSauKM = calculatePromotionPrice($giatreem, $tour);
-            $giaTreNhoSauKM = calculatePromotionPrice($giatrenho, $tour);
-
-            // Kiểm tra xem có thực sự giảm giá không
-            $coGiamGia = $coKhuyenMai && (
-              $giaNguoiLonSauKM < $giagoi ||
-              $giaTreEmSauKM < $giatreem ||
-              $giaTreNhoSauKM < $giatrenho
-            );
           ?>
             <tr>
               <td><?= $cnt ?></td>
@@ -483,42 +469,18 @@ function safe_html($value) {
                 <strong><?= safe_html($songay) ?></strong> ngày
               </td>
               <td class="price-cell">
-                <?php if ($coGiamGia): ?>
-                  <span class="promotion-badge-small">-<?= (int)($tour['khuyenmai_phantram'] ?? 0) ?>% off</span>
-                <?php endif; ?>
                 <div class="price-breakdown">
                   <div class="price-row">
                     <span class="price-label">Người lớn:</span>
-                    <span>
-                      <?php if ($coKhuyenMai && $giaNguoiLonSauKM < $giagoi): ?>
-                        <span class="price-value price-discounted" style="color: #ef4444; font-weight: 700;"><?= number_format($giaNguoiLonSauKM, 0, ',', '.') ?></span>
-                        <span class="price-original-struck" style="margin-left: 6px; color: #9ca3af; text-decoration: line-through; font-size: 13px;"><?= number_format($giagoi, 0, ',', '.') ?></span>
-                      <?php else: ?>
-                        <span class="price-value"><?= number_format($giagoi, 0, ',', '.') ?></span>
-                      <?php endif; ?>
-                    </span>
+                    <span class="price-value"><?= number_format($giagoi, 0, ',', '.') ?></span>
                   </div>
                   <div class="price-row">
                     <span class="price-label">Trẻ em:</span>
-                    <span>
-                      <?php if ($coKhuyenMai && $giaTreEmSauKM < $giatreem): ?>
-                        <span class="price-value price-discounted" style="color: #ef4444; font-weight: 700;"><?= number_format($giaTreEmSauKM, 0, ',', '.') ?></span>
-                        <span class="price-original-struck" style="margin-left: 6px; color: #9ca3af; text-decoration: line-through; font-size: 13px;"><?= number_format($giatreem, 0, ',', '.') ?></span>
-                      <?php else: ?>
-                        <span class="price-value"><?= number_format($giatreem, 0, ',', '.') ?></span>
-                      <?php endif; ?>
-                    </span>
+                    <span class="price-value"><?= number_format($giatreem, 0, ',', '.') ?></span>
                   </div>
                   <div class="price-row">
                     <span class="price-label">Trẻ nhỏ:</span>
-                    <span>
-                      <?php if ($coKhuyenMai && $giaTreNhoSauKM < $giatrenho): ?>
-                        <span class="price-value price-discounted" style="color: #ef4444; font-weight: 700;"><?= number_format($giaTreNhoSauKM, 0, ',', '.') ?></span>
-                        <span class="price-original-struck" style="margin-left: 6px; color: #9ca3af; text-decoration: line-through; font-size: 13px;"><?= number_format($giatrenho, 0, ',', '.') ?></span>
-                      <?php else: ?>
-                        <span class="price-value"><?= number_format($giatrenho, 0, ',', '.') ?></span>
-                      <?php endif; ?>
-                    </span>
+                    <span class="price-value"><?= number_format($giatrenho, 0, ',', '.') ?></span>
                   </div>
                 </div>
               </td>

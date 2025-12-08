@@ -12,7 +12,7 @@ $msg   = $msg   ?? null;
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>StarVel Travel - Quản trị</title>
+  <title>Quản trị</title>
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -74,6 +74,7 @@ $msg   = $msg   ?? null;
       z-index: 1000;
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
       transition: transform 0.3s ease;
+      padding-top: 16px;
     }
     
     .sidebar::-webkit-scrollbar {
@@ -86,9 +87,10 @@ $msg   = $msg   ?? null;
     }
     
     .sidebar-header {
-      padding: 24px 20px;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+      display: none;
+      padding: 0;
+      border: none;
+      background: none;
     }
     
     .logo {
@@ -411,9 +413,24 @@ $msg   = $msg   ?? null;
     
     /* Page header styles */
     .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 32px;
       padding-bottom: 20px;
       border-bottom: 2px solid var(--border);
+    }
+    
+    .page-header h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0;
+    }
+    
+    .page-header .actions {
+      display: flex;
+      gap: 12px;
     }
     
     .page-title {
@@ -996,23 +1013,331 @@ $msg   = $msg   ?? null;
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    
+    /* ===== VOUCHER PAGE STYLES ===== */
+    .filter-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .filter-card form {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    
+    .filter-card input[type="text"],
+    .filter-card select {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: var(--bg-white);
+      color: var(--text-dark);
+      font-family: inherit;
+    }
+    
+    .filter-card input[type="text"]:focus,
+    .filter-card select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    .modern-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .modern-table thead {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+    }
+    
+    .modern-table th {
+      padding: 16px 20px;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text-dark);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .modern-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dark);
+      font-size: 14px;
+      vertical-align: middle;
+    }
+    
+    .modern-table tbody tr {
+      transition: all 0.2s ease;
+    }
+    
+    .modern-table tbody tr:hover {
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.02) 100%);
+    }
+    
+    .modern-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* Badge styles */
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge-success {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+      color: #065f46;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .badge-secondary {
+      background: linear-gradient(135deg, rgba(107, 114, 128, 0.15) 0%, rgba(107, 114, 128, 0.1) 100%);
+      color: #374151;
+      border: 1px solid rgba(107, 114, 128, 0.3);
+    }
+    
+    .badge-warning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
+      color: #92400e;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    
+    .badge-danger {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
+      color: #991b1b;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .badge-info {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+      color: #164e63;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    
+    /* Button outline variants */
+    .btn-outline-primary {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+    
+    .btn-outline-primary:hover {
+      background: var(--primary-gradient);
+      color: white;
+      border-color: transparent;
+    }
+    
+    .btn-outline-warning {
+      background: transparent;
+      border: 2px solid var(--warning);
+      color: var(--warning);
+    }
+    
+    .btn-outline-warning:hover {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      border-color: transparent;
+    }
+    
+    .btn-outline-danger {
+      background: transparent;
+      border: 2px solid var(--danger);
+      color: var(--danger);
+    }
+    
+    .btn-outline-danger:hover {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border-color: transparent;
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    }
+    
+    .btn-secondary:hover {
+      box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+    }
+    
+    /* Form styles for voucher pages */
+    .form-container {
+      max-width: 1000px;
+    }
+    
+    .form-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    
+    .form-card .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.02) 0%, rgba(59, 130, 246, 0.02) 100%);
+    }
+    
+    .form-card .card-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin: 0;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 24px;
+    }
+    
+    .form-group-modern {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .form-group-modern label {
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .form-group-modern label .required {
+      color: var(--danger);
+      font-weight: 700;
+    }
+    
+    .form-group-modern input[type="text"],
+    .form-group-modern input[type="number"],
+    .form-group-modern input[type="date"],
+    .form-group-modern select {
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      background: var(--bg-white);
+      color: var(--text-dark);
+      font-family: inherit;
+    }
+    
+    .form-group-modern input[type="text"]:focus,
+    .form-group-modern input[type="number"]:focus,
+    .form-group-modern input[type="date"]:focus,
+    .form-group-modern select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+      transform: translateY(-1px);
+    }
+    
+    .form-group-modern input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .form-group-modern select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+    }
+    
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 24px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-light);
+    }
+    
+    .btn-cancel {
+      padding: 12px 24px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--text-dark);
+      background: white;
+    }
+    
+    .btn-cancel:hover {
+      background: var(--bg-light);
+      border-color: var(--text-light);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn-submit {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    
+    .btn-submit:hover {
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+      transform: translateY(-2px);
+    }
+    
+    .btn-submit:active {
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
   
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <a href="?act=admin" class="logo">
-        <div class="logo-icon">
-          <i class="fas fa-plane"></i>
-        </div>
-        <div class="logo-text">
-          <h2>StarVel Travel</h2>
-          <p>Admin Panel</p>
-        </div>
-      </a>
-    </div>
+    <div class="sidebar-header"></div>
     
     <div class="sidebar-user">
       <div class="user-info">
@@ -1094,6 +1419,12 @@ $msg   = $msg   ?? null;
             <span>Danh sách Phân loại & Tags</span>
           </a>
         </div>
+        <div class="nav-item">
+          <a href="?act=admin-vouchers" class="nav-link">
+            <i class="fas fa-ticket-alt"></i>
+            <span>Danh sách voucher</span>
+          </a>
+        </div>
       </div>
       
       <div class="nav-section">
@@ -1148,16 +1479,6 @@ $msg   = $msg   ?? null;
       </div>
       
       <div class="topbar-right">
-        <button class="topbar-btn" title="Thông báo">
-          <i class="fas fa-bell"></i>
-          <span class="badge">3</span>
-        </button>
-        
-        <button class="topbar-btn" title="Tin nhắn">
-          <i class="fas fa-envelope"></i>
-          <span class="badge">5</span>
-        </button>
-        
         <div class="user-menu" onclick="window.location='?act=logout'" title="Đăng xuất">
           <div class="user-menu-avatar">
             <?= strtoupper(substr($_SESSION['alogin'] ?? 'A', 0, 1)) ?>
