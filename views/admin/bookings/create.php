@@ -470,7 +470,10 @@ $errors = $errors ?? [];
     
     <div class="form-row" style="grid-template-columns: repeat(3, 1fr);">
       <div class="form-group-modern">
-        <label>Người lớn</label>
+        <label>
+          Người lớn 
+          <span id="priceLabelNguoiLon" style="font-size: 12px; color: #64748b; font-weight: normal; margin-left: 5px;"></span>
+        </label>
         <input type="number" 
                name="so_nguoi_lon" 
                id="so_nguoi_lon"
@@ -480,7 +483,10 @@ $errors = $errors ?? [];
       </div>
       
       <div class="form-group-modern">
-        <label>Trẻ em</label>
+        <label>
+          Trẻ em 
+          <span id="priceLabelTreEm" style="font-size: 12px; color: #64748b; font-weight: normal; margin-left: 5px;"></span>
+        </label>
         <input type="number" 
                name="so_tre_em" 
                id="so_tre_em"
@@ -490,7 +496,10 @@ $errors = $errors ?? [];
       </div>
       
       <div class="form-group-modern">
-        <label>Trẻ nhỏ</label>
+        <label>
+          Trẻ nhỏ 
+          <span id="priceLabelTreNho" style="font-size: 12px; color: #64748b; font-weight: normal; margin-left: 5px;"></span>
+        </label>
         <input type="number" 
                name="so_tre_nho" 
                id="so_tre_nho"
@@ -538,25 +547,8 @@ $errors = $errors ?? [];
         <div id="voucherMessage" class="help-text"></div>
       </div>
       
-      <div class="form-group-modern">
-        <label><i class="fas fa-calculator"></i> Tổng tiền</label>
-        <div class="total-price-display-modern">
-          <div id="tongTienContainer">
-            <div id="tongTienGoc" style="display: none;">
-              <span style="font-size: 14px; color: #6b7280; text-decoration: line-through;">0 đ</span>
-            </div>
-            <span id="tongTien" class="price-value">0 đ</span>
-            <div id="voucherDiscount" style="display: none; margin-top: 8px;">
-              <span style="color: #059669; font-size: 14px;">
-                <i class="fas fa-tag"></i> Giảm: <span id="soTienGiam">0 đ</span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="help-text" id="tongTienNote">Tổng tiền sau khi áp voucher (nếu có)</div>
-        <input type="hidden" name="voucher_id" id="voucher_id" value="">
-        <input type="hidden" name="voucher_discount" id="voucher_discount" value="0">
-      </div>
+      <input type="hidden" name="voucher_id" id="voucher_id" value="">
+      <input type="hidden" name="voucher_discount" id="voucher_discount" value="0">
       
       <div class="form-group-modern">
         <label><i class="fas fa-wallet"></i> Số tiền đặt cọc</label>
@@ -572,6 +564,98 @@ $errors = $errors ?? [];
           <i class="fas fa-info-circle"></i> Nhập số tiền đặt cọc (không bắt buộc)
         </div>
       </div>
+      
+      <div class="form-group-modern">
+        <label><i class="fas fa-calendar-check"></i> Ngày thanh toán</label>
+        <input type="datetime-local" 
+               name="ngay_thanh_toan" 
+               id="ngay_thanh_toan"
+               class="deposit-input"
+               value="<?= !empty($_POST['ngay_thanh_toan']) ? date('Y-m-d\TH:i', strtotime($_POST['ngay_thanh_toan'])) : '' ?>"
+               placeholder="Chọn ngày thanh toán">
+        <div class="help-text">
+          <i class="fas fa-info-circle"></i> Chỉ điền khi booking đã được thanh toán (không bắt buộc)
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bảng tính tổng tiền chi tiết -->
+    <div id="priceBreakdownTable" style="display: none; margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <div style="font-weight: 600; margin-bottom: 15px; color: #1e40af; font-size: 16px;">
+        <i class="fas fa-calculator"></i> Bảng tính tổng tiền
+      </div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: #e0e7ff; border-bottom: 2px solid #3b82f6;">
+            <th style="padding: 12px; text-align: left; color: #1e40af; font-weight: 600;">Loại khách</th>
+            <th style="padding: 12px; text-align: center; color: #1e40af; font-weight: 600;">Số lượng</th>
+            <th style="padding: 12px; text-align: right; color: #1e40af; font-weight: 600;">Đơn giá</th>
+            <th style="padding: 12px; text-align: right; color: #1e40af; font-weight: 600;">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="rowNguoiLon" style="display: none; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #475569;">Người lớn</td>
+            <td style="padding: 12px; text-align: center; color: #475569;">
+              <span id="soLuongNguoiLon">0</span>
+            </td>
+            <td style="padding: 12px; text-align: right; color: #475569;">
+              <span id="donGiaNguoiLon">0 đ</span>
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 600; color: #059669;">
+              <span id="thanhTienNguoiLon">0 đ</span>
+            </td>
+          </tr>
+          <tr id="rowTreEm" style="display: none; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #475569;">Trẻ em</td>
+            <td style="padding: 12px; text-align: center; color: #475569;">
+              <span id="soLuongTreEm">0</span>
+            </td>
+            <td style="padding: 12px; text-align: right; color: #475569;">
+              <span id="donGiaTreEm">0 đ</span>
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 600; color: #059669;">
+              <span id="thanhTienTreEm">0 đ</span>
+            </td>
+          </tr>
+          <tr id="rowTreNho" style="display: none; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #475569;">Trẻ nhỏ</td>
+            <td style="padding: 12px; text-align: center; color: #475569;">
+              <span id="soLuongTreNho">0</span>
+            </td>
+            <td style="padding: 12px; text-align: right; color: #475569;">
+              <span id="donGiaTreNho">0 đ</span>
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 600; color: #059669;">
+              <span id="thanhTienTreNho">0 đ</span>
+            </td>
+          </tr>
+          <tr style="border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6; background: #f1f5f9;">
+            <td colspan="3" style="padding: 12px; text-align: right; font-weight: 600; color: #1e40af;">
+              Tổng tiền gốc:
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 700; color: #1e40af; font-size: 16px;">
+              <span id="tongTienGocTable">0 đ</span>
+            </td>
+          </tr>
+          <tr id="rowVoucher" style="display: none; background: #fef3c7;">
+            <td colspan="3" style="padding: 12px; text-align: right; font-weight: 600; color: #92400e;">
+              <i class="fas fa-tag"></i> Giảm giá voucher:
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 600; color: #059669; font-size: 15px;">
+              -<span id="giamGiaVoucherTable">0 đ</span>
+            </td>
+          </tr>
+          <tr style="border-top: 3px solid #3b82f6; background: #dbeafe;">
+            <td colspan="3" style="padding: 15px; text-align: right; font-weight: 700; color: #1e40af; font-size: 18px;">
+              TỔNG CỘNG:
+            </td>
+            <td style="padding: 15px; text-align: right; font-weight: 700; color: #059669; font-size: 20px;">
+              <span id="tongCongTable">0 đ</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -609,6 +693,10 @@ function loadDeparturePlans() {
   
   if (!tourId) {
     lichKhoiHanhSelect.innerHTML = '<option value="">-- Chọn tour trước --</option>';
+    // Ẩn giá trong label
+    document.getElementById('priceLabelNguoiLon').textContent = '';
+    document.getElementById('priceLabelTreEm').textContent = '';
+    document.getElementById('priceLabelTreNho').textContent = '';
     return;
   }
   
@@ -642,16 +730,72 @@ function loadDeparturePlans() {
 
 let currentVoucher = null;
 
+// Hàm cập nhật bảng tính tổng tiền chi tiết
+function updatePriceBreakdown(soNguoiLon, soTreEm, soTreNho, giaNguoiLon, giaTreEm, giaTreNho, tongTienGoc) {
+  const priceBreakdownTable = document.getElementById('priceBreakdownTable');
+  
+  // Kiểm tra xem có dữ liệu để hiển thị không
+  const hasData = (soNguoiLon > 0 && giaNguoiLon > 0) || 
+                  (soTreEm > 0 && giaTreEm > 0) || 
+                  (soTreNho > 0 && giaTreNho > 0);
+  
+  if (!hasData || tongTienGoc <= 0) {
+    priceBreakdownTable.style.display = 'none';
+    return;
+  }
+  
+  priceBreakdownTable.style.display = 'block';
+  
+  // Cập nhật dòng Người lớn
+  if (soNguoiLon > 0 && giaNguoiLon > 0) {
+    const thanhTienNguoiLon = soNguoiLon * giaNguoiLon;
+    document.getElementById('rowNguoiLon').style.display = 'table-row';
+    document.getElementById('soLuongNguoiLon').textContent = soNguoiLon;
+    document.getElementById('donGiaNguoiLon').textContent = giaNguoiLon.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('thanhTienNguoiLon').textContent = thanhTienNguoiLon.toLocaleString('vi-VN') + ' đ';
+  } else {
+    document.getElementById('rowNguoiLon').style.display = 'none';
+  }
+  
+  // Cập nhật dòng Trẻ em
+  if (soTreEm > 0 && giaTreEm > 0) {
+    const thanhTienTreEm = soTreEm * giaTreEm;
+    document.getElementById('rowTreEm').style.display = 'table-row';
+    document.getElementById('soLuongTreEm').textContent = soTreEm;
+    document.getElementById('donGiaTreEm').textContent = giaTreEm.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('thanhTienTreEm').textContent = thanhTienTreEm.toLocaleString('vi-VN') + ' đ';
+  } else {
+    document.getElementById('rowTreEm').style.display = 'none';
+  }
+  
+  // Cập nhật dòng Trẻ nhỏ
+  if (soTreNho > 0 && giaTreNho > 0) {
+    const thanhTienTreNho = soTreNho * giaTreNho;
+    document.getElementById('rowTreNho').style.display = 'table-row';
+    document.getElementById('soLuongTreNho').textContent = soTreNho;
+    document.getElementById('donGiaTreNho').textContent = giaTreNho.toLocaleString('vi-VN') + ' đ';
+    document.getElementById('thanhTienTreNho').textContent = thanhTienTreNho.toLocaleString('vi-VN') + ' đ';
+  } else {
+    document.getElementById('rowTreNho').style.display = 'none';
+  }
+  
+  // Cập nhật tổng tiền gốc
+  document.getElementById('tongTienGocTable').textContent = tongTienGoc.toLocaleString('vi-VN') + ' đ';
+}
+
 function calculateTotal() {
   const lichKhoiHanhSelect = document.getElementById('id_lich_khoi_hanh');
   const selectedOption = lichKhoiHanhSelect.options[lichKhoiHanhSelect.selectedIndex];
   const seatInfo = document.getElementById('seatInfo');
   
   if (!selectedOption || !selectedOption.value) {
-    document.getElementById('tongTien').textContent = '0 đ';
-    document.getElementById('tongTienGoc').style.display = 'none';
-    document.getElementById('voucherDiscount').style.display = 'none';
     seatInfo.style.display = 'none';
+    // Ẩn giá trong label
+    document.getElementById('priceLabelNguoiLon').textContent = '';
+    document.getElementById('priceLabelTreEm').textContent = '';
+    document.getElementById('priceLabelTreNho').textContent = '';
+    // Ẩn bảng tính tổng tiền
+    document.getElementById('priceBreakdownTable').style.display = 'none';
     return;
   }
   
@@ -660,12 +804,20 @@ function calculateTotal() {
   const giaTreNho = parseFloat(selectedOption.getAttribute('data-gia-tre-nho')) || 0;
   const soChoConLai = parseInt(selectedOption.getAttribute('data-so-cho-con-lai')) || 0;
   
+  // Hiển thị giá trong label
+  document.getElementById('priceLabelNguoiLon').textContent = giaNguoiLon > 0 ? '(' + giaNguoiLon.toLocaleString('vi-VN') + ' đ/người)' : '';
+  document.getElementById('priceLabelTreEm').textContent = giaTreEm > 0 ? '(' + giaTreEm.toLocaleString('vi-VN') + ' đ/người)' : '';
+  document.getElementById('priceLabelTreNho').textContent = giaTreNho > 0 ? '(' + giaTreNho.toLocaleString('vi-VN') + ' đ/người)' : '';
+  
   const soNguoiLon = parseInt(document.getElementById('so_nguoi_lon').value) || 0;
   const soTreEm = parseInt(document.getElementById('so_tre_em').value) || 0;
   const soTreNho = parseInt(document.getElementById('so_tre_nho').value) || 0;
   
   const tongSoNguoi = soNguoiLon + soTreEm + soTreNho;
   const tongTienGoc = (soNguoiLon * giaNguoiLon) + (soTreEm * giaTreEm) + (soTreNho * giaTreNho);
+  
+  // Cập nhật bảng tính tổng tiền chi tiết
+  updatePriceBreakdown(soNguoiLon, soTreEm, soTreNho, giaNguoiLon, giaTreEm, giaTreNho, tongTienGoc);
   
   // Áp dụng voucher nếu có
   let tongTienCuoi = tongTienGoc;
@@ -683,13 +835,9 @@ function calculateTotal() {
       soTienGiam = Math.min(soTienGiam, tongTienGoc); // Không giảm quá tổng tiền
       tongTienCuoi = Math.max(0, tongTienGoc - soTienGiam);
       
-      // Hiển thị tổng tiền gốc và số tiền giảm
-      document.getElementById('tongTienGoc').style.display = 'block';
-      document.getElementById('tongTienGoc').querySelector('span').textContent = tongTienGoc.toLocaleString('vi-VN') + ' đ';
-      document.getElementById('voucherDiscount').style.display = 'block';
-      document.getElementById('soTienGiam').textContent = soTienGiam.toLocaleString('vi-VN') + ' đ';
-      document.getElementById('tongTien').style.color = '#059669';
-      document.getElementById('tongTien').style.fontWeight = '700';
+      // Cập nhật bảng tính tổng tiền với voucher
+      document.getElementById('rowVoucher').style.display = 'table-row';
+      document.getElementById('giamGiaVoucherTable').textContent = soTienGiam.toLocaleString('vi-VN') + ' đ';
     } else {
       // Tổng tiền chưa đạt mức tối thiểu
       currentVoucher = null;
@@ -700,13 +848,11 @@ function calculateTotal() {
     }
   } else {
     // Không có voucher hoặc tổng tiền = 0
-    document.getElementById('tongTienGoc').style.display = 'none';
-    document.getElementById('voucherDiscount').style.display = 'none';
-    document.getElementById('tongTien').style.color = '';
-    document.getElementById('tongTien').style.fontWeight = '';
+    // Ẩn dòng voucher trong bảng
+    document.getElementById('rowVoucher').style.display = 'none';
   }
   
-  document.getElementById('tongTien').textContent = tongTienCuoi.toLocaleString('vi-VN') + ' đ';
+  document.getElementById('tongCongTable').textContent = tongTienCuoi.toLocaleString('vi-VN') + ' đ';
   document.getElementById('voucher_discount').value = soTienGiam;
   
   // Hiển thị thông tin số chỗ

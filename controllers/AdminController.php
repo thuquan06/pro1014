@@ -1295,6 +1295,93 @@ class AdminController extends BaseController {
     }
 
     /**
+     * Validate dữ liệu booking
+     * @param array $data
+     * @param int|null $excludeId ID booking để loại trừ khi kiểm tra (dùng cho update)
+     * @return Validator
+     */
+    private function validateBookingData($data, $excludeId = null) {
+        $validator = new Validator($data);
+        
+        // Họ tên
+        $validator->required('ho_ten', 'Họ tên là bắt buộc')
+                  ->minLength('ho_ten', 2, 'Họ tên phải có ít nhất 2 ký tự')
+                  ->maxLength('ho_ten', 255, 'Họ tên không được quá 255 ký tự');
+        
+        // Số điện thoại
+        $validator->required('so_dien_thoai', 'Số điện thoại là bắt buộc')
+                  ->custom('so_dien_thoai', function($value) {
+                      return preg_match('/^(0|\+84)[0-9]{9,10}$/', preg_replace('/\s+/', '', $value));
+                  }, 'Số điện thoại không hợp lệ');
+        
+        // Email (nếu có)
+        if (!empty($data['email'])) {
+            $validator->email('email', 'Email không hợp lệ')
+                      ->maxLength('email', 255, 'Email không được quá 255 ký tự');
+        }
+        
+        // Lịch khởi hành (chỉ bắt buộc khi tạo mới, không bắt buộc khi update)
+        if ($excludeId === null) {
+            // Tạo mới: bắt buộc
+            $validator->required('id_lich_khoi_hanh', 'Lịch khởi hành là bắt buộc')
+                      ->integer('id_lich_khoi_hanh', 'Lịch khởi hành không hợp lệ')
+                      ->min('id_lich_khoi_hanh', 1, 'Lịch khởi hành không hợp lệ');
+        } else {
+            // Update: chỉ validate nếu có trong data
+            if (isset($data['id_lich_khoi_hanh']) && $data['id_lich_khoi_hanh'] !== '') {
+                $validator->integer('id_lich_khoi_hanh', 'Lịch khởi hành không hợp lệ')
+                          ->min('id_lich_khoi_hanh', 1, 'Lịch khởi hành không hợp lệ');
+            }
+        }
+        
+        // Số người lớn
+        $validator->required('so_nguoi_lon', 'Số người lớn là bắt buộc')
+                  ->integer('so_nguoi_lon', 'Số người lớn phải là số nguyên')
+                  ->min('so_nguoi_lon', 0, 'Số người lớn phải lớn hơn hoặc bằng 0');
+        
+        // Số trẻ em (nếu có)
+        if (isset($data['so_tre_em']) && $data['so_tre_em'] !== '') {
+            $validator->integer('so_tre_em', 'Số trẻ em phải là số nguyên')
+                      ->min('so_tre_em', 0, 'Số trẻ em phải lớn hơn hoặc bằng 0');
+        }
+        
+        // Số trẻ nhỏ (nếu có)
+        if (isset($data['so_tre_nho']) && $data['so_tre_nho'] !== '') {
+            $validator->integer('so_tre_nho', 'Số trẻ nhỏ phải là số nguyên')
+                      ->min('so_tre_nho', 0, 'Số trẻ nhỏ phải lớn hơn hoặc bằng 0');
+        }
+        
+        // Tổng tiền (nếu có)
+        if (isset($data['tong_tien']) && $data['tong_tien'] !== '') {
+            $validator->numeric('tong_tien', 'Tổng tiền phải là số')
+                      ->min('tong_tien', 0, 'Tổng tiền phải lớn hơn hoặc bằng 0');
+        }
+        
+        // Tiền đặt cọc (nếu có)
+        if (isset($data['tien_dat_coc']) && $data['tien_dat_coc'] !== '') {
+            $validator->numeric('tien_dat_coc', 'Tiền đặt cọc phải là số')
+                      ->min('tien_dat_coc', 0, 'Tiền đặt cọc phải lớn hơn hoặc bằng 0');
+        }
+        
+        // Ngày thanh toán (nếu có)
+        if (!empty($data['ngay_thanh_toan'])) {
+            $validator->date('ngay_thanh_toan', 'Y-m-d H:i:s', 'Ngày thanh toán không hợp lệ');
+        }
+        
+        // Địa chỉ (nếu có)
+        if (!empty($data['dia_chi'])) {
+            $validator->maxLength('dia_chi', 500, 'Địa chỉ không được quá 500 ký tự');
+        }
+        
+        // Ghi chú (nếu có)
+        if (!empty($data['ghi_chu'])) {
+            $validator->maxLength('ghi_chu', 2000, 'Ghi chú không được quá 2000 ký tự');
+        }
+        
+        return $validator;
+    }
+
+    /**
      * Validate departure plan data (dùng chung cho create và update)
      * @param array $data
      * @return Validator
@@ -1438,21 +1525,68 @@ class AdminController extends BaseController {
                 if (!empty($_POST['hdv_assignments']) && is_array($_POST['hdv_assignments'])) {
                     $id_lich_khoi_hanh = $result; // createDeparturePlan trả về ID của lịch khởi hành mới tạo
                     
-                    foreach ($_POST['hdv_assignments'] as $assignment) {
-                        if (!empty($assignment['id_hdv']) && !empty($assignment['vai_tro'])) {
-                            $assignmentData = [
-                                'id_lich_khoi_hanh' => $id_lich_khoi_hanh,
-                                'id_hdv' => (int)$assignment['id_hdv'],
-                                'vai_tro' => trim($assignment['vai_tro']),
-                                'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
-                                'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
-                                'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
-                                'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
-                                'trang_thai' => 1
-                            ];
-                            
-                            $this->assignmentModel->createAssignment($assignmentData);
+                    // Validate HDV assignments
+                    $validVaiTro = ['HDV chính', 'HDV phụ', 'Trợ lý'];
+                    
+                    foreach ($_POST['hdv_assignments'] as $index => $assignment) {
+                        if (empty($assignment['id_hdv']) || empty($assignment['vai_tro'])) {
+                            $_SESSION['error'] = "Phân công HDV thứ " . ($index + 1) . " thiếu thông tin bắt buộc";
+                            $allTours = $this->tourModel->getAllTours();
+                            $this->loadView('admin/departure-plans/create', compact('allTours', 'tourId'), 'admin/layout');
+                            return;
                         }
+                        
+                        $id_hdv = (int)$assignment['id_hdv'];
+                        
+                        // Kiểm tra HDV tồn tại
+                        $hdv = $this->guideModel->getGuideByID($id_hdv);
+                        if (!$hdv) {
+                            $_SESSION['error'] = "HDV không tồn tại ở phân công thứ " . ($index + 1);
+                            $allTours = $this->tourModel->getAllTours();
+                            $this->loadView('admin/departure-plans/create', compact('allTours', 'tourId'), 'admin/layout');
+                            return;
+                        }
+                        
+                        // Validate vai trò
+                        $vaiTro = trim($assignment['vai_tro']);
+                        if (!in_array($vaiTro, $validVaiTro)) {
+                            $_SESSION['error'] = "Vai trò không hợp lệ ở phân công thứ " . ($index + 1) . ". Chỉ chấp nhận: " . implode(', ', $validVaiTro);
+                            $allTours = $this->tourModel->getAllTours();
+                            $this->loadView('admin/departure-plans/create', compact('allTours', 'tourId'), 'admin/layout');
+                            return;
+                        }
+                        
+                        // Validate lương (nếu có)
+                        if (isset($assignment['luong']) && $assignment['luong'] !== '') {
+                            $luong = (float)$assignment['luong'];
+                            if ($luong < 0) {
+                                $_SESSION['error'] = "Lương không được nhỏ hơn 0 ở phân công thứ " . ($index + 1);
+                                $allTours = $this->tourModel->getAllTours();
+                                $this->loadView('admin/departure-plans/create', compact('allTours', 'tourId'), 'admin/layout');
+                                return;
+                            }
+                        }
+                        
+                        // Validate ghi chú length (nếu có)
+                        if (isset($assignment['ghi_chu']) && mb_strlen($assignment['ghi_chu']) > 500) {
+                            $_SESSION['error'] = "Ghi chú quá dài (tối đa 500 ký tự) ở phân công thứ " . ($index + 1);
+                            $allTours = $this->tourModel->getAllTours();
+                            $this->loadView('admin/departure-plans/create', compact('allTours', 'tourId'), 'admin/layout');
+                            return;
+                        }
+                        
+                        $assignmentData = [
+                            'id_lich_khoi_hanh' => $id_lich_khoi_hanh,
+                            'id_hdv' => $id_hdv,
+                            'vai_tro' => $vaiTro,
+                            'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
+                            'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
+                            'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
+                            'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
+                            'trang_thai' => 1
+                        ];
+                        
+                        $this->assignmentModel->createAssignment($assignmentData);
                     }
                 }
                 
@@ -1572,33 +1706,104 @@ class AdminController extends BaseController {
                 
                 // Lưu phân công HDV mới nếu có
                 if (!empty($_POST['hdv_assignments']) && is_array($_POST['hdv_assignments'])) {
-                    foreach ($_POST['hdv_assignments'] as $assignment) {
-                        if (!empty($assignment['id_hdv']) && !empty($assignment['vai_tro'])) {
-                            $assignmentData = [
-                                'id_lich_khoi_hanh' => $id,
-                                'id_hdv' => (int)$assignment['id_hdv'],
-                                'vai_tro' => trim($assignment['vai_tro']),
-                                'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
-                                'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
-                                'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
-                                'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
-                                'trang_thai' => 1
-                            ];
-                            
-                            $this->assignmentModel->createAssignment($assignmentData);
+                    // Validate HDV assignments
+                    $validVaiTro = ['HDV chính', 'HDV phụ', 'Trợ lý'];
+                    
+                    foreach ($_POST['hdv_assignments'] as $index => $assignment) {
+                        if (empty($assignment['id_hdv']) || empty($assignment['vai_tro'])) {
+                            $_SESSION['error'] = "Phân công HDV thứ " . ($index + 1) . " thiếu thông tin bắt buộc";
+                            $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                            if ($redirectTourId) {
+                                $redirectUrl .= '&tour_id=' . $redirectTourId;
+                            }
+                            $this->redirect($redirectUrl);
+                            return;
                         }
+                        
+                        $id_hdv = (int)$assignment['id_hdv'];
+                        
+                        // Kiểm tra HDV tồn tại
+                        $hdv = $this->guideModel->getGuideByID($id_hdv);
+                        if (!$hdv) {
+                            $_SESSION['error'] = "HDV không tồn tại ở phân công thứ " . ($index + 1);
+                            $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                            if ($redirectTourId) {
+                                $redirectUrl .= '&tour_id=' . $redirectTourId;
+                            }
+                            $this->redirect($redirectUrl);
+                            return;
+                        }
+                        
+                        // Validate vai trò
+                        $vaiTro = trim($assignment['vai_tro']);
+                        if (!in_array($vaiTro, $validVaiTro)) {
+                            $_SESSION['error'] = "Vai trò không hợp lệ ở phân công thứ " . ($index + 1) . ". Chỉ chấp nhận: " . implode(', ', $validVaiTro);
+                            $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                            if ($redirectTourId) {
+                                $redirectUrl .= '&tour_id=' . $redirectTourId;
+                            }
+                            $this->redirect($redirectUrl);
+                            return;
+                        }
+                        
+                        // Validate lương (nếu có)
+                        if (isset($assignment['luong']) && $assignment['luong'] !== '') {
+                            $luong = (float)$assignment['luong'];
+                            if ($luong < 0) {
+                                $_SESSION['error'] = "Lương không được nhỏ hơn 0 ở phân công thứ " . ($index + 1);
+                                $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                                if ($redirectTourId) {
+                                    $redirectUrl .= '&tour_id=' . $redirectTourId;
+                                }
+                                $this->redirect($redirectUrl);
+                                return;
+                            }
+                        }
+                        
+                        // Validate ghi chú length (nếu có)
+                        if (isset($assignment['ghi_chu']) && mb_strlen($assignment['ghi_chu']) > 500) {
+                            $_SESSION['error'] = "Ghi chú quá dài (tối đa 500 ký tự) ở phân công thứ " . ($index + 1);
+                            $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                            if ($redirectTourId) {
+                                $redirectUrl .= '&tour_id=' . $redirectTourId;
+                            }
+                            $this->redirect($redirectUrl);
+                            return;
+                        }
+                        
+                        $assignmentData = [
+                            'id_lich_khoi_hanh' => $id,
+                            'id_hdv' => $id_hdv,
+                            'vai_tro' => $vaiTro,
+                            'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
+                            'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
+                            'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
+                            'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
+                            'trang_thai' => 1
+                        ];
+                        
+                        $this->assignmentModel->createAssignment($assignmentData);
                     }
                 }
                 
                 $_SESSION['success'] = 'Cập nhật lịch khởi hành thành công!';
+                
+                // Redirect về trang chi tiết lịch khởi hành
+                $this->redirect(BASE_URL . '?act=admin-departure-plan-detail&id=' . $id);
+                return;
             } else {
                 // Log chi tiết lỗi để debug
                 error_log("Lỗi cập nhật lịch khởi hành ID: $id | Data: " . json_encode($validated));
                 $_SESSION['error'] = 'Không thể cập nhật lịch khởi hành. Vui lòng kiểm tra lại thông tin.';
+                
+                // Redirect về trang edit để người dùng có thể sửa lại
+                $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                if ($redirectTourId) {
+                    $redirectUrl .= '&tour_id=' . $redirectTourId;
+                }
+                $this->redirect($redirectUrl);
+                return;
             }
-
-            // Redirect về trang quản lý lịch trình (không giữ tour_id)
-            $this->redirect(BASE_URL . '?act=admin-departure-plans');
         }
 
         $this->redirect(BASE_URL . '?act=admin-departure-plans');
@@ -2496,47 +2701,16 @@ class AdminController extends BaseController {
         $this->checkLogin();
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Validate required fields
-            if (empty($_POST['id_lich_khoi_hanh']) || empty($_POST['ho_ten']) || empty($_POST['so_dien_thoai'])) {
-                $_SESSION['error'] = 'Vui lòng điền đầy đủ thông tin bắt buộc';
+            // Validate dữ liệu booking
+            $validator = $this->validateBookingData($_POST);
+            if ($validator->fails()) {
+                $_SESSION['error'] = $validator->firstError();
+                $errors = $validator->errors();
                 $tours = $this->tourModel->getAllTours();
                 $selectedTourId = $_POST['id_tour'] ?? null;
                 $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
                 $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
-                return;
-            }
-
-            // Validate số điện thoại
-            if (!BookingModel::validatePhone($_POST['so_dien_thoai'])) {
-                $_SESSION['error'] = 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 số bắt đầu bằng 0';
-                $tours = $this->tourModel->getAllTours();
-                $selectedTourId = $_POST['id_tour'] ?? null;
-                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
-                return;
-            }
-
-            // Validate email
-            if (!empty($_POST['email']) && !BookingModel::validateEmail($_POST['email'])) {
-                $_SESSION['error'] = 'Email không hợp lệ';
-                $tours = $this->tourModel->getAllTours();
-                $selectedTourId = $_POST['id_tour'] ?? null;
-                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
-                return;
-            }
-
-            // Validate loại booking
-            if (empty($_POST['loai_booking']) || !in_array($_POST['loai_booking'], [1, 2, 3, 4])) {
-                $_SESSION['error'] = 'Vui lòng chọn loại booking';
-                $tours = $this->tourModel->getAllTours();
-                $selectedTourId = $_POST['id_tour'] ?? null;
-                $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
+                $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides', 'errors'), 'admin/layout');
                 return;
             }
 
@@ -2580,6 +2754,10 @@ class AdminController extends BaseController {
                 $_POST['so_tre_em'] ?? 0,
                 $_POST['so_tre_nho'] ?? 0
             );
+            
+            // Đảm bảo baseTotal là số hợp lệ
+            $baseTotal = (float)$baseTotal;
+            if ($baseTotal < 0) $baseTotal = 0;
 
             $voucherId = null;
             $voucherCode = null;
@@ -2639,7 +2817,18 @@ class AdminController extends BaseController {
                 $voucherCode = $voucher['code'];
             }
 
+            // Tính tổng tiền cuối cùng và đảm bảo luôn được set
             $finalTotal = max(0, $baseTotal - $voucherDiscount);
+            $finalTotal = (float)$finalTotal; // Đảm bảo là số
+            
+            // Xử lý ngày thanh toán: chuyển từ datetime-local sang DATETIME
+            if (!empty($_POST['ngay_thanh_toan'])) {
+                $_POST['ngay_thanh_toan'] = date('Y-m-d H:i:s', strtotime($_POST['ngay_thanh_toan']));
+            } else {
+                $_POST['ngay_thanh_toan'] = null;
+            }
+            
+            // Luôn set tong_tien_override để đảm bảo tổng tiền được lưu đúng
             $_POST['tong_tien_override'] = $finalTotal;
             $_POST['voucher_id'] = $voucherId;
             $_POST['voucher_code'] = $voucherCode;
@@ -2691,22 +2880,15 @@ class AdminController extends BaseController {
         $bookingGuides = $this->bookingModel->getBookingGuides($id);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Validate số điện thoại
-            if (!BookingModel::validatePhone($_POST['so_dien_thoai'])) {
-                $_SESSION['error'] = 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 số bắt đầu bằng 0';
-                $statusList = BookingModel::getStatusList();
-                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides'), 'admin/layout');
-                return;
-            }
-
-            // Validate email
-            if (!empty($_POST['email']) && !BookingModel::validateEmail($_POST['email'])) {
-                $_SESSION['error'] = 'Email không hợp lệ';
+            // Validate dữ liệu booking
+            $validator = $this->validateBookingData($_POST, $id);
+            if ($validator->fails()) {
+                $_SESSION['error'] = $validator->firstError();
+                $errors = $validator->errors();
                 $statusList = BookingModel::getStatusList();
                 $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
                 $bookingGuides = $this->bookingModel->getBookingGuides($id);
-                $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides', 'bookingGuides'), 'admin/layout');
+                $this->loadView('admin/bookings/edit', compact('booking', 'statusList', 'guides', 'bookingGuides', 'errors'), 'admin/layout');
                 return;
             }
 
@@ -2768,6 +2950,28 @@ class AdminController extends BaseController {
                 $voucherDiscount = 0;
             }
             
+            // Đảm bảo id_lich_khoi_hanh có trong POST (lấy từ booking cũ nếu không có)
+            if (empty($_POST['id_lich_khoi_hanh']) && !empty($booking['id_lich_khoi_hanh'])) {
+                $_POST['id_lich_khoi_hanh'] = $booking['id_lich_khoi_hanh'];
+            }
+            
+            // Tính lại tổng tiền gốc để đảm bảo chính xác
+            $idLichKhoiHanh = $_POST['id_lich_khoi_hanh'] ?? $booking['id_lich_khoi_hanh'] ?? null;
+            if ($idLichKhoiHanh) {
+                $baseTotal = $this->bookingModel->calculateTotal(
+                    $idLichKhoiHanh,
+                    $_POST['so_nguoi_lon'] ?? $booking['so_nguoi_lon'] ?? 0,
+                    $_POST['so_tre_em'] ?? $booking['so_tre_em'] ?? 0,
+                    $_POST['so_tre_nho'] ?? $booking['so_tre_nho'] ?? 0
+                );
+            } else {
+                $baseTotal = $booking['tong_tien'] ?? 0;
+            }
+            
+            // Tính tổng tiền cuối cùng sau khi áp dụng voucher
+            $finalTotal = max(0, $baseTotal - $voucherDiscount);
+            
+            $_POST['tong_tien_override'] = $finalTotal;
             $_POST['voucher_id'] = $voucherId;
             $_POST['voucher_code'] = $voucherCode;
             $_POST['voucher_discount'] = $voucherDiscount;
@@ -2926,7 +3130,7 @@ class AdminController extends BaseController {
             return;
         }
 
-        $tong_tien = $this->bookingModel->calculateTotal($id_lich_khoi_hanh, $so_nguoi_lon, $so_tre_em, $so_tre_nho, $so_em_be);
+        $tong_tien = $this->bookingModel->calculateTotal($id_lich_khoi_hanh, $so_nguoi_lon, $so_tre_em, $so_tre_nho);
         $so_nguoi = $so_nguoi_lon + $so_tre_em + $so_tre_nho + $so_em_be;
         $seatCheck = $this->bookingModel->checkAvailableSeats($id_lich_khoi_hanh, $so_nguoi);
 
@@ -3367,6 +3571,23 @@ class AdminController extends BaseController {
             return;
         }
         
+        // Validate id_lich_khoi_hanh
+        if (empty($id_lich_khoi_hanh) || !is_numeric($id_lich_khoi_hanh)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'ID lịch khởi hành không hợp lệ']);
+            return;
+        }
+        
+        $id_lich_khoi_hanh = (int)$id_lich_khoi_hanh;
+        
+        // Kiểm tra lịch khởi hành tồn tại
+        $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id_lich_khoi_hanh);
+        if (!$departurePlan) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Lịch khởi hành không tồn tại']);
+            return;
+        }
+        
         // Chỉ HDV mới có thể điểm danh, admin không thể
         $isAdmin = !empty($_SESSION['alogin']);
         
@@ -3384,11 +3605,83 @@ class AdminController extends BaseController {
             return;
         }
         
+        $id_hdv = (int)$id_hdv;
+        
+        // Kiểm tra HDV tồn tại
+        $hdv = $this->guideModel->getGuideByID($id_hdv);
+        if (!$hdv) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'HDV không tồn tại']);
+            return;
+        }
+        
         // Kiểm tra quyền HDV
         if (!$this->diemDanModel->canHdvAttend($id_hdv, $id_lich_khoi_hanh)) {
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => 'Bạn không có quyền điểm danh cho lịch trình này']);
             return;
+        }
+        
+        // Validate attendance data structure
+        if (empty($attendanceData) || !is_array($attendanceData)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu điểm danh không hợp lệ']);
+            return;
+        }
+        
+        // Validate từng bản ghi điểm danh
+        foreach ($attendanceData as $index => $record) {
+            if (!isset($record['id_booking']) || !isset($record['id_thanh_vien']) || !isset($record['trang_thai'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Bản ghi điểm danh thứ " . ($index + 1) . " thiếu thông tin bắt buộc"]);
+                return;
+            }
+            
+            $id_booking = (int)$record['id_booking'];
+            $id_thanh_vien = (int)$record['id_thanh_vien'];
+            $trang_thai = (int)$record['trang_thai'];
+            
+            // Validate trang_thai chỉ nhận 1, 2, 3
+            if (!in_array($trang_thai, [1, 2, 3])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Trạng thái điểm danh không hợp lệ ở bản ghi thứ " . ($index + 1)]);
+                return;
+            }
+            
+            // Kiểm tra booking tồn tại và thuộc về lịch khởi hành
+            $booking = $this->bookingModel->getBookingById($id_booking);
+            if (!$booking) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Booking không tồn tại ở bản ghi thứ " . ($index + 1)]);
+                return;
+            }
+            
+            if ($booking['id_lich_khoi_hanh'] != $id_lich_khoi_hanh) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Booking không thuộc về lịch khởi hành này ở bản ghi thứ " . ($index + 1)]);
+                return;
+            }
+            
+            // Kiểm tra thành viên tồn tại và thuộc về booking
+            $member = $this->bookingModel->getBookingMemberById($id_thanh_vien);
+            if (!$member) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Thành viên không tồn tại ở bản ghi thứ " . ($index + 1)]);
+                return;
+            }
+            
+            if ($member['id_booking'] != $id_booking) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Thành viên không thuộc về booking này ở bản ghi thứ " . ($index + 1)]);
+                return;
+            }
+            
+            // Validate ghi_chu length (nếu có)
+            if (isset($record['ghi_chu']) && mb_strlen($record['ghi_chu']) > 500) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => "Ghi chú quá dài (tối đa 500 ký tự) ở bản ghi thứ " . ($index + 1)]);
+                return;
+            }
         }
         
         // Xử lý điểm danh

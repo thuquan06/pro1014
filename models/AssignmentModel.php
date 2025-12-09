@@ -21,6 +21,12 @@ class AssignmentModel extends BaseModel
                 WHERE 1=1";
         $params = [];
 
+        // Filter theo lịch khởi hành
+        if (!empty($filters['id_lich_khoi_hanh'])) {
+            $sql .= " AND pc.id_lich_khoi_hanh = :id_lich_khoi_hanh";
+            $params[':id_lich_khoi_hanh'] = $filters['id_lich_khoi_hanh'];
+        }
+
         // Filter theo tên tour
         if (!empty($filters['ten_tour'])) {
             $sql .= " AND g.tengoi LIKE :ten_tour";
