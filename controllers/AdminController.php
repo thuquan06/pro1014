@@ -1693,6 +1693,12 @@ class AdminController extends BaseController {
                 $validated['so_cho_con_lai'] = max(0, (int)$validated['so_cho'] - (int)$validated['so_cho_da_dat']);
             }
             
+            // Lấy chuongtrinh từ POST (không escape, giữ nguyên HTML)
+            $chuongtrinh = $_POST['chuongtrinh'] ?? '';
+            // Decode HTML entities nếu có (để đảm bảo HTML thuần, không bị double-encode)
+            // Chỉ decode nếu có entities, không decode HTML tags
+            $validated['chuongtrinh'] = $chuongtrinh;
+            
             // ===== UPDATE DATABASE =====
             $result = $this->departurePlanModel->updateDeparturePlan($id, $validated);
             $redirectTourId = $validated['id_tour'] ?? null;

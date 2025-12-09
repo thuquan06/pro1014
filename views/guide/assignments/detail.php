@@ -33,7 +33,15 @@
       <div>
         <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Tour</strong>
         <p style="font-size: 18px; font-weight: 700; margin-top: 4px; color: var(--primary);">
-          <?= htmlspecialchars($assignment['ten_tour'] ?? 'N/A') ?>
+          <?php if (!empty($assignment['ten_tour'])): ?>
+            <?= htmlspecialchars($assignment['ten_tour']) ?>
+          <?php elseif (!empty($assignment['id_lich_khoi_hanh'])): ?>
+            Tour #<?= htmlspecialchars($assignment['id_lich_khoi_hanh']) ?>
+            <br><small style="font-size: 14px; font-weight: 400; color: var(--text-light); font-style: italic;">Chưa có thông tin tour</small>
+          <?php else: ?>
+            Phân công #<?= htmlspecialchars($assignment['id']) ?>
+            <br><small style="font-size: 14px; font-weight: 400; color: var(--text-light); font-style: italic;">Chưa có lịch khởi hành</small>
+          <?php endif; ?>
         </p>
       </div>
       
@@ -130,23 +138,180 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
       <div>
         <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Tên tour</strong>
-        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;"><?= htmlspecialchars($tour['tengoi'] ?? 'N/A') ?></p>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px; color: var(--primary);">
+          <?= htmlspecialchars($tour['tengoi'] ?? 'N/A') ?>
+        </p>
       </div>
       <div>
-        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Giá tour</strong>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Số ngày</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;">
+          <?= htmlspecialchars($tour['songay'] ?? 'N/A') ?> ngày
+        </p>
+      </div>
+      <div>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Giá tour (người lớn)</strong>
         <p style="font-size: 16px; font-weight: 600; margin-top: 4px; color: var(--success);">
-          <?php if (!empty($tour['gia'])): ?>
-            <?= number_format($tour['gia'], 0, ',', '.') ?> đ
+          <?php if (!empty($tour['giagoi'])): ?>
+            <?= number_format($tour['giagoi'], 0, ',', '.') ?> đ
           <?php else: ?>
             Chưa cập nhật
           <?php endif; ?>
         </p>
       </div>
+      <?php if (!empty($tour['giatreem'])): ?>
       <div>
-        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Số ngày</strong>
-        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;"><?= htmlspecialchars($tour['songay'] ?? 'N/A') ?> ngày</p>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Giá trẻ em</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px; color: var(--info);">
+          <?= number_format($tour['giatreem'], 0, ',', '.') ?> đ
+        </p>
       </div>
+      <?php endif; ?>
+      <?php if (!empty($tour['giatrenho'])): ?>
+      <div>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Giá trẻ nhỏ</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px; color: var(--info);">
+          <?= number_format($tour['giatrenho'], 0, ',', '.') ?> đ
+        </p>
+      </div>
+      <?php endif; ?>
+      <?php if (!empty($tour['noixuatphat'])): ?>
+      <div>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Nơi xuất phát</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;">
+          <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
+          <?= htmlspecialchars($tour['noixuatphat']) ?>
+        </p>
+      </div>
+      <?php endif; ?>
+      <?php if (!empty($tour['diadiem'])): ?>
+      <div>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Địa điểm</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;">
+          <i class="fas fa-location-dot" style="color: var(--primary);"></i>
+          <?= htmlspecialchars($tour['diadiem']) ?>
+        </p>
+      </div>
+      <?php endif; ?>
+      <?php if (!empty($tour['quocgia'])): ?>
+      <div>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Quốc gia</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;">
+          <i class="fas fa-globe" style="color: var(--primary);"></i>
+          <?= htmlspecialchars($tour['quocgia']) ?>
+        </p>
+      </div>
+      <?php endif; ?>
+      <?php if (!empty($departurePlan['diem_tap_trung'])): ?>
+      <div>
+        <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Điểm tập trung</strong>
+        <p style="font-size: 16px; font-weight: 600; margin-top: 4px;">
+          <i class="fas fa-map-pin" style="color: var(--primary);"></i>
+          <?= htmlspecialchars($departurePlan['diem_tap_trung']) ?>
+        </p>
+      </div>
+      <?php endif; ?>
     </div>
+    
+    <?php if (!empty($tour['mota'])): ?>
+    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+      <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase;">Mô tả tour</strong>
+      <p style="margin-top: 8px; color: var(--text-dark); line-height: 1.6;">
+        <?= nl2br(htmlspecialchars($tour['mota'])) ?>
+      </p>
+    </div>
+    <?php endif; ?>
+    
+    <?php if ($tour): ?>
+    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+      <strong style="color: var(--text-light); font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 16px;">
+        <i class="fas fa-route" style="color: var(--primary);"></i> Lịch trình tour
+      </strong>
+      <?php 
+      // Debug: Kiểm tra dữ liệu
+      $itinerary = $itinerary ?? [];
+      if (!empty($itinerary) && is_array($itinerary) && count($itinerary) > 0): 
+      ?>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <?php foreach ($itinerary as $day): ?>
+          <div style="background: var(--bg-light); border-left: 4px solid var(--primary); padding: 16px; border-radius: 8px;">
+            <div style="display: flex; align-items: start; gap: 16px;">
+              <div style="background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">
+                <?= htmlspecialchars($day['ngay_thu']) ?>
+              </div>
+              <div style="flex: 1;">
+                <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: var(--primary);">
+                  <?= htmlspecialchars($day['tieude'] ?? 'Ngày ' . $day['ngay_thu']) ?>
+                </h4>
+                <?php if (!empty($day['content_html']) || !empty($day['mota'])): ?>
+                  <div style="margin: 0 0 8px 0; color: var(--text-dark); line-height: 1.6;">
+                    <?php if (!empty($day['content_html'])): ?>
+                      <?php 
+                      // Decode HTML entities và hiển thị HTML
+                      $content = html_entity_decode($day['content_html'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                      echo $content;
+                      ?>
+                    <?php elseif (!empty($day['mota'])): ?>
+                      <?= nl2br(htmlspecialchars($day['mota'])) ?>
+                    <?php endif; ?>
+                  </div>
+                <?php endif; ?>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px;">
+                  <?php if (!empty($day['diemden'])): ?>
+                    <div>
+                      <small style="color: var(--text-light); font-weight: 600;">Điểm đến:</small>
+                      <p style="margin: 4px 0 0 0; font-size: 14px;"><?= htmlspecialchars($day['diemden']) ?></p>
+                    </div>
+                  <?php endif; ?>
+                  <?php if (!empty($day['thoiluong'])): ?>
+                    <div>
+                      <small style="color: var(--text-light); font-weight: 600;">Thời lượng:</small>
+                      <p style="margin: 4px 0 0 0; font-size: 14px;"><?= htmlspecialchars($day['thoiluong']) ?></p>
+                    </div>
+                  <?php endif; ?>
+                  <?php if (!empty($day['buaan'])): ?>
+                    <div>
+                      <small style="color: var(--text-light); font-weight: 600;">Bữa ăn:</small>
+                      <p style="margin: 4px 0 0 0; font-size: 14px;"><?= htmlspecialchars($day['buaan']) ?></p>
+                    </div>
+                  <?php endif; ?>
+                  <?php if (!empty($day['noinghi'])): ?>
+                    <div>
+                      <small style="color: var(--text-light); font-weight: 600;">Nơi nghỉ:</small>
+                      <p style="margin: 4px 0 0 0; font-size: 14px;"><?= htmlspecialchars($day['noinghi']) ?></p>
+                    </div>
+                  <?php endif; ?>
+                </div>
+                <?php if (!empty($day['hoatdong'])): ?>
+                  <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                    <small style="color: var(--text-light); font-weight: 600;">Hoạt động:</small>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--text-dark);">
+                      <?= nl2br(htmlspecialchars($day['hoatdong'])) ?>
+                    </p>
+                  </div>
+                <?php endif; ?>
+                <?php if (!empty($day['ghichu_hdv'])): ?>
+                  <div style="margin-top: 12px; padding: 12px; background: #fef3c7; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                    <small style="color: #78350f; font-weight: 600;">
+                      <i class="fas fa-info-circle"></i> Ghi chú cho HDV:
+                    </small>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; color: #78350f;">
+                      <?= nl2br(htmlspecialchars($day['ghichu_hdv'])) ?>
+                    </p>
+                  </div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <?php else: ?>
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-light);">
+        <i class="fas fa-route" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px; display: block;"></i>
+        <p style="margin: 0; font-size: 14px;">Chưa có lịch trình cho tour này</p>
+      </div>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
   </div>
 </div>
 <?php endif; ?>

@@ -2,6 +2,9 @@
 // views/guide/dashboard.php
 ?>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
 <div class="dashboard-container">
   <div class="stats-grid">
     <div class="stat-card">
@@ -43,7 +46,138 @@
         <p>Đang hoạt động</p>
       </div>
     </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <i class="fas fa-money-bill-wave"></i>
+      </div>
+      <div class="stat-details">
+        <h4><?= number_format($stats['total_salary'] ?? 0, 0, ',', '.') ?> đ</h4>
+        <p>Tổng lương</p>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <i class="fas fa-book"></i>
+      </div>
+      <div class="stat-details">
+        <h4><?= $stats['total_journals'] ?? 0 ?></h4>
+        <p>Nhật ký tour</p>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon orange">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-details">
+        <h4><?= $stats['total_incidents'] ?? 0 ?></h4>
+        <p>Báo cáo sự cố</p>
+      </div>
+    </div>
   </div>
+
+  <!-- Biểu đồ thống kê -->
+  <?php if (!empty($stats['monthly_stats'])): ?>
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+      <h3><i class="fas fa-chart-line"></i> Thống kê 6 tháng gần nhất</h3>
+    </div>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div>
+          <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Số tour theo tháng</h4>
+          <canvas id="toursChart" style="max-height: 300px;"></canvas>
+        </div>
+        <div>
+          <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Lương theo tháng</h4>
+          <canvas id="salaryChart" style="max-height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Biểu đồ số tour
+    const toursCtx = document.getElementById('toursChart').getContext('2d');
+    new Chart(toursCtx, {
+      type: 'bar',
+      data: {
+        labels: <?= json_encode(array_column($stats['monthly_stats'], 'month')) ?>,
+        datasets: [{
+          label: 'Số tour',
+          data: <?= json_encode(array_column($stats['monthly_stats'], 'count')) ?>,
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          borderColor: 'rgba(16, 185, 129, 1)',
+          borderWidth: 2,
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        }
+      }
+    });
+    
+    // Biểu đồ lương
+    const salaryCtx = document.getElementById('salaryChart').getContext('2d');
+    new Chart(salaryCtx, {
+      type: 'line',
+      data: {
+        labels: <?= json_encode(array_column($stats['monthly_stats'], 'month')) ?>,
+        datasets: [{
+          label: 'Lương (VNĐ)',
+          data: <?= json_encode(array_column($stats['monthly_stats'], 'salary')) ?>,
+          borderColor: 'rgba(59, 130, 246, 1)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' đ';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(value) + ' đ';
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+  <?php endif; ?>
 
   <div class="card">
     <div class="card-header">
@@ -75,7 +209,15 @@
               <?php foreach ($recentAssignments as $assignment): ?>
                 <tr>
                   <td>
-                    <strong><?= htmlspecialchars($assignment['ten_tour'] ?? 'N/A') ?></strong>
+                    <?php if (!empty($assignment['ten_tour'])): ?>
+                      <strong><?= htmlspecialchars($assignment['ten_tour']) ?></strong>
+                    <?php elseif (!empty($assignment['id_lich_khoi_hanh'])): ?>
+                      <strong style="color: var(--text-light);">Tour #<?= htmlspecialchars($assignment['id_lich_khoi_hanh']) ?></strong>
+                      <br><small style="color: var(--text-light); font-style: italic;">Chưa có thông tin tour</small>
+                    <?php else: ?>
+                      <strong style="color: var(--text-light);">Phân công #<?= htmlspecialchars($assignment['id']) ?></strong>
+                      <br><small style="color: var(--text-light); font-style: italic;">Chưa có lịch khởi hành</small>
+                    <?php endif; ?>
                   </td>
                   <td>
                     <?php if ($assignment['ngay_khoi_hanh']): ?>
@@ -84,7 +226,7 @@
                         <br><small style="color: var(--text-light);"><?= htmlspecialchars($assignment['gio_khoi_hanh']) ?></small>
                       <?php endif; ?>
                     <?php else: ?>
-                      N/A
+                      <span style="color: var(--text-light); font-style: italic;">Chưa cập nhật</span>
                     <?php endif; ?>
                   </td>
                   <td><?= htmlspecialchars($assignment['vai_tro'] ?? 'HDV chính') ?></td>
@@ -166,6 +308,44 @@
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.stat-card {
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+.stat-card:nth-child(5) { animation-delay: 0.5s; }
+.stat-card:nth-child(6) { animation-delay: 0.6s; }
+.stat-card:nth-child(7) { animation-delay: 0.7s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #toursChart, #salaryChart {
+    max-height: 250px !important;
+  }
+  
+  .card-body > div {
+    grid-template-columns: 1fr !important;
+  }
 }
 </style>
 

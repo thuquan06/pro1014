@@ -100,38 +100,37 @@ class GuideModel extends BaseModel
     public function updateGuide($id, array $data)
     {
         try {
-            $sql = "UPDATE huong_dan_vien SET
-                        ho_ten = :ho_ten,
-                        email = :email,
-                        so_dien_thoai = :so_dien_thoai,
-                        cmnd_cccd = :cmnd_cccd,
-                        dia_chi = :dia_chi,
-                        ky_nang = :ky_nang,
-                        tuyen_chuyen = :tuyen_chuyen,
-                        ngon_ngu = :ngon_ngu,
-                        kinh_nghiem = :kinh_nghiem,
-                        danh_gia = :danh_gia,
-                        trang_thai = :trang_thai,
-                        ghi_chu = :ghi_chu,
-                        ngay_cap_nhat = NOW()
-                    WHERE id = :id";
-
+            // Xây dựng SQL động để chỉ cập nhật các field có trong $data
+            $fields = [];
+            $params = [':id' => $id];
+            
+            $allowedFields = [
+                'ho_ten', 'email', 'so_dien_thoai', 'cmnd_cccd', 'dia_chi',
+                'ky_nang', 'tuyen_chuyen', 'ngon_ngu', 'kinh_nghiem',
+                'danh_gia', 'trang_thai', 'ghi_chu', 'anh_dai_dien'
+            ];
+            
+            foreach ($allowedFields as $field) {
+                if (isset($data[$field])) {
+                    if (in_array($field, ['ky_nang', 'tuyen_chuyen', 'ngon_ngu'])) {
+                        $fields[] = "$field = :$field";
+                        $params[":$field"] = $this->prepareJsonArray($data[$field]);
+                    } else {
+                        $fields[] = "$field = :$field";
+                        $params[":$field"] = $data[$field];
+                    }
+                }
+            }
+            
+            if (empty($fields)) {
+                return false;
+            }
+            
+            $fields[] = "ngay_cap_nhat = NOW()";
+            $sql = "UPDATE huong_dan_vien SET " . implode(', ', $fields) . " WHERE id = :id";
+            
             $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                ':id' => $id,
-                ':ho_ten' => $data['ho_ten'] ?? '',
-                ':email' => $data['email'] ?? null,
-                ':so_dien_thoai' => $data['so_dien_thoai'] ?? null,
-                ':cmnd_cccd' => $data['cmnd_cccd'] ?? null,
-                ':dia_chi' => $data['dia_chi'] ?? null,
-                ':ky_nang' => $this->prepareJsonArray($data['ky_nang'] ?? []),
-                ':tuyen_chuyen' => $this->prepareJsonArray($data['tuyen_chuyen'] ?? []),
-                ':ngon_ngu' => $this->prepareJsonArray($data['ngon_ngu'] ?? []),
-                ':kinh_nghiem' => $data['kinh_nghiem'] ?? 0,
-                ':danh_gia' => $data['danh_gia'] ?? 0.00,
-                ':trang_thai' => $data['trang_thai'] ?? 1,
-                ':ghi_chu' => $data['ghi_chu'] ?? null,
-            ]);
+            return $stmt->execute($params);
         } catch (PDOException $e) {
             error_log("Lỗi cập nhật HDV: " . $e->getMessage());
             return false;

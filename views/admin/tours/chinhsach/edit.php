@@ -253,7 +253,7 @@ ob_start();
         rows="8"
         placeholder="Nhập nội dung chính sách chi tiết..."
         required
-      ><?= htmlspecialchars($chinhsach['noidung']) ?></textarea>
+      ><?= $chinhsach['noidung'] ?? '' ?></textarea>
       <small class="form-hint">
         <i class="fas fa-info-circle"></i>
         Mô tả chi tiết chính sách

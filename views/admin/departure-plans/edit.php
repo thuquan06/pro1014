@@ -509,7 +509,7 @@ $guides = $guides ?? [];
           </div>
           
           <!-- Hidden textarea để lưu HTML cuối cùng -->
-          <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display: none;"><?= safe_html($departurePlan['chuongtrinh'] ?? '') ?></textarea>
+          <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display: none;"><?= htmlspecialchars($departurePlan['chuongtrinh'] ?? '', ENT_NOQUOTES, 'UTF-8') ?></textarea>
         </div>
       </div>
     </div>
@@ -543,10 +543,30 @@ const dayEditorConfig = {
     filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
 };
 
+// Helpers
+function htmlToPlain(html) {
+    if (!html) return '';
+    html = html.replace(/<\s*br\s*\/?>/gi, '\n');
+    html = html.replace(/<\/p>/gi, '\n');
+    const tmp = document.createElement('textarea');
+    tmp.innerHTML = html;
+    return tmp.value;
+}
+
+function escapeHtml(str) {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function addDay(dayTitle = '', dayContent = '') {
     dayCounter++;
     const dayId = 'day_' + dayCounter;
     const editorId = 'day_editor_' + dayCounter;
+    
+    // Escape HTML cho title input (chỉ cần escape quotes)
+    const escapedTitle = (dayTitle || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     
     const dayHtml = `
         <div class="day-item" id="${dayId}" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--border); border-radius: 8px; background: #f9fafb;">
@@ -561,12 +581,12 @@ function addDay(dayTitle = '', dayContent = '') {
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Tiêu đề ngày (tùy chọn)</label>
                 <input type="text" class="day-title-input" data-day="${dayCounter}" placeholder="Ví dụ: Khởi hành, Tham quan thành phố..." 
-                       value="${dayTitle.replace(/"/g, '&quot;')}"
+                       value="${escapedTitle}"
                        style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Nội dung</label>
-                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;">${dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;"></textarea>
             </div>
         </div>
     `;
@@ -577,12 +597,24 @@ function addDay(dayTitle = '', dayContent = '') {
         
         setTimeout(() => {
             dayEditors[dayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
-            if (dayContent) {
+            // Set data sau khi editor ready
+            if (dayContent && dayContent.trim()) {
                 dayEditors[dayCounter].on('instanceReady', function() {
-                    this.setData(dayContent);
+                    // Clean content trước khi set vào editor - loại bỏ ký tự lạ
+                    let cleanContent = dayContent;
+                    // Loại bỏ header "NGÀY X" nếu có trong content
+                    cleanContent = cleanContent.replace(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/h[1-6]>/gi, '');
+                    cleanContent = cleanContent.replace(/<p[^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/p>/gi, '');
+                    cleanContent = cleanContent.replace(/<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>/gi, '');
+                    // Loại bỏ các ký tự lạ như "Â", "Ã", "DY" đơn lẻ
+                    cleanContent = cleanContent.replace(/^[ÂâÃã]\s*$/gm, '').trim();
+                    cleanContent = cleanContent.replace(/^\s*[ÂâÃã]\s*$/gm, '').trim();
+                    cleanContent = cleanContent.replace(/^DY\s*$/gm, '').trim();
+                    // Set data trực tiếp vào CKEditor (CKEditor sẽ tự xử lý HTML)
+                    this.setData(cleanContent);
                 });
             }
-        }, 200);
+        }, 300);
     }
 }
 
@@ -651,14 +683,23 @@ function buildItineraryHTML() {
         }
         
         if (content.trim()) {
-            let dayHeader = '';
-            if (title) {
-                dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
-            } else {
-                dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
-            }
+            // Clean content - loại bỏ header "NGÀY X" nếu có trong content (tránh duplicate)
+            let cleanContent = content;
+            cleanContent = cleanContent.replace(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/h[1-6]>/gi, '');
+            cleanContent = cleanContent.replace(/<p[^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/p>/gi, '');
+            cleanContent = cleanContent.replace(/<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>/gi, '');
+            cleanContent = cleanContent.trim();
             
-            html += dayHeader + content;
+            if (cleanContent) {
+                let dayHeader = '';
+                if (title) {
+                    dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
+                } else {
+                    dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
+                }
+                
+                html += dayHeader + cleanContent;
+            }
         }
     });
     
@@ -668,6 +709,7 @@ function buildItineraryHTML() {
 function parseAndLoadExistingItinerary(html) {
     if (!html || !html.trim()) return;
     
+    // Destroy all existing editors first
     Object.keys(dayEditors).forEach(dayNum => {
         if (dayEditors[dayNum]) {
             dayEditors[dayNum].destroy();
@@ -680,36 +722,69 @@ function parseAndLoadExistingItinerary(html) {
         daysContainer.innerHTML = '';
     }
     
-    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
+    // Parse HTML to extract days - improved regex (hỗ trợ cả NGÀY và NGÃY do encoding)
+    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
     const daySections = [];
+    const matches = [];
     let match;
-    let lastIndex = 0;
     
+    // Collect all matches first
     while ((match = regex.exec(html)) !== null) {
-        const dayNum = parseInt(match[1]);
-        const dayTitle = match[2] ? match[2].trim() : '';
-        const startPos = match.index;
+        let title = match[2] ? match[2].trim() : '';
+        // Decode HTML entities trong title
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = title;
+        title = tempDiv.textContent || tempDiv.innerText || title;
         
-        const nextMatch = regex.exec(html);
-        regex.lastIndex = match.index + match[0].length;
-        
-        const endPos = nextMatch ? nextMatch.index : html.length;
-        const dayContent = html.substring(startPos + match[0].length, endPos).trim();
-        
-        daySections.push({
-            dayNum: dayNum,
-            title: dayTitle,
-            content: dayContent
+        matches.push({
+            dayNum: parseInt(match[1]),
+            title: title,
+            startPos: match.index,
+            headerLength: match[0].length
         });
-        
-        lastIndex = endPos;
     }
     
+    // Extract content for each day
+    for (let i = 0; i < matches.length; i++) {
+        const currentMatch = matches[i];
+        const nextMatch = matches[i + 1];
+        
+        const contentStart = currentMatch.startPos + currentMatch.headerLength;
+        const contentEnd = nextMatch ? nextMatch.startPos : html.length;
+        let dayContent = html.substring(contentStart, contentEnd).trim();
+        
+        // Loại bỏ header "NGÀY X" hoặc các biến thể encode sai nếu còn sót trong content (tránh duplicate khi build lại)
+        // Loại bỏ cả các pattern khác nhau của header và phiên bản plain-text không tag
+        dayContent = dayContent.replace(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/h[1-6]>/gi, '');
+        dayContent = dayContent.replace(/<p[^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/p>/gi, '');
+        dayContent = dayContent.replace(/<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>/gi, '');
+        // Plain text header dòng đơn (kể cả sai encode: NGÃ̀Y, NGÃY, NGAY)
+        dayContent = dayContent.replace(/^\s*NG\S*Y\s*\d+[^\r\n]*$/gim, '');
+        
+        // Loại bỏ các ký tự lạ như "Â", "Ã", "DY" đơn lẻ (có thể là phần còn lại của "NGÀY" bị decode sai)
+        dayContent = dayContent.replace(/^[ÂâÃã\xa0]\s*$/gim, '').trim();
+        dayContent = dayContent.replace(/^\s*[ÂâÃã\xa0]\s*$/gim, '').trim();
+        dayContent = dayContent.replace(/^DY\s*$/gim, '').trim();
+        // Loại bỏ các dòng chỉ có ký tự đơn lẻ hoặc whitespace
+        dayContent = dayContent.replace(/^[^\w\s<>&;]{1,2}$/gm, '').trim();
+        dayContent = dayContent.trim();
+        
+        daySections.push({
+            dayNum: currentMatch.dayNum,
+            title: currentMatch.title,
+            content: dayContent
+        });
+    }
+    
+    // Load days into editor
     if (daySections.length > 0) {
+        // Sort by day number to ensure correct order
+        daySections.sort((a, b) => a.dayNum - b.dayNum);
         daySections.forEach(section => {
             addDay(section.title, section.content);
         });
     } else if (html.trim()) {
+        // If no day headers found, treat entire content as one day
         addDay('', html);
     }
 }
@@ -850,9 +925,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     <?php if (!empty($departurePlan['chuongtrinh'])): ?>
-    const existingItinerary = <?= json_encode($departurePlan['chuongtrinh'], JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>;
-    if (existingItinerary && existingItinerary.trim()) {
-        parseAndLoadExistingItinerary(existingItinerary);
+    // Load existing itinerary - use base64 to avoid JSON encoding issues
+    // Decode HTML entities trước khi encode base64
+    <?php 
+    $chuongtrinhRaw = html_entity_decode($departurePlan['chuongtrinh'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $chuongtrinhBase64 = base64_encode($chuongtrinhRaw);
+    ?>
+    const existingItineraryBase64 = '<?= $chuongtrinhBase64 ?>';
+    if (existingItineraryBase64) {
+        try {
+            const existingItineraryHtml = atob(existingItineraryBase64);
+            if (existingItineraryHtml && existingItineraryHtml.trim()) {
+                // Wait a bit for DOM to be ready
+                setTimeout(() => {
+                    parseAndLoadExistingItinerary(existingItineraryHtml);
+                }, 500);
+            }
+        } catch(e) {
+            console.error('Error decoding itinerary:', e);
+        }
     }
     <?php endif; ?>
     
