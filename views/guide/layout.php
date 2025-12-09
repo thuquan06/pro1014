@@ -499,6 +499,7 @@ $msg   = $msg   ?? null;
     @media (max-width: 768px) {
       .sidebar {
         transform: translateX(-100%);
+        transition: transform 0.3s ease;
       }
       
       .sidebar.active {
@@ -511,6 +512,11 @@ $msg   = $msg   ?? null;
       
       .topbar {
         padding: 16px 20px;
+        flex-wrap: wrap;
+      }
+      
+      .topbar-left h1 {
+        font-size: 20px;
       }
       
       .content-wrapper {
@@ -519,6 +525,41 @@ $msg   = $msg   ?? null;
       
       .mobile-toggle {
         display: block !important;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .card-body {
+        padding: 16px;
+      }
+      
+      table {
+        font-size: 12px;
+      }
+      
+      table th,
+      table td {
+        padding: 8px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .topbar-left h1 {
+        font-size: 18px;
+      }
+      
+      .topbar-left p {
+        font-size: 12px;
+      }
+      
+      .user-menu-name {
+        display: none;
+      }
+      
+      .content-wrapper {
+        padding: 16px;
       }
     }
     
@@ -532,12 +573,64 @@ $msg   = $msg   ?? null;
       color: var(--text-dark);
       cursor: pointer;
       font-size: 18px;
+      transition: all 0.2s;
+    }
+    
+    .mobile-toggle:hover {
+      background: var(--primary);
+      color: white;
     }
     
     /* ===== ANIMATIONS ===== */
     @keyframes fadeOut {
       from { opacity: 1; }
       to { opacity: 0; }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .card {
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    .nav-link {
+      transition: all 0.2s ease;
+    }
+    
+    .btn {
+      transition: all 0.2s ease;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-card {
+      transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+    
+    table tbody tr {
+      transition: background 0.2s ease;
     }
   </style>
 </head>

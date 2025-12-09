@@ -59,7 +59,15 @@
             <?php foreach ($assignments as $assignment): ?>
               <tr>
                 <td>
-                  <strong><?= htmlspecialchars($assignment['ten_tour'] ?? 'N/A') ?></strong>
+                  <?php if (!empty($assignment['ten_tour'])): ?>
+                    <strong><?= htmlspecialchars($assignment['ten_tour']) ?></strong>
+                  <?php elseif (!empty($assignment['id_lich_khoi_hanh'])): ?>
+                    <strong style="color: var(--text-light);">Tour #<?= htmlspecialchars($assignment['id_lich_khoi_hanh']) ?></strong>
+                    <br><small style="color: var(--text-light); font-style: italic;">Chưa có thông tin tour</small>
+                  <?php else: ?>
+                    <strong style="color: var(--text-light);">Phân công #<?= htmlspecialchars($assignment['id']) ?></strong>
+                    <br><small style="color: var(--text-light); font-style: italic;">Chưa có lịch khởi hành</small>
+                  <?php endif; ?>
                   <?php if ($assignment['diem_tap_trung']): ?>
                     <br><small style="color: var(--text-light);"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($assignment['diem_tap_trung']) ?></small>
                   <?php endif; ?>

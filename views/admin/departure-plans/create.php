@@ -635,13 +635,16 @@ const dayEditorConfig = {
     filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
     filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
     filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
-};
+}; 
 
 // Hàm thêm ngày mới
 function addDay(dayTitle = '', dayContent = '') {
     dayCounter++;
     const dayId = 'day_' + dayCounter;
     const editorId = 'day_editor_' + dayCounter;
+    
+    // Escape HTML cho title input (chỉ cần escape quotes)
+    const escapedTitle = (dayTitle || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     
     const dayHtml = `
         <div class="day-item" id="${dayId}" style="margin-bottom: 20px; padding: 20px; border: 2px solid var(--border); border-radius: 8px; background: #f9fafb;">
@@ -656,12 +659,12 @@ function addDay(dayTitle = '', dayContent = '') {
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Tiêu đề ngày (tùy chọn)</label>
                 <input type="text" class="day-title-input" data-day="${dayCounter}" placeholder="Ví dụ: Khởi hành, Tham quan thành phố..." 
-                       value="${dayTitle.replace(/"/g, '&quot;')}"
+                       value="${escapedTitle}"
                        style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;">
             </div>
             <div>
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-dark);">Nội dung</label>
-                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;">${dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+                <textarea class="day-content-editor" id="${editorId}" data-day="${dayCounter}" style="width: 100%; min-height: 250px;"></textarea>
             </div>
         </div>
     `;
@@ -670,15 +673,23 @@ function addDay(dayTitle = '', dayContent = '') {
     if (daysContainer) {
         daysContainer.insertAdjacentHTML('beforeend', dayHtml);
         
-        // Khởi tạo CKEditor cho ngày này
-        setTimeout(() => {
-            dayEditors[dayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
-            if (dayContent) {
-                dayEditors[dayCounter].on('instanceReady', function() {
-                    this.setData(dayContent);
-                });
+        // Không dùng CKEditor: set thẳng vào textarea (clean text)
+        if (dayContent) {
+            const textarea = document.getElementById(editorId);
+            if (textarea) {
+                let clean = dayContent
+                    .replace(/^\s*NG\S*Y\s*\d+[^\r\n]*$/gim, '')
+                    .replace(/^[ÂâÃã\xa0]\s*$/gim, '').trim()
+                    .replace(/^\s*[ÂâÃã\xa0]\s*$/gim, '').trim()
+                    .replace(/^DY\s*$/gim, '').trim()
+                    .replace(/^[^\w\s<>&;]{1,2}$/gm, '').trim();
+                clean = clean.replace(/<\s*br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n');
+                const tmp = document.createElement('textarea');
+                tmp.innerHTML = clean;
+                clean = tmp.value;
+                textarea.value = clean;
             }
-        }, 200);
+        }
     }
 }
 
@@ -754,14 +765,33 @@ function buildItineraryHTML() {
         }
         
         if (content.trim()) {
-            let dayHeader = '';
-            if (title) {
-                dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
-            } else {
-                dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
-            }
+            // Clean content & escape khi lưu
+            let cleanContent = content
+                .replace(/<h[1-6][^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/h[1-6]>/gi, '')
+                .replace(/<p[^>]*>\s*<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>\s*<\/p>/gi, '')
+                .replace(/<strong[^>]*>\s*NG[ÀÃ]Y\s*\d+[^<]*\s*<\/strong>/gi, '')
+                .replace(/^\s*NG\S*Y\s*\d+[^\r\n]*$/gim, '')
+                .replace(/^[ÂâÃã\xa0]\s*$/gim, '').trim()
+                .replace(/^\s*[ÂâÃã\xa0]\s*$/gim, '').trim()
+                .replace(/^DY\s*$/gim, '').trim()
+                .replace(/^[^\w\s<>&;]{1,2}$/gm, '').trim();
+            // Plain text -> escape HTML, giữ xuống dòng
+            const escaped = cleanContent
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
             
-            html += dayHeader + content;
+            if (escaped) {
+                let dayHeader = '';
+                if (title) {
+                    dayHeader = `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`;
+                } else {
+                    dayHeader = `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
+                }
+                
+                html += dayHeader + `<p>${escaped}</p>`;
+            }
         }
     });
     

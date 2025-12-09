@@ -18,9 +18,20 @@ $ngay_diem_danh = $ngay_diem_danh ?? date('Y-m-d');
   </div>
   <div class="card-body">
     <?php if ($departurePlan): ?>
+      <!-- Box thông tin nhanh -->
       <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
         <h4 style="margin: 0 0 8px 0; color: #1e40af;">
-          <?= htmlspecialchars($departurePlan['ten_tour'] ?? 'N/A') ?>
+          <?php if (!empty($departurePlan['ten_tour'])): ?>
+            <?= htmlspecialchars($departurePlan['ten_tour']) ?>
+          <?php elseif (!empty($tour['tengoi'])): ?>
+            <?= htmlspecialchars($tour['tengoi']) ?>
+          <?php elseif (!empty($departurePlan['id_tour'])): ?>
+            Tour #<?= htmlspecialchars($departurePlan['id_tour']) ?>
+            <small style="display: block; font-size: 12px; font-weight: 400; color: #64748b; font-style: italic; margin-top: 4px;">Chưa có thông tin tour</small>
+          <?php else: ?>
+            Lịch khởi hành #<?= htmlspecialchars($departurePlan['id']) ?>
+            <small style="display: block; font-size: 12px; font-weight: 400; color: #64748b; font-style: italic; margin-top: 4px;">Chưa có tour được gán</small>
+          <?php endif; ?>
         </h4>
         <p style="margin: 0; color: #64748b;">
           <i class="fas fa-calendar"></i> Ngày khởi hành: <?= date('d/m/Y', strtotime($departurePlan['ngay_khoi_hanh'])) ?>

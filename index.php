@@ -614,6 +614,7 @@ try {
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
             require_once './models/TourJournalModel.php';
+            require_once './models/TourChiTietModel.php';
             require_once './models/PretripChecklistModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
@@ -624,7 +625,10 @@ try {
             require_once './models/BaseModel.php';
             require_once './models/GuideModel.php';
             require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './models/BookingModel.php';
             require_once './models/AttendanceModel.php';
             require_once './controllers/BaseController.php';
@@ -635,6 +639,11 @@ try {
         case 'guide-attendance-save':
             require_once './models/BaseModel.php';
             require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
             require_once './models/AttendanceModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
@@ -666,6 +675,32 @@ try {
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->profile();
+            break;
+
+        case 'guide-profile-update':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->updateProfile();
+            break;
+
+        case 'guide-change-password':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/ServiceAssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './models/TourJournalModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->changePassword();
             break;
 
         case 'guide-schedule':
