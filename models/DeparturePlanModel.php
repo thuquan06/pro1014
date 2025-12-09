@@ -293,15 +293,15 @@ class DeparturePlanModel extends BaseModel
     {
         try {
             // Tính toán so_cho_con_lai nếu có so_cho và so_cho_da_dat
-            $so_cho = $data['so_cho'] ?? null;
-            $so_cho_da_dat = $data['so_cho_da_dat'] ?? 0;
-            $so_cho_con_lai = $data['so_cho_con_lai'] ?? null;
+            $so_cho = isset($data['so_cho']) && $data['so_cho'] !== '' ? (int)$data['so_cho'] : null;
+            $so_cho_da_dat = isset($data['so_cho_da_dat']) && $data['so_cho_da_dat'] !== '' ? (int)$data['so_cho_da_dat'] : 0;
+            $so_cho_con_lai = isset($data['so_cho_con_lai']) && $data['so_cho_con_lai'] !== '' ? (int)$data['so_cho_con_lai'] : null;
             if ($so_cho !== null && $so_cho_con_lai === null) {
                 $so_cho_con_lai = max(0, $so_cho - $so_cho_da_dat);
             }
             // Fallback: nếu có so_cho_con_trong thì dùng nó
-            if ($so_cho_con_lai === null && isset($data['so_cho_con_trong'])) {
-                $so_cho_con_lai = $data['so_cho_con_trong'];
+            if ($so_cho_con_lai === null && isset($data['so_cho_con_trong']) && $data['so_cho_con_trong'] !== '') {
+                $so_cho_con_lai = (int)$data['so_cho_con_trong'];
             }
 
             $sql = "INSERT INTO lich_khoi_hanh (
@@ -329,7 +329,7 @@ class DeparturePlanModel extends BaseModel
                 ':so_cho' => $so_cho,
                 ':so_cho_da_dat' => $so_cho_da_dat,
                 ':so_cho_con_lai' => $so_cho_con_lai,
-                ':so_cho_con_trong' => $data['so_cho_con_trong'] ?? null,
+                ':so_cho_con_trong' => isset($data['so_cho_con_trong']) && $data['so_cho_con_trong'] !== '' ? (int)$data['so_cho_con_trong'] : null,
                 ':gia_nguoi_lon' => isset($data['gia_nguoi_lon']) && $data['gia_nguoi_lon'] !== '' ? (float)$data['gia_nguoi_lon'] : null,
                 ':gia_tre_em' => isset($data['gia_tre_em']) && $data['gia_tre_em'] !== '' ? (float)$data['gia_tre_em'] : null,
                 ':gia_tre_nho' => isset($data['gia_tre_nho']) && $data['gia_tre_nho'] !== '' ? (float)$data['gia_tre_nho'] : null,
@@ -337,6 +337,7 @@ class DeparturePlanModel extends BaseModel
                 ':uu_dai_giam_gia' => isset($data['uu_dai_giam_gia']) && $data['uu_dai_giam_gia'] !== '' ? (float)$data['uu_dai_giam_gia'] : null,
                 ':ghi_chu' => $data['ghi_chu'] ?? null,
                 ':ghi_chu_van_hanh' => $data['ghi_chu_van_hanh'] ?? null,
+                ':chuongtrinh' => $data['chuongtrinh'] ?? null,
                 ':trang_thai' => $data['trang_thai'] ?? 1,
             ]);
 

@@ -1,262 +1,262 @@
 <?php
 /**
- * AttendanceModel - Quản lý điểm danh tại điểm dừng nghỉ
- * UC-Attendance: Điểm danh khách hàng tại các điểm dừng nghỉ của tour
+ * AttendanceModel - Quản lý điểm danh thành viên
  */
 class AttendanceModel extends BaseModel
 {
     public function __construct()
     {
         parent::__construct();
-        $this->ensureTablesExist();
+        $this->ensureTableExists();
     }
 
     /**
-     * Đảm bảo các bảng cần thiết tồn tại
+     * Đảm bảo bảng booking_attendance tồn tại
      */
-    private function ensureTablesExist()
+    private function ensureTableExists()
     {
         try {
-            // Tạo bảng diem_danh_diem_nghi nếu chưa có
-            $this->conn->exec("CREATE TABLE IF NOT EXISTS `diem_danh_diem_nghi` (
-                `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                `id_phan_cong` INT(11) NULL DEFAULT NULL COMMENT 'ID phân công HDV',
-                `id_lich_trinh` INT(11) NULL DEFAULT NULL COMMENT 'ID lịch trình (lichtrinhtheoday)',
-                `id_tour` INT(11) NULL DEFAULT NULL COMMENT 'ID tour (backup)',
-                `diem_nghi` VARCHAR(255) NULL DEFAULT NULL COMMENT 'Tên điểm nghỉ',
-                `ngay_thu` INT(11) NULL DEFAULT NULL COMMENT 'Ngày thứ mấy của tour',
-                `ngay_diem_danh` DATE NULL DEFAULT NULL COMMENT 'Ngày điểm danh',
-                `gio_diem_danh` TIME NULL DEFAULT NULL COMMENT 'Giờ điểm danh',
-                `so_nguoi_co_mat` INT(11) DEFAULT 0 COMMENT 'Số người có mặt',
-                `so_nguoi_vang_mat` INT(11) DEFAULT 0 COMMENT 'Số người vắng mặt',
-                `danh_sach_co_mat` TEXT NULL DEFAULT NULL COMMENT 'Danh sách người có mặt (JSON)',
-                `danh_sach_vang_mat` TEXT NULL DEFAULT NULL COMMENT 'Danh sách người vắng mặt (JSON)',
-                `ghi_chu` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú',
-                `id_hdv` INT(11) NULL DEFAULT NULL COMMENT 'ID HDV điểm danh',
-                `ngay_tao` DATETIME NULL DEFAULT NULL COMMENT 'Ngày tạo',
-                `ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
-                KEY `idx_phan_cong` (`id_phan_cong`),
-                KEY `idx_lich_trinh` (`id_lich_trinh`),
-                KEY `idx_tour` (`id_tour`),
-                KEY `idx_hdv` (`id_hdv`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Điểm danh tại điểm dừng nghỉ'");
-        } catch (PDOException $e) {
-            error_log("Lỗi ensureTablesExist AttendanceModel: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Tạo điểm danh mới
-     */
-    public function createAttendance(array $data)
-    {
-        try {
-            $sql = "INSERT INTO diem_danh_diem_nghi (
-                        id_phan_cong, id_lich_trinh, id_tour, diem_nghi, ngay_thu,
-                        ngay_diem_danh, gio_diem_danh, so_nguoi_co_mat, so_nguoi_vang_mat,
-                        danh_sach_co_mat, danh_sach_vang_mat, ghi_chu, id_hdv, ngay_tao
-                    ) VALUES (
-                        :id_phan_cong, :id_lich_trinh, :id_tour, :diem_nghi, :ngay_thu,
-                        :ngay_diem_danh, :gio_diem_danh, :so_nguoi_co_mat, :so_nguoi_vang_mat,
-                        :danh_sach_co_mat, :danh_sach_vang_mat, :ghi_chu, :id_hdv, NOW()
-                    )";
-
-            $stmt = $this->conn->prepare($sql);
-            $result = $stmt->execute([
-                ':id_phan_cong' => $data['id_phan_cong'] ?? null,
-                ':id_lich_trinh' => $data['id_lich_trinh'] ?? null,
-                ':id_tour' => $data['id_tour'] ?? null,
-                ':diem_nghi' => $data['diem_nghi'] ?? null,
-                ':ngay_thu' => $data['ngay_thu'] ?? null,
-                ':ngay_diem_danh' => $data['ngay_diem_danh'] ?? date('Y-m-d'),
-                ':gio_diem_danh' => $data['gio_diem_danh'] ?? date('H:i:s'),
-                ':so_nguoi_co_mat' => $data['so_nguoi_co_mat'] ?? 0,
-                ':so_nguoi_vang_mat' => $data['so_nguoi_vang_mat'] ?? 0,
-                ':danh_sach_co_mat' => isset($data['danh_sach_co_mat']) ? json_encode($data['danh_sach_co_mat'], JSON_UNESCAPED_UNICODE) : null,
-                ':danh_sach_vang_mat' => isset($data['danh_sach_vang_mat']) ? json_encode($data['danh_sach_vang_mat'], JSON_UNESCAPED_UNICODE) : null,
-                ':ghi_chu' => $data['ghi_chu'] ?? null,
-                ':id_hdv' => $data['id_hdv'] ?? null,
-            ]);
-
-            return $result ? $this->conn->lastInsertId() : false;
-        } catch (PDOException $e) {
-            error_log("Lỗi createAttendance: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Cập nhật điểm danh
-     */
-    public function updateAttendance($id, array $data)
-    {
-        try {
-            $sql = "UPDATE diem_danh_diem_nghi SET
-                        ngay_diem_danh = :ngay_diem_danh,
-                        gio_diem_danh = :gio_diem_danh,
-                        so_nguoi_co_mat = :so_nguoi_co_mat,
-                        so_nguoi_vang_mat = :so_nguoi_vang_mat,
-                        danh_sach_co_mat = :danh_sach_co_mat,
-                        danh_sach_vang_mat = :danh_sach_vang_mat,
-                        ghi_chu = :ghi_chu,
-                        ngay_cap_nhat = NOW()
-                    WHERE id = :id";
-
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute([
-                ':ngay_diem_danh' => $data['ngay_diem_danh'] ?? date('Y-m-d'),
-                ':gio_diem_danh' => $data['gio_diem_danh'] ?? date('H:i:s'),
-                ':so_nguoi_co_mat' => $data['so_nguoi_co_mat'] ?? 0,
-                ':so_nguoi_vang_mat' => $data['so_nguoi_vang_mat'] ?? 0,
-                ':danh_sach_co_mat' => isset($data['danh_sach_co_mat']) ? json_encode($data['danh_sach_co_mat'], JSON_UNESCAPED_UNICODE) : null,
-                ':danh_sach_vang_mat' => isset($data['danh_sach_vang_mat']) ? json_encode($data['danh_sach_vang_mat'], JSON_UNESCAPED_UNICODE) : null,
-                ':ghi_chu' => $data['ghi_chu'] ?? null,
-                ':id' => $id,
-            ]);
-        } catch (PDOException $e) {
-            error_log("Lỗi updateAttendance: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Lấy điểm danh theo ID
-     */
-    public function getAttendanceByID($id)
-    {
-        try {
-            $sql = "SELECT dd.*, 
-                           pc.id_hdv, pc.id_lich_khoi_hanh,
-                           lt.ngay_thu, lt.noinghi, lt.tieude,
-                           g.tengoi AS ten_tour
-                    FROM diem_danh_diem_nghi dd
-                    LEFT JOIN phan_cong_hdv pc ON dd.id_phan_cong = pc.id
-                    LEFT JOIN lichtrinhtheoday lt ON dd.id_lich_trinh = lt.id
-                    LEFT JOIN goidulich g ON dd.id_tour = g.id_goi
-                    WHERE dd.id = :id";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([':id' => $id]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $tableExists = $this->conn->query("SHOW TABLES LIKE 'booking_attendance'")->rowCount() > 0;
             
-            if ($result) {
-                $result['danh_sach_co_mat'] = $this->parseJsonArray($result['danh_sach_co_mat'] ?? '[]');
-                $result['danh_sach_vang_mat'] = $this->parseJsonArray($result['danh_sach_vang_mat'] ?? '[]');
+            if (!$tableExists) {
+                $createTableSQL = "CREATE TABLE `booking_attendance` (
+                    `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    `id_booking` INT(11) NOT NULL COMMENT 'ID booking',
+                    `id_booking_detail` INT(11) NOT NULL COMMENT 'ID thành viên trong booking_detail',
+                    `id_hdv` INT(11) NOT NULL COMMENT 'ID hướng dẫn viên điểm danh',
+                    `id_lich_khoi_hanh` INT(11) NULL DEFAULT NULL COMMENT 'ID lịch khởi hành',
+                    `ngay_diem_danh` DATE NOT NULL COMMENT 'Ngày điểm danh',
+                    `gio_diem_danh` TIME NULL DEFAULT NULL COMMENT 'Giờ điểm danh',
+                    `trang_thai` TINYINT(1) DEFAULT 1 COMMENT '1=Có mặt, 0=Vắng mặt',
+                    `ghi_chu` TEXT NULL DEFAULT NULL COMMENT 'Ghi chú',
+                    `ngay_tao` DATETIME NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Ngày tạo',
+                    `ngay_cap_nhat` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Ngày cập nhật',
+                    KEY `idx_booking` (`id_booking`),
+                    KEY `idx_booking_detail` (`id_booking_detail`),
+                    KEY `idx_hdv` (`id_hdv`),
+                    KEY `idx_lich_khoi_hanh` (`id_lich_khoi_hanh`),
+                    KEY `idx_ngay_diem_danh` (`ngay_diem_danh`),
+                    UNIQUE KEY `unique_attendance` (`id_booking_detail`, `id_lich_khoi_hanh`, `ngay_diem_danh`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng điểm danh thành viên'";
+                $this->conn->exec($createTableSQL);
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi ensureTableExists AttendanceModel: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Lấy điểm danh theo booking
+     */
+    public function getAttendanceByBooking($id_booking, $id_lich_khoi_hanh = null)
+    {
+        try {
+            $sql = "SELECT 
+                        a.*,
+                        bd.ho_ten,
+                        bd.so_dien_thoai,
+                        hdv.ho_ten as ten_hdv
+                    FROM booking_attendance a
+                    INNER JOIN booking_detail bd ON a.id_booking_detail = bd.id
+                    LEFT JOIN huong_dan_vien hdv ON a.id_hdv = hdv.id
+                    WHERE a.id_booking = :id_booking";
+            
+            $params = [':id_booking' => $id_booking];
+            
+            if ($id_lich_khoi_hanh !== null) {
+                $sql .= " AND a.id_lich_khoi_hanh = :id_lich_khoi_hanh";
+                $params[':id_lich_khoi_hanh'] = $id_lich_khoi_hanh;
             }
             
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Lỗi getAttendanceByID: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Lấy tất cả điểm danh theo phân công
-     */
-    public function getAttendancesByAssignmentID($assignmentId)
-    {
-        try {
-            $sql = "SELECT dd.*, 
-                           lt.ngay_thu, lt.noinghi, lt.tieude,
-                           g.tengoi AS ten_tour
-                    FROM diem_danh_diem_nghi dd
-                    LEFT JOIN lichtrinhtheoday lt ON dd.id_lich_trinh = lt.id
-                    LEFT JOIN goidulich g ON dd.id_tour = g.id_goi
-                    WHERE dd.id_phan_cong = :id_phan_cong
-                    ORDER BY dd.ngay_thu ASC, dd.ngay_diem_danh ASC, dd.gio_diem_danh ASC";
+            $sql .= " ORDER BY a.ngay_diem_danh DESC, a.gio_diem_danh DESC";
+            
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([':id_phan_cong' => $assignmentId]);
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            foreach ($results as &$result) {
-                $result['danh_sach_co_mat'] = $this->parseJsonArray($result['danh_sach_co_mat'] ?? '[]');
-                $result['danh_sach_vang_mat'] = $this->parseJsonArray($result['danh_sach_vang_mat'] ?? '[]');
-            }
-            
-            return $results;
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Lỗi getAttendancesByAssignmentID: " . $e->getMessage());
+            error_log("Lỗi getAttendanceByBooking AttendanceModel: " . $e->getMessage());
             return [];
         }
     }
 
     /**
-     * Lấy điểm danh theo lịch trình
+     * Lấy điểm danh theo lịch khởi hành
      */
-    public function getAttendanceByScheduleID($scheduleId, $assignmentId)
+    public function getAttendanceByDeparturePlan($id_lich_khoi_hanh, $ngay_diem_danh = null)
     {
         try {
-            $sql = "SELECT * FROM diem_danh_diem_nghi 
-                    WHERE id_lich_trinh = :id_lich_trinh 
-                      AND id_phan_cong = :id_phan_cong
-                    ORDER BY ngay_diem_danh DESC, gio_diem_danh DESC
-                    LIMIT 1";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([
-                ':id_lich_trinh' => $scheduleId,
-                ':id_phan_cong' => $assignmentId
-            ]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $sql = "SELECT 
+                        a.*,
+                        bd.ho_ten,
+                        bd.so_dien_thoai,
+                        bd.loai_khach,
+                        b.ma_booking,
+                        hdv.ho_ten as ten_hdv
+                    FROM booking_attendance a
+                    INNER JOIN booking_detail bd ON a.id_booking_detail = bd.id
+                    INNER JOIN booking b ON a.id_booking = b.id
+                    LEFT JOIN huong_dan_vien hdv ON a.id_hdv = hdv.id
+                    WHERE a.id_lich_khoi_hanh = :id_lich_khoi_hanh";
             
-            if ($result) {
-                $result['danh_sach_co_mat'] = $this->parseJsonArray($result['danh_sach_co_mat'] ?? '[]');
-                $result['danh_sach_vang_mat'] = $this->parseJsonArray($result['danh_sach_vang_mat'] ?? '[]');
+            $params = [':id_lich_khoi_hanh' => $id_lich_khoi_hanh];
+            
+            if ($ngay_diem_danh !== null) {
+                $sql .= " AND a.ngay_diem_danh = :ngay_diem_danh";
+                $params[':ngay_diem_danh'] = $ngay_diem_danh;
             }
             
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Lỗi getAttendanceByScheduleID: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Kiểm tra quyền truy cập của HDV
-     */
-    public function checkGuideAccess($attendanceId, $guideId)
-    {
-        try {
-            $sql = "SELECT COUNT(*) as count
-                    FROM diem_danh_diem_nghi dd
-                    LEFT JOIN phan_cong_hdv pc ON dd.id_phan_cong = pc.id
-                    WHERE dd.id = :attendance_id AND pc.id_hdv = :guide_id";
+            $sql .= " ORDER BY b.ma_booking ASC, bd.ho_ten ASC";
+            
             $stmt = $this->conn->prepare($sql);
-            $stmt->execute([
-                ':attendance_id' => $attendanceId,
-                ':guide_id' => $guideId
-            ]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return ($result['count'] > 0);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Lỗi checkGuideAccess: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Xóa điểm danh
-     */
-    public function deleteAttendance($id)
-    {
-        try {
-            $stmt = $this->conn->prepare("DELETE FROM diem_danh_diem_nghi WHERE id = :id");
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) {
-            error_log("Lỗi deleteAttendance: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Parse JSON string thành mảng
-     */
-    private function parseJsonArray($jsonString)
-    {
-        if (empty($jsonString)) {
+            error_log("Lỗi getAttendanceByDeparturePlan AttendanceModel: " . $e->getMessage());
             return [];
         }
-        $decoded = json_decode($jsonString, true);
-        return $decoded ?: [];
+    }
+
+    /**
+     * Điểm danh thành viên
+     */
+    public function markAttendance($data)
+    {
+        try {
+            // Kiểm tra xem đã điểm danh chưa
+            $existing = $this->getAttendanceByMemberAndDate(
+                $data['id_booking_detail'],
+                $data['id_lich_khoi_hanh'] ?? null,
+                $data['ngay_diem_danh']
+            );
+            
+            if ($existing) {
+                // Cập nhật điểm danh đã có
+                $sql = "UPDATE booking_attendance SET
+                            id_hdv = :id_hdv,
+                            trang_thai = :trang_thai,
+                            gio_diem_danh = :gio_diem_danh,
+                            ghi_chu = :ghi_chu,
+                            ngay_cap_nhat = NOW()
+                        WHERE id = :id";
+                
+                $stmt = $this->conn->prepare($sql);
+                return $stmt->execute([
+                    ':id' => $existing['id'],
+                    ':id_hdv' => $data['id_hdv'],
+                    ':trang_thai' => $data['trang_thai'] ?? 1,
+                    ':gio_diem_danh' => $data['gio_diem_danh'] ?? date('H:i:s'),
+                    ':ghi_chu' => $data['ghi_chu'] ?? null
+                ]);
+            } else {
+                // Tạo điểm danh mới
+                $sql = "INSERT INTO booking_attendance (
+                            id_booking, id_booking_detail, id_hdv, id_lich_khoi_hanh,
+                            ngay_diem_danh, gio_diem_danh, trang_thai, ghi_chu
+                        ) VALUES (
+                            :id_booking, :id_booking_detail, :id_hdv, :id_lich_khoi_hanh,
+                            :ngay_diem_danh, :gio_diem_danh, :trang_thai, :ghi_chu
+                        )";
+                
+                $stmt = $this->conn->prepare($sql);
+                return $stmt->execute([
+                    ':id_booking' => $data['id_booking'],
+                    ':id_booking_detail' => $data['id_booking_detail'],
+                    ':id_hdv' => $data['id_hdv'],
+                    ':id_lich_khoi_hanh' => $data['id_lich_khoi_hanh'] ?? null,
+                    ':ngay_diem_danh' => $data['ngay_diem_danh'],
+                    ':gio_diem_danh' => $data['gio_diem_danh'] ?? date('H:i:s'),
+                    ':trang_thai' => $data['trang_thai'] ?? 1,
+                    ':ghi_chu' => $data['ghi_chu'] ?? null
+                ]);
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi markAttendance AttendanceModel: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy điểm danh theo thành viên và ngày
+     */
+    private function getAttendanceByMemberAndDate($id_booking_detail, $id_lich_khoi_hanh, $ngay_diem_danh)
+    {
+        try {
+            $sql = "SELECT * FROM booking_attendance 
+                    WHERE id_booking_detail = :id_booking_detail 
+                    AND ngay_diem_danh = :ngay_diem_danh";
+            
+            $params = [
+                ':id_booking_detail' => $id_booking_detail,
+                ':ngay_diem_danh' => $ngay_diem_danh
+            ];
+            
+            if ($id_lich_khoi_hanh !== null) {
+                $sql .= " AND id_lich_khoi_hanh = :id_lich_khoi_hanh";
+                $params[':id_lich_khoi_hanh'] = $id_lich_khoi_hanh;
+            }
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getAttendanceByMemberAndDate AttendanceModel: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Điểm danh hàng loạt
+     */
+    public function markAttendanceBatch($id_lich_khoi_hanh, $id_hdv, $ngay_diem_danh, $attendanceList)
+    {
+        try {
+            $this->conn->beginTransaction();
+            
+            foreach ($attendanceList as $item) {
+                $data = [
+                    'id_booking' => $item['id_booking'],
+                    'id_booking_detail' => $item['id_booking_detail'],
+                    'id_hdv' => $id_hdv,
+                    'id_lich_khoi_hanh' => $id_lich_khoi_hanh,
+                    'ngay_diem_danh' => $ngay_diem_danh,
+                    'trang_thai' => $item['trang_thai'] ?? 1,
+                    'ghi_chu' => $item['ghi_chu'] ?? null
+                ];
+                
+                if (!$this->markAttendance($data)) {
+                    throw new Exception("Không thể điểm danh thành viên ID: " . $item['id_booking_detail']);
+                }
+            }
+            
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollBack();
+            error_log("Lỗi markAttendanceBatch AttendanceModel: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Lấy thống kê điểm danh theo booking
+     */
+    public function getAttendanceStatsByBooking($id_booking)
+    {
+        try {
+            $sql = "SELECT 
+                        COUNT(*) as tong_so,
+                        SUM(CASE WHEN trang_thai = 1 THEN 1 ELSE 0 END) as co_mat,
+                        SUM(CASE WHEN trang_thai = 0 THEN 1 ELSE 0 END) as vang_mat
+                    FROM booking_attendance
+                    WHERE id_booking = :id_booking";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id_booking' => $id_booking]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getAttendanceStatsByBooking AttendanceModel: " . $e->getMessage());
+            return ['tong_so' => 0, 'co_mat' => 0, 'vang_mat' => 0];
+        }
     }
 }
 

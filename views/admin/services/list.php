@@ -39,9 +39,15 @@ $serviceTypes = $serviceTypes ?? [];
 }
 
 .filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
   gap: 16px;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 0;
 }
 
 .filter-group {

@@ -1403,6 +1403,12 @@ $msg   = $msg   ?? null;
             <span>Danh sách phân công HDV</span>
           </a>
         </div>
+        <div class="nav-item">
+          <a href="?act=admin-attendance-list" class="nav-link">
+            <i class="fas fa-clipboard-check"></i>
+            <span>Điểm danh</span>
+          </a>
+        </div>
       </div>
       
       <div class="nav-section">
