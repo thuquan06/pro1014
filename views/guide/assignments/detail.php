@@ -14,6 +14,9 @@
           <i class="fas fa-clipboard-check"></i> Checklist (<?= $completionPercentage ?>%)
         </a>
       <?php endif; ?>
+      <a href="?act=guide-attendance&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: #3b82f6; color: white;">
+        <i class="fas fa-user-check"></i> Điểm danh
+      </a>
       <a href="?act=guide-journal-create&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm btn-primary">
         <i class="fas fa-book"></i> Tạo nhật ký
       </a>
