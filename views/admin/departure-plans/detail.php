@@ -320,6 +320,9 @@ function getTrangThaiText($status) {
       Chi tiết lịch trình
     </h1>
     <div class="detail-actions">
+      <a href="<?= BASE_URL ?>?act=admin-attendance&id_lich_khoi_hanh=<?= $departurePlan['id'] ?>" class="btn btn-primary" style="background: #10b981;">
+        <i class="fas fa-clipboard-check"></i> Điểm danh
+      </a>
       <a href="<?= BASE_URL ?>?act=admin-departure-plan-edit&id=<?= $departurePlan['id'] ?>" class="btn btn-primary">
         <i class="fas fa-edit"></i> Sửa
       </a>
@@ -589,6 +592,57 @@ function getTrangThaiText($status) {
             </div>
           </div>
         <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <!-- Phân công Hướng dẫn viên -->
+  <?php if (!empty($assignments)): ?>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fas fa-user-tie"></i> Phân công Hướng dẫn viên
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">STT</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Họ tên</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Số điện thoại</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Vai trò</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Lương</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($assignments as $index => $assignment): ?>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 12px;"><?= $index + 1 ?></td>
+              <td style="padding: 12px; font-weight: 600;"><?= htmlspecialchars($assignment['ten_hdv'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
+              <td style="padding: 12px;"><?= htmlspecialchars($assignment['sdt_hdv'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
+              <td style="padding: 12px;">
+                <?php
+                $vaiTro = $assignment['vai_tro'] ?? 'HDV chính';
+                $badgeClass = $vaiTro == 'HDV chính' ? 'success' : ($vaiTro == 'HDV phụ' ? 'info' : 'secondary');
+                ?>
+                <span class="status-badge <?= $badgeClass ?>"><?= htmlspecialchars($vaiTro, ENT_QUOTES, 'UTF-8') ?></span>
+              </td>
+              <td style="padding: 12px;">
+                <?php if (!empty($assignment['luong'])): ?>
+                  <?= number_format($assignment['luong'], 0, ',', '.') ?> đ
+                <?php else: ?>
+                  -
+                <?php endif; ?>
+              </td>
+              <td style="padding: 12px;"><?= htmlspecialchars($assignment['ghi_chu'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

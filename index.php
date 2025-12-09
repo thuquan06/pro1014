@@ -299,6 +299,44 @@ try {
             (new AdminController())->listBookings();
             break;
 
+        case 'admin-booking-member-add':
+            require_once './models/BookingModel.php';
+            (new AdminController())->addBookingMember();
+            break;
+
+        case 'admin-booking-member-update':
+            require_once './models/BookingModel.php';
+            (new AdminController())->updateBookingMember();
+            break;
+
+        case 'admin-booking-member-delete':
+            require_once './models/BookingModel.php';
+            (new AdminController())->deleteBookingMember();
+            break;
+
+        case 'admin-booking-member-get':
+            require_once './models/BookingModel.php';
+            (new AdminController())->getBookingMember();
+            break;
+        
+        // Điểm danh
+        case 'admin-attendance-list':
+            require_once './models/DiemDanModel.php';
+            (new AdminController())->listAttendancePlans();
+            break;
+        case 'admin-attendance':
+            require_once './models/DiemDanModel.php';
+            (new AdminController())->attendancePage();
+            break;
+        case 'admin-attendance-submit':
+            require_once './models/DiemDanModel.php';
+            (new AdminController())->submitAttendance();
+            break;
+        case 'admin-attendance-history':
+            require_once './models/DiemDanModel.php';
+            (new AdminController())->viewAttendanceHistory();
+            break;
+
         case 'admin-booking-detail':
             require_once './models/BookingModel.php';
             (new AdminController())->viewBookingDetail();
@@ -580,6 +618,27 @@ try {
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->assignmentDetail();
+            break;
+
+        case 'guide-attendance':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/BookingModel.php';
+            require_once './models/AttendanceModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->attendance();
+            break;
+
+        case 'guide-attendance-save':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AttendanceModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->saveAttendance();
             break;
 
         case 'guide-checklist':

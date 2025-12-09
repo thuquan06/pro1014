@@ -6,6 +6,9 @@
   <div class="card-header">
     <h3><i class="fas fa-info-circle"></i> Chi tiết phân công</h3>
     <div style="display: flex; gap: 12px;">
+      <a href="?act=guide-attendance&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: #8b5cf6; color: white;">
+        <i class="fas fa-clipboard-check"></i> Điểm danh
+      </a>
       <?php if (!empty($checklist)): ?>
         <a href="?act=guide-checklist&assignment_id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: #10b981; color: white;">
           <i class="fas fa-clipboard-check"></i> Checklist (<?= $completionPercentage ?>%)

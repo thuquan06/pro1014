@@ -23,6 +23,7 @@ class AdminController extends BaseController {
     private $serviceModel;
     private $bookingModel;
     private $voucherModel;
+    private $diemDanModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
@@ -37,6 +38,8 @@ class AdminController extends BaseController {
         $this->bookingModel = new BookingModel();
         require_once './models/VoucherModel.php';
         $this->voucherModel = new VoucherModel();
+        require_once './models/DiemDanModel.php';
+        $this->diemDanModel = new DiemDanModel();
     }
 
     
@@ -1431,13 +1434,31 @@ class AdminController extends BaseController {
             $redirectTourId = $validated['id_tour'] ?? $tourId;
 
             if ($result) {
-                $_SESSION['success'] = 'Tạo lịch khởi hành thành công!';
-                // Redirect về trang list với tour_id nếu có
-                $redirectUrl = BASE_URL . '?act=admin-departure-plans';
-                if ($redirectTourId) {
-                    $redirectUrl .= '&tour_id=' . $redirectTourId;
+                // Lưu phân công HDV nếu có
+                if (!empty($_POST['hdv_assignments']) && is_array($_POST['hdv_assignments'])) {
+                    $id_lich_khoi_hanh = $result; // createDeparturePlan trả về ID của lịch khởi hành mới tạo
+                    
+                    foreach ($_POST['hdv_assignments'] as $assignment) {
+                        if (!empty($assignment['id_hdv']) && !empty($assignment['vai_tro'])) {
+                            $assignmentData = [
+                                'id_lich_khoi_hanh' => $id_lich_khoi_hanh,
+                                'id_hdv' => (int)$assignment['id_hdv'],
+                                'vai_tro' => trim($assignment['vai_tro']),
+                                'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
+                                'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
+                                'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
+                                'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
+                                'trang_thai' => 1
+                            ];
+                            
+                            $this->assignmentModel->createAssignment($assignmentData);
+                        }
+                    }
                 }
-                $this->redirect($redirectUrl);
+                
+                $_SESSION['success'] = 'Tạo lịch khởi hành thành công!';
+                // Redirect về trang quản lý lịch trình (không giữ tour_id)
+                $this->redirect(BASE_URL . '?act=admin-departure-plans');
             } else {
                 // Kiểm tra lỗi database cụ thể
                 $dbError = $this->departurePlanModel->getLastError();
@@ -1446,10 +1467,13 @@ class AdminController extends BaseController {
                 } else {
                     $error = 'Không thể tạo lịch khởi hành. Vui lòng kiểm tra lại dữ liệu và đảm bảo đã chạy migration để thêm cột phuong_tien vào bảng lich_khoi_hanh.';
                 }
-                $this->loadView('admin/departure-plans/create', compact('tours', 'error', 'tourId'), 'admin/layout');
+                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                $this->loadView('admin/departure-plans/create', compact('tours', 'error', 'tourId', 'guides'), 'admin/layout');
             }
         } else {
-            $this->loadView('admin/departure-plans/create', compact('tours', 'tourId'), 'admin/layout');
+            // Lấy danh sách HDV để hiển thị trong dropdown
+            $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+            $this->loadView('admin/departure-plans/create', compact('tours', 'tourId', 'guides'), 'admin/layout');
         }
     }
 
@@ -1474,7 +1498,11 @@ class AdminController extends BaseController {
         }
 
         $tours = $this->tourModel->getAllTours();
-        $this->loadView('admin/departure-plans/edit', compact('departurePlan', 'tours', 'tourId'), 'admin/layout');
+        // Lấy danh sách phân công HDV của lịch trình này
+        $assignments = $this->assignmentModel->getAssignmentsByDeparturePlanID($id);
+        // Lấy danh sách HDV để hiển thị trong dropdown
+        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+        $this->loadView('admin/departure-plans/edit', compact('departurePlan', 'tours', 'tourId', 'assignments', 'guides'), 'admin/layout');
     }
 
     /**
@@ -1536,6 +1564,32 @@ class AdminController extends BaseController {
             $redirectTourId = $validated['id_tour'] ?? null;
 
             if ($result) {
+                // Xóa tất cả phân công HDV cũ của lịch trình này
+                $existingAssignments = $this->assignmentModel->getAssignmentsByDeparturePlanID($id);
+                foreach ($existingAssignments as $assignment) {
+                    $this->assignmentModel->deleteAssignment($assignment['id']);
+                }
+                
+                // Lưu phân công HDV mới nếu có
+                if (!empty($_POST['hdv_assignments']) && is_array($_POST['hdv_assignments'])) {
+                    foreach ($_POST['hdv_assignments'] as $assignment) {
+                        if (!empty($assignment['id_hdv']) && !empty($assignment['vai_tro'])) {
+                            $assignmentData = [
+                                'id_lich_khoi_hanh' => $id,
+                                'id_hdv' => (int)$assignment['id_hdv'],
+                                'vai_tro' => trim($assignment['vai_tro']),
+                                'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
+                                'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
+                                'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
+                                'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
+                                'trang_thai' => 1
+                            ];
+                            
+                            $this->assignmentModel->createAssignment($assignmentData);
+                        }
+                    }
+                }
+                
                 $_SESSION['success'] = 'Cập nhật lịch khởi hành thành công!';
             } else {
                 // Log chi tiết lỗi để debug
@@ -1543,12 +1597,8 @@ class AdminController extends BaseController {
                 $_SESSION['error'] = 'Không thể cập nhật lịch khởi hành. Vui lòng kiểm tra lại thông tin.';
             }
 
-            // Redirect về trang list với tour_id nếu có
-            $redirectUrl = BASE_URL . '?act=admin-departure-plans';
-            if ($redirectTourId) {
-                $redirectUrl .= '&tour_id=' . $redirectTourId;
-            }
-            $this->redirect($redirectUrl);
+            // Redirect về trang quản lý lịch trình (không giữ tour_id)
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
         }
 
         $this->redirect(BASE_URL . '?act=admin-departure-plans');
@@ -1646,7 +1696,10 @@ class AdminController extends BaseController {
             }
         }
         
-        $this->loadView('admin/departure-plans/detail', compact('departurePlan', 'tour', 'checklist', 'checklistItems', 'completionPercentage'), 'admin/layout');
+        // Lấy danh sách phân công HDV của lịch trình này
+        $assignments = $this->assignmentModel->getAssignmentsByDeparturePlanID($id);
+        
+        $this->loadView('admin/departure-plans/detail', compact('departurePlan', 'tour', 'checklist', 'checklistItems', 'completionPercentage', 'assignments'), 'admin/layout');
     }
 
     /* ==================== PRETRIP CHECKLIST MANAGEMENT ==================== */
@@ -2056,8 +2109,8 @@ class AdminController extends BaseController {
             $filters['ma_booking'] = trim($_GET['ma_booking']);
         }
 
-        // Sử dụng AssignmentModel với bảng phan_cong_hdv như ban đầu
-        $assignments = $this->assignmentModel->getAllAssignments($filters);
+        // Lấy dữ liệu từ booking (booking_hdv table)
+        $assignments = $this->bookingModel->getAllBookingAssignments($filters);
         $this->loadView('admin/assignments/list', compact('assignments', 'filters'), 'admin/layout');
     }
 
@@ -2361,24 +2414,78 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-bookings');
         }
 
-        // Lấy danh sách khách chi tiết nếu là nhóm/đoàn
-        $bookingDetails = [];
-        if (in_array($booking['loai_booking'] ?? 1, [3, 4])) {
-            $bookingDetails = $this->bookingModel->getBookingDetails($id);
+        // Lấy danh sách khách chi tiết (luôn lấy, không chỉ khi là nhóm/đoàn)
+        $bookingDetails = $this->bookingModel->getBookingDetails($id);
+        
+        // Nếu là booking cá nhân (loai_booking = 1) và chưa có thành viên nào, tự động thêm người đăng ký
+        $loaiBooking = (int)($booking['loai_booking'] ?? 1);
+        if ($loaiBooking == 1 && empty($bookingDetails)) {
+            // Tạo thành viên từ thông tin người đăng ký
+            $memberData = [
+                'ho_ten' => $booking['ho_ten'] ?? '',
+                'so_dien_thoai' => $booking['so_dien_thoai'] ?? '',
+                'loai_khach' => 1, // Mặc định là Người lớn
+                'gioi_tinh' => null,
+                'ngay_sinh' => null,
+                'so_cmnd_cccd' => null
+            ];
+            
+            // Kiểm tra xem đã có thành viên này chưa (tránh trùng lặp)
+            $existingMember = false;
+            foreach ($bookingDetails as $detail) {
+                if ($detail['ho_ten'] === $memberData['ho_ten'] && 
+                    $detail['so_dien_thoai'] === $memberData['so_dien_thoai']) {
+                    $existingMember = true;
+                    break;
+                }
+            }
+            
+            if (!$existingMember) {
+                // Tự động tạo thành viên từ thông tin người đăng ký
+                $this->bookingModel->createBookingMember($id, $memberData);
+                // Lấy lại danh sách sau khi tạo
+                $bookingDetails = $this->bookingModel->getBookingDetails($id);
+            }
         }
 
-        // Lấy danh sách HDV của booking
-        $bookingGuides = $this->bookingModel->getBookingGuides($id);
+        // Lấy danh sách HDV từ lịch trình (departure plan) thay vì từ booking
+        $bookingGuides = [];
+        if (!empty($booking['id_lich_khoi_hanh'])) {
+            $assignments = $this->assignmentModel->getAssignmentsByDeparturePlanID($booking['id_lich_khoi_hanh']);
+            // Chuyển đổi format từ assignment sang bookingGuides
+            foreach ($assignments as $assignment) {
+                $bookingGuides[] = [
+                    'ho_ten' => $assignment['ho_ten'] ?? '',
+                    'so_dien_thoai' => $assignment['so_dien_thoai'] ?? '',
+                    'email' => $assignment['email'] ?? '',
+                    'vai_tro' => $assignment['vai_tro'] ?? 'HDV chính'
+                ];
+            }
+        }
 
         // Lấy thông tin chi tiết lịch trình
         $departurePlan = null;
         if (!empty($booking['id_lich_khoi_hanh'])) {
             $departurePlan = $this->departurePlanModel->getDeparturePlanByID($booking['id_lich_khoi_hanh']);
         }
+        
+        // Lấy điểm danh của các thành viên trong booking này
+        $attendanceRecords = [];
+        if (!empty($booking['id_lich_khoi_hanh'])) {
+            $allAttendance = $this->diemDanModel->getDiemDanByBooking($id, $booking['id_lich_khoi_hanh']);
+            // Tạo map theo id_thanh_vien để lấy điểm danh mới nhất
+            foreach ($allAttendance as $record) {
+                $memberId = $record['id_thanh_vien'];
+                if (!isset($attendanceRecords[$memberId]) || 
+                    strtotime($record['thoi_gian_diem_dan']) > strtotime($attendanceRecords[$memberId]['thoi_gian_diem_dan'])) {
+                    $attendanceRecords[$memberId] = $record;
+                }
+            }
+        }
 
         $statusList = BookingModel::getStatusList();
         $bookingTypeList = BookingModel::getBookingTypeList();
-        $this->loadView('admin/bookings/detail', compact('booking', 'statusList', 'bookingTypeList', 'bookingDetails', 'bookingGuides', 'departurePlan'), 'admin/layout');
+        $this->loadView('admin/bookings/detail', compact('booking', 'statusList', 'bookingTypeList', 'bookingDetails', 'bookingGuides', 'departurePlan', 'attendanceRecords'), 'admin/layout');
     }
 
     /**
@@ -2433,42 +2540,6 @@ class AdminController extends BaseController {
                 return;
             }
 
-            // Validate danh sách HDV
-            if (!empty($_POST['danh_sach_hdv']) && is_array($_POST['danh_sach_hdv'])) {
-                $hdvIds = [];
-                foreach ($_POST['danh_sach_hdv'] as $index => $hdv) {
-                    if (empty($hdv['id_hdv'])) {
-                        $_SESSION['error'] = "Vui lòng chọn HDV cho hàng thứ " . ($index + 1);
-                        $tours = $this->tourModel->getAllTours();
-                        $selectedTourId = $_POST['id_tour'] ?? null;
-                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
-                        return;
-                    }
-                    if (empty($hdv['vai_tro'])) {
-                        $_SESSION['error'] = "Vui lòng chọn vai trò cho HDV ở hàng thứ " . ($index + 1);
-                        $tours = $this->tourModel->getAllTours();
-                        $selectedTourId = $_POST['id_tour'] ?? null;
-                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
-                        return;
-                    }
-                    // Kiểm tra trùng HDV
-                    $hdvId = (int)$hdv['id_hdv'];
-                    if (in_array($hdvId, $hdvIds)) {
-                        $_SESSION['error'] = "HDV đã được chọn ở nhiều hàng. Mỗi HDV chỉ có thể được chọn một lần.";
-                        $tours = $this->tourModel->getAllTours();
-                        $selectedTourId = $_POST['id_tour'] ?? null;
-                        $departurePlans = $selectedTourId ? $this->departurePlanModel->getDeparturePlansByTourID($selectedTourId) : [];
-                        $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
-                        $this->loadView('admin/bookings/create', compact('tours', 'departurePlans', 'selectedTourId', 'guides'), 'admin/layout');
-                        return;
-                    }
-                    $hdvIds[] = $hdvId;
-                }
-            }
 
             // Validate danh sách khách cho nhóm/đoàn
             $loaiBooking = (int)$_POST['loai_booking'];
@@ -3034,6 +3105,326 @@ class AdminController extends BaseController {
         if (empty($_SESSION['alogin'])) {
             $this->redirect(BASE_URL . '?act=login');
         }
+    }
+
+    /**
+     * UC-BOOKING-ADD-MEMBER: Danh sách thành viên Booking
+     * Route: ?act=admin-booking-members
+     */
+    /**
+     * UC-BOOKING-ADD-MEMBER: Thêm thành viên vào booking
+     * Route: ?act=admin-booking-member-add
+     */
+    public function addBookingMember()
+    {
+        $this->checkLogin();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            return;
+        }
+        
+        $id_booking = $_POST['id_booking'] ?? null;
+        if (!$id_booking) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'ID booking không hợp lệ']);
+            return;
+        }
+        
+        $data = [
+            'ho_ten' => $_POST['ho_ten'] ?? '',
+            'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
+            'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
+            'so_cmnd_cccd' => $_POST['so_cmnd_cccd'] ?? null,
+            'so_dien_thoai' => $_POST['so_dien_thoai'] ?? null,
+            'loai_khach' => $_POST['loai_khach'] ?? 1
+        ];
+        
+        $result = $this->bookingModel->createBookingMember($id_booking, $data);
+        
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    }
+
+    /**
+     * UC-BOOKING-ADD-MEMBER: Cập nhật thành viên
+     * Route: ?act=admin-booking-member-update&id=X
+     */
+    public function updateBookingMember()
+    {
+        $this->checkLogin();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            return;
+        }
+        
+        $id = $_POST['id'] ?? null;
+        if (!$id) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'ID thành viên không hợp lệ']);
+            return;
+        }
+        
+        $data = [
+            'ho_ten' => $_POST['ho_ten'] ?? '',
+            'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
+            'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
+            'so_cmnd_cccd' => $_POST['so_cmnd_cccd'] ?? null,
+            'so_dien_thoai' => $_POST['so_dien_thoai'] ?? null,
+            'loai_khach' => $_POST['loai_khach'] ?? 1
+        ];
+        
+        $result = $this->bookingModel->updateBookingMember($id, $data);
+        
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    }
+
+    /**
+     * UC-BOOKING-ADD-MEMBER: Xóa thành viên
+     * Route: ?act=admin-booking-member-delete&id=X
+     */
+    public function deleteBookingMember()
+    {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'ID thành viên không hợp lệ']);
+            return;
+        }
+        
+        $result = $this->bookingModel->deleteBookingMember($id);
+        
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    }
+
+    /**
+     * UC-BOOKING-ADD-MEMBER: Lấy thông tin thành viên (AJAX)
+     * Route: ?act=admin-booking-member-get&id=X
+     */
+    public function getBookingMember()
+    {
+        $this->checkLogin();
+        
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'ID thành viên không hợp lệ']);
+            return;
+        }
+        
+        $member = $this->bookingModel->getBookingMemberById($id);
+        
+        header('Content-Type: application/json');
+        if ($member) {
+            echo json_encode(['success' => true, 'data' => $member]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy thành viên']);
+        }
+    }
+
+    /* ==================== ĐIỂM DANH ==================== */
+
+    /**
+     * Trang danh sách lịch trình để điểm danh
+     * Route: ?act=admin-attendance-list
+     */
+    public function listAttendancePlans()
+    {
+        $this->checkLogin();
+        
+        $tourId = isset($_GET['tour_id']) ? (int)$_GET['tour_id'] : null;
+        $tour = null;
+        $filters = [];
+        
+        // Lấy filter tên tour
+        if (!empty($_GET['ten_tour'])) {
+            $filters['ten_tour'] = trim($_GET['ten_tour']);
+        }
+        
+        if ($tourId) {
+            $tour = $this->tourModel->getTourByID($tourId);
+            if (!$tour) {
+                $_SESSION['error'] = 'Không tìm thấy tour';
+                $this->redirect(BASE_URL . '?act=admin-attendance-list');
+            }
+            $filters['id_tour'] = $tourId;
+        }
+        
+        // Lấy danh sách lịch trình
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans($filters);
+        
+        // Lấy thống kê điểm danh cho mỗi lịch trình
+        foreach ($departurePlans as &$plan) {
+            $stats = $this->diemDanModel->getAttendanceStats($plan['id']);
+            $plan['attendance_stats'] = $stats;
+        }
+        
+        $tours = $this->tourModel->getAllTours();
+        $this->loadView('admin/attendance/list', compact('departurePlans', 'tours', 'tour', 'filters'), 'admin/layout');
+    }
+
+    /**
+     * Trang điểm danh cho HDV
+     * Route: ?act=admin-attendance&id_lich_khoi_hanh=X
+     */
+    public function attendancePage()
+    {
+        $this->checkLogin();
+        
+        $id_lich_khoi_hanh = $_GET['id_lich_khoi_hanh'] ?? null;
+        if (!$id_lich_khoi_hanh) {
+            $_SESSION['error'] = 'Vui lòng chọn lịch trình';
+            $this->redirect(BASE_URL . '?act=admin-attendance-list');
+        }
+        
+        // Lấy thông tin lịch trình
+        $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id_lich_khoi_hanh);
+        if (!$departurePlan) {
+            $_SESSION['error'] = 'Không tìm thấy lịch trình';
+            $this->redirect(BASE_URL . '?act=admin-attendance-list');
+        }
+        
+        // Lấy thông tin tour
+        $tour = null;
+        if ($departurePlan['id_tour']) {
+            $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+        }
+        
+        // Lấy danh sách thành viên cần điểm danh
+        $members = $this->diemDanModel->getMembersForAttendance($id_lich_khoi_hanh);
+        
+        // Lấy điểm danh đã có (để hiển thị trạng thái)
+        $attendanceRecords = $this->diemDanModel->getDiemDanByLichKhoiHanh($id_lich_khoi_hanh);
+        
+        // Tạo map để dễ tra cứu điểm danh theo thành viên
+        $attendanceMap = [];
+        foreach ($attendanceRecords as $record) {
+            $key = $record['id_booking'] . '_' . $record['id_thanh_vien'];
+            if (!isset($attendanceMap[$key]) || strtotime($record['thoi_gian_diem_dan']) > strtotime($attendanceMap[$key]['thoi_gian_diem_dan'])) {
+                $attendanceMap[$key] = $record;
+            }
+        }
+        
+        // Lấy danh sách HDV được phân công (để kiểm tra quyền)
+        $assignments = $this->assignmentModel->getAssignmentsByDeparturePlanID($id_lich_khoi_hanh);
+        $hdvIds = array_column($assignments, 'id_hdv');
+        
+        // Kiểm tra quyền
+        $isAdmin = !empty($_SESSION['alogin']);
+        $currentHdvId = $_SESSION['hdv_id'] ?? null;
+        $canAttend = false; // Mặc định không thể điểm danh
+        
+        if ($isAdmin) {
+            // Admin chỉ xem, không thể điểm danh
+            $canAttend = false;
+        } else {
+            // HDV chỉ có thể điểm danh nếu được phân công
+            $canAttend = $currentHdvId && in_array($currentHdvId, $hdvIds);
+            if (!$canAttend) {
+                $_SESSION['error'] = 'Bạn không có quyền điểm danh cho lịch trình này';
+                $this->redirect(BASE_URL . '?act=admin-attendance-list');
+            }
+        }
+        
+        $this->loadView('admin/attendance/index', compact('departurePlan', 'tour', 'members', 'attendanceMap', 'assignments', 'isAdmin', 'canAttend'), 'admin/layout');
+    }
+
+    /**
+     * Xử lý điểm danh (AJAX)
+     * Route: ?act=admin-attendance-submit
+     */
+    public function submitAttendance()
+    {
+        $this->checkLogin();
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            return;
+        }
+        
+        $id_lich_khoi_hanh = $_POST['id_lich_khoi_hanh'] ?? null;
+        $attendanceJson = $_POST['attendance'] ?? '[]';
+        
+        if (!$id_lich_khoi_hanh) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
+            return;
+        }
+        
+        // Parse JSON attendance data
+        $attendanceData = json_decode($attendanceJson, true);
+        if (!is_array($attendanceData) || empty($attendanceData)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Không có dữ liệu điểm danh']);
+            return;
+        }
+        
+        // Chỉ HDV mới có thể điểm danh, admin không thể
+        $isAdmin = !empty($_SESSION['alogin']);
+        
+        if ($isAdmin) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Admin chỉ có thể xem, không thể điểm danh']);
+            return;
+        }
+        
+        // HDV tự điểm danh
+        $id_hdv = $_SESSION['hdv_id'] ?? null;
+        if (!$id_hdv) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Không tìm thấy thông tin HDV']);
+            return;
+        }
+        
+        // Kiểm tra quyền HDV
+        if (!$this->diemDanModel->canHdvAttend($id_hdv, $id_lich_khoi_hanh)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Bạn không có quyền điểm danh cho lịch trình này']);
+            return;
+        }
+        
+        // Xử lý điểm danh
+        $result = $this->diemDanModel->batchDiemDan($id_lich_khoi_hanh, $id_hdv, $attendanceData);
+        
+        header('Content-Type: application/json');
+        echo json_encode($result);
+    }
+
+    /**
+     * Xem lịch sử điểm danh của một booking
+     * Route: ?act=admin-attendance-history&id_booking=X
+     */
+    public function viewAttendanceHistory()
+    {
+        $this->checkLogin();
+        
+        $id_booking = $_GET['id_booking'] ?? null;
+        if (!$id_booking) {
+            $_SESSION['error'] = 'ID booking không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+        
+        $booking = $this->bookingModel->getBookingById($id_booking);
+        if (!$booking) {
+            $_SESSION['error'] = 'Không tìm thấy booking';
+            $this->redirect(BASE_URL . '?act=admin-bookings');
+        }
+        
+        // Lấy lịch sử điểm danh
+        $attendanceHistory = $this->diemDanModel->getDiemDanByBooking($id_booking, $booking['id_lich_khoi_hanh'] ?? null);
+        
+        // Lấy danh sách thành viên
+        $members = $this->bookingModel->getBookingDetails($id_booking);
+        
+        $this->loadView('admin/attendance/history', compact('booking', 'attendanceHistory', 'members'), 'admin/layout');
     }
 }
    

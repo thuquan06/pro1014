@@ -255,6 +255,103 @@ class GuideController extends BaseController {
     }
 
     /**
+     * Trang điểm danh thành viên
+     * Route: ?act=guide-attendance&assignment_id=X
+     */
+    public function attendance() {
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? null;
+        $ngay_diem_danh = $_GET['ngay_diem_danh'] ?? date('Y-m-d');
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền xem';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Lấy thông tin lịch khởi hành
+        $departurePlan = null;
+        if ($assignment['id_lich_khoi_hanh']) {
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+        }
+        
+        if (!$departurePlan) {
+            $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Lấy danh sách thành viên từ các booking trong lịch khởi hành
+        require_once './models/BookingModel.php';
+        require_once './models/AttendanceModel.php';
+        $bookingModel = new BookingModel();
+        $attendanceModel = new AttendanceModel();
+        
+        // Lấy tất cả booking của lịch khởi hành
+        $bookings = $bookingModel->getBookingsByDeparturePlan($departurePlan['id']);
+        
+        $members = [];
+        foreach ($bookings as $booking) {
+            $bookingDetails = $bookingModel->getBookingDetails($booking['id']);
+            foreach ($bookingDetails as $detail) {
+                $members[] = [
+                    'id' => $detail['id'],
+                    'id_booking' => $booking['id'],
+                    'ma_booking' => $booking['ma_booking'],
+                    'ho_ten' => $detail['ho_ten'],
+                    'so_dien_thoai' => $detail['so_dien_thoai'],
+                    'loai_khach' => $detail['loai_khach']
+                ];
+            }
+        }
+        
+        // Lấy điểm danh đã có
+        $attendance = $attendanceModel->getAttendanceByDeparturePlan($departurePlan['id'], $ngay_diem_danh);
+        
+        $this->loadView('guide/attendance', compact('assignment', 'departurePlan', 'members', 'attendance', 'ngay_diem_danh'), 'guide/layout');
+    }
+
+    /**
+     * Lưu điểm danh (AJAX)
+     * Route: ?act=guide-attendance-save
+     */
+    public function saveAttendance() {
+        $this->checkLogin();
+        header('Content-Type: application/json');
+        
+        $guideId = $_SESSION['guide_id'];
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$data || !isset($data['id_lich_khoi_hanh']) || !isset($data['ngay_diem_danh']) || !isset($data['attendance'])) {
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
+            return;
+        }
+        
+        require_once './models/AttendanceModel.php';
+        $attendanceModel = new AttendanceModel();
+        
+        $result = $attendanceModel->markAttendanceBatch(
+            $data['id_lich_khoi_hanh'],
+            $data['id_hdv'] ?? $guideId,
+            $data['ngay_diem_danh'],
+            $data['attendance']
+        );
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Điểm danh thành công']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Không thể lưu điểm danh']);
+        }
+    }
+
+    /**
      * Xem và tick checklist cho tour được phân công
      * Route: ?act=guide-checklist&assignment_id=X
      */

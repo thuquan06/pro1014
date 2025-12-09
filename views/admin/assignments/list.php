@@ -43,18 +43,21 @@ $filters = $filters ?? [];
 
 .filter-row {
   display: flex;
-  flex-wrap: nowrap;
   gap: 16px;
-  margin-bottom: 16px;
   align-items: flex-end;
+  flex-wrap: nowrap;
+  margin-bottom: 16px;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 0;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
-  min-width: 0;
 }
 
 .filter-group label {
@@ -116,7 +119,6 @@ $filters = $filters ?? [];
   display: flex;
   gap: 12px;
   align-items: center;
-  flex-shrink: 0;
 }
 
 .btn-primary {
@@ -393,7 +395,7 @@ $filters = $filters ?? [];
 </style>
 
 <!-- Page Header -->
-<div class="assignments-header">
+  <div class="assignments-header">
   <h1 class="assignments-title">
     <i class="fas fa-user-tie" style="color: var(--primary);"></i>
     Danh sách Phân công HDV
@@ -421,6 +423,13 @@ $filters = $filters ?? [];
                placeholder="Nhập tên HDV...">
       </div>
       
+      <div class="filter-group">
+        <label>Mã booking</label>
+        <input type="text" 
+               name="ma_booking" 
+               value="<?= htmlspecialchars($filters['ma_booking'] ?? '') ?>"
+               placeholder="Nhập mã booking...">
+      </div>
     </div>
     
     <div class="filter-actions">
@@ -442,12 +451,12 @@ $filters = $filters ?? [];
       <thead>
         <tr>
           <th>STT</th>
-          <th>Lịch khởi hành</th>
+          <th>Mã booking</th>
           <th>HDV</th>
           <th>Tour</th>
           <th>Ngày khởi hành</th>
           <th>Vai trò</th>
-          <th>Trạng thái</th>
+          <th>Trạng thái booking</th>
           <th>Thao tác</th>
         </tr>
       </thead>
@@ -459,33 +468,29 @@ $filters = $filters ?? [];
           <tr>
             <td><?= $cnt ?></td>
             <td>
-              <?php if ($assignment['id_lich_khoi_hanh']): ?>
-                <a href="<?= BASE_URL ?>?act=admin-departure-plan-detail&id=<?= $assignment['id_lich_khoi_hanh'] ?>" 
-                   style="color: #3b82f6; font-weight: 600; text-decoration: none;">
-                  Lịch #<?= $assignment['id_lich_khoi_hanh'] ?>
-                </a>
-              <?php else: ?>
-                <span style="color: var(--text-light);">-</span>
-              <?php endif; ?>
+              <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
+                 style="color: #3b82f6; font-weight: 600; text-decoration: none;">
+                <?= safe_html($assignment['ma_booking'] ?? 'N/A') ?>
+              </a>
             </td>
             <td>
-              <strong><?= safe_html($assignment['ho_ten'] ?? 'N/A') ?></strong>
-              <?php if ($assignment['email']): ?>
-                <br><small style="color: var(--text-light);"><?= safe_html($assignment['email']) ?></small>
+              <strong><?= safe_html($assignment['ten_hdv'] ?? 'N/A') ?></strong>
+              <?php if ($assignment['email_hdv']): ?>
+                <br><small style="color: var(--text-light);"><?= safe_html($assignment['email_hdv']) ?></small>
               <?php endif; ?>
-              <?php if ($assignment['so_dien_thoai']): ?>
-                <br><small style="color: var(--text-light);"><?= safe_html($assignment['so_dien_thoai']) ?></small>
+              <?php if ($assignment['sdt_hdv']): ?>
+                <br><small style="color: var(--text-light);"><?= safe_html($assignment['sdt_hdv']) ?></small>
               <?php endif; ?>
             </td>
             <td>
               <strong><?= safe_html($assignment['ten_tour'] ?? 'N/A') ?></strong>
-              <?php if ($assignment['id_tour']): ?>
-                <br><small style="color: var(--text-light);">ID: <?= safe_html($assignment['id_tour']) ?></small>
+              <?php if ($assignment['ma_tour']): ?>
+                <br><small style="color: var(--text-light);">Mã: <?= safe_html($assignment['ma_tour']) ?></small>
               <?php endif; ?>
             </td>
             <td>
-              <?php if ($assignment['ngay_khoi_hanh']): ?>
-                <strong><?= formatDate($assignment['ngay_khoi_hanh']) ?></strong>
+              <?php if ($assignment['ngay_khoi_hanh_lich']): ?>
+                <strong><?= formatDate($assignment['ngay_khoi_hanh_lich']) ?></strong>
                 <?php if ($assignment['gio_khoi_hanh']): ?>
                   <br><small style="color: var(--text-light);"><?= date('H:i', strtotime($assignment['gio_khoi_hanh'])) ?></small>
                 <?php endif; ?>
@@ -508,25 +513,29 @@ $filters = $filters ?? [];
             </td>
             <td>
               <?php
-              $trangThai = (int)($assignment['trang_thai'] ?? 1);
-              $statusText = $trangThai == 1 ? 'Hoạt động' : 'Tạm dừng';
-              $statusClass = $trangThai == 1 ? 'success' : 'danger';
+              $statusList = [
+                0 => 'Chờ xử lý',
+                1 => 'Đã liên hệ',
+                2 => 'Đã đặt cọc',
+                3 => 'Đã thanh toán',
+                4 => 'Hoàn thành',
+                5 => 'Hủy'
+              ];
+              $trangThai = (int)($assignment['trang_thai_booking'] ?? 0);
+              $statusText = $statusList[$trangThai] ?? 'Không xác định';
+              $statusClass = 'success';
+              if ($trangThai == 0) $statusClass = 'warning';
+              elseif ($trangThai == 5) $statusClass = 'danger';
               ?>
               <span class="status-badge <?= $statusClass ?>">
                 <i class="fas fa-circle"></i> <?= $statusText ?>
               </span>
             </td>
             <td style="text-align: center;">
-              <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" 
+              <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
                  class="btn-action edit" 
-                 title="Chỉnh sửa">
-                <i class="fas fa-edit"></i>
-              </a>
-              <a href="<?= BASE_URL ?>?act=admin-assignment-delete&id=<?= $assignment['id'] ?>" 
-                 class="btn-action delete" 
-                 title="Xóa"
-                 onclick="return confirm('Bạn có chắc muốn xóa phân công này?')">
-                <i class="fas fa-trash"></i>
+                 title="Xem chi tiết booking">
+                <i class="fas fa-eye"></i>
               </a>
             </td>
           </tr>

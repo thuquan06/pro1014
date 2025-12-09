@@ -439,6 +439,17 @@ class BookingModel extends BaseModel
             // Lưu danh sách khách nếu là nhóm/đoàn
             if (in_array($loai_booking, [3, 4]) && !empty($danh_sach_khach)) {
                 $this->saveBookingDetails($booking_id, $danh_sach_khach);
+            } elseif ($loai_booking == 1) {
+                // Nếu là booking cá nhân, tự động tạo thành viên từ thông tin người đăng ký
+                $memberData = [
+                    'ho_ten' => $data['ho_ten'],
+                    'so_dien_thoai' => $data['so_dien_thoai'],
+                    'loai_khach' => 1, // Mặc định là Người lớn
+                    'gioi_tinh' => null,
+                    'ngay_sinh' => null,
+                    'so_cmnd_cccd' => null
+                ];
+                $this->createBookingMember($booking_id, $memberData);
             }
 
             // Lưu nhiều HDV nếu có
@@ -974,13 +985,43 @@ class BookingModel extends BaseModel
     /**
      * Lấy danh sách khách trong booking
      */
-    public function getBookingDetails($id_booking)
+    public function getBookingDetails($id_booking, $includeRegistrant = true)
     {
         try {
             $sql = "SELECT * FROM booking_detail WHERE id_booking = :id_booking ORDER BY id ASC";
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([':id_booking' => $id_booking]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $details = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Nếu là booking cá nhân và chưa có thành viên nào, tự động thêm người đăng ký
+            if ($includeRegistrant && empty($details)) {
+                // Lấy thông tin booking
+                $bookingSql = "SELECT ho_ten, so_dien_thoai, loai_booking FROM booking WHERE id = :id_booking";
+                $bookingStmt = $this->conn->prepare($bookingSql);
+                $bookingStmt->execute([':id_booking' => $id_booking]);
+                $booking = $bookingStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($booking && (int)($booking['loai_booking'] ?? 1) == 1) {
+                    // Tạo thành viên từ thông tin người đăng ký
+                    $memberData = [
+                        'ho_ten' => $booking['ho_ten'] ?? '',
+                        'so_dien_thoai' => $booking['so_dien_thoai'] ?? '',
+                        'loai_khach' => 1, // Mặc định là Người lớn
+                        'gioi_tinh' => null,
+                        'ngay_sinh' => null,
+                        'so_cmnd_cccd' => null
+                    ];
+                    
+                    // Tự động tạo thành viên
+                    $this->createBookingMember($id_booking, $memberData);
+                    
+                    // Lấy lại danh sách sau khi tạo
+                    $stmt->execute([':id_booking' => $id_booking]);
+                    $details = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+            }
+            
+            return $details;
         } catch (PDOException $e) {
             error_log("Lỗi getBookingDetails BookingModel: " . $e->getMessage());
             return [];
@@ -1006,16 +1047,23 @@ class BookingModel extends BaseModel
                 
                 $savedCount = 0;
                 foreach ($danh_sach_hdv as $hdv) {
-                    if (!empty($hdv['id_hdv']) && !empty($hdv['vai_tro'])) {
+                    // Kiểm tra cả id_hdv và vai_tro có giá trị hợp lệ
+                    $id_hdv = isset($hdv['id_hdv']) ? (int)$hdv['id_hdv'] : 0;
+                    $vai_tro = isset($hdv['vai_tro']) ? trim($hdv['vai_tro']) : '';
+                    
+                    if ($id_hdv > 0 && !empty($vai_tro)) {
                         $stmt->execute([
                             ':id_booking' => $id_booking,
-                            ':id_hdv' => (int)$hdv['id_hdv'],
-                            ':vai_tro' => $hdv['vai_tro']
+                            ':id_hdv' => $id_hdv,
+                            ':vai_tro' => $vai_tro
                         ]);
                         $savedCount++;
+                        error_log("Saved HDV assignment: booking_id=$id_booking, hdv_id=$id_hdv, vai_tro=$vai_tro");
+                    } else {
+                        error_log("Skipped invalid HDV data: " . print_r($hdv, true));
                     }
                 }
-                error_log("Saved " . $savedCount . " HDV assignments for booking ID: " . $id_booking);
+                error_log("Total saved " . $savedCount . " HDV assignments for booking ID: " . $id_booking);
             }
         } catch (PDOException $e) {
             error_log("Lỗi saveBookingGuides BookingModel: " . $e->getMessage());
@@ -1124,6 +1172,10 @@ class BookingModel extends BaseModel
             $checkBookingHdv = $this->conn->query("SELECT COUNT(*) as total FROM booking_hdv")->fetch(PDO::FETCH_ASSOC);
             error_log("Total records in booking_hdv: " . ($checkBookingHdv['total'] ?? 0));
             
+            // Debug: Lấy chi tiết các record trong booking_hdv
+            $debugRecords = $this->conn->query("SELECT bh.*, b.ma_booking FROM booking_hdv bh LEFT JOIN booking b ON bh.id_booking = b.id LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+            error_log("Sample booking_hdv records: " . print_r($debugRecords, true));
+            
             $sql = "SELECT 
                         bh.id,
                         bh.id_booking,
@@ -1132,22 +1184,20 @@ class BookingModel extends BaseModel
                         b.ma_booking,
                         b.ho_ten as ten_khach,
                         b.so_dien_thoai,
-                        b.ngay_khoi_hanh,
-                        b.ngay_ket_thuc,
                         b.trang_thai as trang_thai_booking,
                         hdv.ho_ten as ten_hdv,
                         hdv.email as email_hdv,
                         hdv.so_dien_thoai as sdt_hdv,
                         lkh.ngay_khoi_hanh as ngay_khoi_hanh_lich,
                         lkh.gio_khoi_hanh,
-                        g.tengoi as ten_tour,
+                        COALESCE(g.tengoi, 'N/A') as ten_tour,
                         g.mato as ma_tour,
-                        g.id_goi as id_tour
+                        COALESCE(lkh.id_tour, b.id_tour, g.id_goi) as id_tour
                     FROM booking_hdv bh
                     INNER JOIN booking b ON bh.id_booking = b.id
                     LEFT JOIN huong_dan_vien hdv ON bh.id_hdv = hdv.id
                     LEFT JOIN lich_khoi_hanh lkh ON b.id_lich_khoi_hanh = lkh.id
-                    LEFT JOIN goidulich g ON b.id_tour = g.id_goi
+                    LEFT JOIN goidulich g ON COALESCE(lkh.id_tour, b.id_tour) = g.id_goi
                     WHERE bh.id_hdv IS NOT NULL AND bh.id_hdv > 0";
             
             $params = [];
@@ -1170,11 +1220,17 @@ class BookingModel extends BaseModel
                 $params[':ma_booking'] = '%' . $filters['ma_booking'] . '%';
             }
             
-            $sql .= " ORDER BY b.ngay_khoi_hanh DESC, hdv.ho_ten ASC";
+            $sql .= " ORDER BY COALESCE(lkh.ngay_khoi_hanh, b.ngay_dat) DESC, hdv.ho_ten ASC";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug: Log số lượng kết quả
+            error_log("getAllBookingAssignments returned " . count($results) . " results");
+            if (!empty($results)) {
+                error_log("First result: " . print_r($results[0], true));
+            }
             
             // Nếu không có kết quả, thử migrate lại và query lại
             if (empty($results)) {
@@ -1185,6 +1241,7 @@ class BookingModel extends BaseModel
                 $stmt = $this->conn->prepare($sql);
                 $stmt->execute($params);
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                error_log("After retry, returned " . count($results) . " results");
             }
             
             return $results;
@@ -1210,6 +1267,339 @@ class BookingModel extends BaseModel
             error_log("Lỗi deleteBookingDetails BookingModel: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Lấy danh sách booking theo lịch khởi hành
+     */
+    public function getBookingsByDeparturePlan($id_lich_khoi_hanh)
+    {
+        try {
+            $sql = "SELECT * FROM booking WHERE id_lich_khoi_hanh = :id_lich_khoi_hanh ORDER BY ma_booking ASC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id_lich_khoi_hanh' => $id_lich_khoi_hanh]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getBookingsByDeparturePlan BookingModel: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lấy tất cả thành viên booking với filter
+     */
+    public function getAllBookingMembers($filters = [])
+    {
+        try {
+            $sql = "SELECT 
+                        bd.id,
+                        bd.id_booking,
+                        bd.ho_ten,
+                        bd.gioi_tinh,
+                        bd.ngay_sinh,
+                        bd.so_cmnd_cccd,
+                        bd.so_dien_thoai,
+                        bd.loai_khach,
+                        b.ma_booking,
+                        b.ho_ten as ten_khach_booking,
+                        b.email as email_booking,
+                        b.trang_thai as trang_thai_booking,
+                        b.loai_booking,
+                        lkh.ngay_khoi_hanh,
+                        g.tengoi as ten_tour,
+                        g.id_goi as id_tour
+                    FROM booking_detail bd
+                    INNER JOIN booking b ON bd.id_booking = b.id
+                    LEFT JOIN lich_khoi_hanh lkh ON b.id_lich_khoi_hanh = lkh.id
+                    LEFT JOIN goidulich g ON COALESCE(lkh.id_tour, b.id_tour) = g.id_goi
+                    WHERE 1=1";
+            
+            $params = [];
+            
+            // Filter theo mã booking
+            if (!empty($filters['ma_booking'])) {
+                $sql .= " AND b.ma_booking LIKE :ma_booking";
+                $params[':ma_booking'] = '%' . $filters['ma_booking'] . '%';
+            }
+            
+            // Filter theo họ tên
+            if (!empty($filters['ho_ten'])) {
+                $sql .= " AND bd.ho_ten LIKE :ho_ten";
+                $params[':ho_ten'] = '%' . $filters['ho_ten'] . '%';
+            }
+            
+            // Filter theo số điện thoại
+            if (!empty($filters['so_dien_thoai'])) {
+                $sql .= " AND bd.so_dien_thoai LIKE :so_dien_thoai";
+                $params[':so_dien_thoai'] = '%' . $filters['so_dien_thoai'] . '%';
+            }
+            
+            // Filter theo loại khách
+            if (isset($filters['loai_khach']) && $filters['loai_khach'] !== '') {
+                $sql .= " AND bd.loai_khach = :loai_khach";
+                $params[':loai_khach'] = (int)$filters['loai_khach'];
+            }
+            
+            // Filter theo ngày sinh từ
+            if (!empty($filters['ngay_sinh_tu'])) {
+                $sql .= " AND bd.ngay_sinh >= :ngay_sinh_tu";
+                $params[':ngay_sinh_tu'] = $filters['ngay_sinh_tu'];
+            }
+            
+            // Filter theo ngày sinh đến
+            if (!empty($filters['ngay_sinh_den'])) {
+                $sql .= " AND bd.ngay_sinh <= :ngay_sinh_den";
+                $params[':ngay_sinh_den'] = $filters['ngay_sinh_den'];
+            }
+            
+            // Đếm tổng số bản ghi (trước khi thêm LIMIT)
+            $countSql = "SELECT COUNT(*) as total FROM ($sql) as count_query";
+            $countStmt = $this->conn->prepare($countSql);
+            $countStmt->execute($params);
+            $totalRecords = $countStmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            
+            // Phân trang
+            $page = isset($filters['page']) ? max(1, (int)$filters['page']) : 1;
+            $perPage = isset($filters['per_page']) ? max(1, (int)$filters['per_page']) : 20;
+            $offset = ($page - 1) * $perPage;
+            
+            $sql .= " ORDER BY b.ngay_dat DESC, bd.id ASC LIMIT :limit OFFSET :offset";
+            
+            $stmt = $this->conn->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return [
+                'data' => $results,
+                'total' => (int)$totalRecords,
+                'page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => ceil($totalRecords / $perPage)
+            ];
+        } catch (PDOException $e) {
+            error_log("Lỗi getAllBookingMembers BookingModel: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Thêm thành viên mới vào booking
+     */
+    public function createBookingMember($id_booking, $data)
+    {
+        try {
+            // Kiểm tra booking tồn tại
+            $booking = $this->getBookingById($id_booking);
+            if (!$booking) {
+                return ['success' => false, 'message' => 'Booking không tồn tại'];
+            }
+            
+            // Kiểm tra booking có thể chỉnh sửa không
+            if (!$this->canEditBooking($id_booking)) {
+                return ['success' => false, 'message' => 'Booking đang ở trạng thái không thể thêm thành viên'];
+            }
+            
+            // Validate dữ liệu
+            $validation = $this->validateMemberData($data);
+            if (!$validation['valid']) {
+                return ['success' => false, 'message' => $validation['message']];
+            }
+            
+            $sql = "INSERT INTO booking_detail (
+                        id_booking, ho_ten, gioi_tinh, ngay_sinh, 
+                        so_cmnd_cccd, so_dien_thoai, loai_khach
+                    ) VALUES (
+                        :id_booking, :ho_ten, :gioi_tinh, :ngay_sinh,
+                        :so_cmnd_cccd, :so_dien_thoai, :loai_khach
+                    )";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([
+                ':id_booking' => $id_booking,
+                ':ho_ten' => trim($data['ho_ten']),
+                ':gioi_tinh' => isset($data['gioi_tinh']) ? (int)$data['gioi_tinh'] : null,
+                ':ngay_sinh' => !empty($data['ngay_sinh']) ? $data['ngay_sinh'] : null,
+                ':so_cmnd_cccd' => !empty($data['so_cmnd_cccd']) ? trim($data['so_cmnd_cccd']) : null,
+                ':so_dien_thoai' => !empty($data['so_dien_thoai']) ? trim($data['so_dien_thoai']) : null,
+                ':loai_khach' => isset($data['loai_khach']) ? (int)$data['loai_khach'] : 1
+            ]);
+            
+            return ['success' => true, 'id' => $this->conn->lastInsertId(), 'message' => 'Thêm thành viên thành công'];
+        } catch (PDOException $e) {
+            error_log("Lỗi createBookingMember BookingModel: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Cập nhật thông tin thành viên
+     */
+    public function updateBookingMember($id, $data)
+    {
+        try {
+            // Lấy thông tin thành viên
+            $member = $this->getBookingMemberById($id);
+            if (!$member) {
+                return ['success' => false, 'message' => 'Thành viên không tồn tại'];
+            }
+            
+            // Kiểm tra booking có thể chỉnh sửa không
+            if (!$this->canEditBooking($member['id_booking'])) {
+                return ['success' => false, 'message' => 'Booking đang ở trạng thái không thể chỉnh sửa'];
+            }
+            
+            // Validate dữ liệu
+            $validation = $this->validateMemberData($data);
+            if (!$validation['valid']) {
+                return ['success' => false, 'message' => $validation['message']];
+            }
+            
+            $sql = "UPDATE booking_detail SET
+                        ho_ten = :ho_ten,
+                        gioi_tinh = :gioi_tinh,
+                        ngay_sinh = :ngay_sinh,
+                        so_cmnd_cccd = :so_cmnd_cccd,
+                        so_dien_thoai = :so_dien_thoai,
+                        loai_khach = :loai_khach
+                    WHERE id = :id";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([
+                ':id' => $id,
+                ':ho_ten' => trim($data['ho_ten']),
+                ':gioi_tinh' => isset($data['gioi_tinh']) ? (int)$data['gioi_tinh'] : null,
+                ':ngay_sinh' => !empty($data['ngay_sinh']) ? $data['ngay_sinh'] : null,
+                ':so_cmnd_cccd' => !empty($data['so_cmnd_cccd']) ? trim($data['so_cmnd_cccd']) : null,
+                ':so_dien_thoai' => !empty($data['so_dien_thoai']) ? trim($data['so_dien_thoai']) : null,
+                ':loai_khach' => isset($data['loai_khach']) ? (int)$data['loai_khach'] : 1
+            ]);
+            
+            return ['success' => true, 'message' => 'Cập nhật thành viên thành công'];
+        } catch (PDOException $e) {
+            error_log("Lỗi updateBookingMember BookingModel: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Xóa thành viên
+     */
+    public function deleteBookingMember($id)
+    {
+        try {
+            // Lấy thông tin thành viên
+            $member = $this->getBookingMemberById($id);
+            if (!$member) {
+                return ['success' => false, 'message' => 'Thành viên không tồn tại'];
+            }
+            
+            // Kiểm tra booking có thể chỉnh sửa không
+            if (!$this->canEditBooking($member['id_booking'])) {
+                return ['success' => false, 'message' => 'Booking đang ở trạng thái không thể xóa thành viên'];
+            }
+            
+            $sql = "DELETE FROM booking_detail WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            
+            return ['success' => true, 'message' => 'Xóa thành viên thành công'];
+        } catch (PDOException $e) {
+            error_log("Lỗi deleteBookingMember BookingModel: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Lấy thông tin thành viên theo ID
+     */
+    public function getBookingMemberById($id)
+    {
+        try {
+            $sql = "SELECT * FROM booking_detail WHERE id = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Lỗi getBookingMemberById BookingModel: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Kiểm tra booking có thể chỉnh sửa không
+     */
+    public function canEditBooking($id_booking)
+    {
+        try {
+            $booking = $this->getBookingById($id_booking);
+            if (!$booking) {
+                return false;
+            }
+            
+            $trangThai = (int)($booking['trang_thai'] ?? 0);
+            
+            // Booking ở trạng thái đã hoàn thành hoặc đã hủy thì không thể chỉnh sửa
+            if ($trangThai == 4 || $trangThai == 5) {
+                return false;
+            }
+            
+            // Có thể thêm kiểm tra khác: đã xuất hóa đơn, đã khởi hành, etc.
+            // Nếu có trạng thái hóa đơn, kiểm tra thêm
+            if (isset($booking['trang_thai_hoa_don'])) {
+                $trangThaiHoaDon = (int)$booking['trang_thai_hoa_don'];
+                // Đã xuất hóa đơn hoặc đã gửi thì không thể chỉnh sửa
+                if ($trangThaiHoaDon >= 2) {
+                    return false;
+                }
+            }
+            
+            return true;
+        } catch (PDOException $e) {
+            error_log("Lỗi canEditBooking BookingModel: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Validate dữ liệu thành viên
+     */
+    private function validateMemberData($data)
+    {
+        // Họ tên bắt buộc
+        if (empty(trim($data['ho_ten'] ?? ''))) {
+            return ['valid' => false, 'message' => 'Họ tên không được để trống'];
+        }
+        
+        // Email đúng định dạng (nếu có)
+        if (!empty($data['email'] ?? '')) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                return ['valid' => false, 'message' => 'Email không hợp lệ'];
+            }
+        }
+        
+        // Số điện thoại đúng định dạng (nếu có)
+        if (!empty($data['so_dien_thoai'] ?? '')) {
+            $phone = trim($data['so_dien_thoai']);
+            // Kiểm tra định dạng số điện thoại Việt Nam
+            if (!preg_match('/^(0|\+84)[0-9]{9,10}$/', $phone)) {
+                return ['valid' => false, 'message' => 'Số điện thoại không hợp lệ'];
+            }
+        }
+        
+        // Loại khách hợp lệ
+        if (isset($data['loai_khach'])) {
+            $loaiKhach = (int)$data['loai_khach'];
+            if (!in_array($loaiKhach, [1, 2, 3, 4])) {
+                return ['valid' => false, 'message' => 'Loại khách không hợp lệ'];
+            }
+        }
+        
+        return ['valid' => true];
     }
 
     

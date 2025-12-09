@@ -390,9 +390,9 @@ class HoadonModel extends BaseModel
             $total += ($hoadon['trenho'] ?? 0) * ($hoadon['gia_tre_nho'] ?? 0);
         } else {
             // Fallback về giá tour
-            $total += ($hoadon['nguoilon'] ?? 0) * ($hoadon['giagoi'] ?? 0);
-            $total += ($hoadon['treem'] ?? 0) * ($hoadon['giatreem'] ?? 0);
-            $total += ($hoadon['trenho'] ?? 0) * ($hoadon['giatrenho'] ?? 0);
+        $total += ($hoadon['nguoilon'] ?? 0) * ($hoadon['giagoi'] ?? 0);
+        $total += ($hoadon['treem'] ?? 0) * ($hoadon['giatreem'] ?? 0);
+        $total += ($hoadon['trenho'] ?? 0) * ($hoadon['giatrenho'] ?? 0);
         }
         // embe thường miễn phí
 

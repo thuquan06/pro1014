@@ -44,6 +44,7 @@ $bookingTypeList = $bookingTypeList ?? [];
 $bookingDetails = $bookingDetails ?? [];
 $bookingGuides = $bookingGuides ?? [];
 $departurePlan = $departurePlan ?? null;
+$attendanceRecords = $attendanceRecords ?? [];
 
 if (!$booking) {
     echo '<div class="alert alert-danger">Không tìm thấy booking</div>';
@@ -400,23 +401,27 @@ if (!$booking) {
               <div style="display: grid; gap: 12px; margin-top: 8px;">
                 <?php foreach ($bookingGuides as $hdv): ?>
                   <div style="background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
                       <i class="fas fa-user-tie" style="color: #3b82f6;"></i>
                       <strong style="font-size: 15px;"><?= safe_html($hdv['ho_ten'] ?? 'N/A') ?></strong>
                       <span style="background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
                         <?= safe_html($hdv['vai_tro'] ?? 'HDV chính') ?>
                       </span>
                     </div>
-                    <?php if (!empty($hdv['so_dien_thoai'])): ?>
-                      <div style="color: #6b7280; font-size: 13px; margin-left: 28px;">
-                        <i class="fas fa-phone"></i> <?= safe_html($hdv['so_dien_thoai']) ?>
-                      </div>
-                    <?php endif; ?>
-                    <?php if (!empty($hdv['email'])): ?>
-                      <div style="color: #6b7280; font-size: 13px; margin-left: 28px;">
-                        <i class="fas fa-envelope"></i> <?= safe_html($hdv['email']) ?>
-                      </div>
-                    <?php endif; ?>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                      <?php if (!empty($hdv['so_dien_thoai'])): ?>
+                        <div style="color: #6b7280; font-size: 13px;">
+                          <i class="fas fa-phone" style="color: #3b82f6; margin-right: 6px;"></i>
+                          <?= safe_html($hdv['so_dien_thoai']) ?>
+                        </div>
+                      <?php endif; ?>
+                      <?php if (!empty($hdv['email'])): ?>
+                        <div style="color: #6b7280; font-size: 13px;">
+                          <i class="fas fa-envelope" style="color: #3b82f6; margin-right: 6px;"></i>
+                          <?= safe_html($hdv['email']) ?>
+                        </div>
+                      <?php endif; ?>
+                    </div>
                   </div>
                 <?php endforeach; ?>
               </div>
@@ -751,14 +756,30 @@ if (!$booking) {
     </div>
   </div>
 
-  <!-- Danh sách khách chi tiết (nếu là nhóm/đoàn) -->
-  <?php if (!empty($bookingDetails)): ?>
+  <!-- Danh sách thành viên -->
   <div class="card">
-    <div class="card-header">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <h2 class="card-title">
-        <i class="fas fa-list"></i> Danh sách khách
+        <i class="fas fa-users"></i> Danh sách thành viên
       </h2>
+      <?php 
+      // Kiểm tra booking có thể chỉnh sửa không
+      $canEdit = true;
+      $trangThai = (int)($booking['trang_thai'] ?? 0);
+      if ($trangThai == 4 || $trangThai == 5) {
+        $canEdit = false;
+      }
+      if (isset($booking['trang_thai_hoa_don']) && (int)$booking['trang_thai_hoa_don'] >= 2) {
+        $canEdit = false;
+      }
+      ?>
+      <?php if ($canEdit): ?>
+        <button onclick="showAddMemberModal()" class="btn-primary" style="padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: var(--primary); color: white;">
+          <i class="fas fa-plus"></i> Thêm thành viên
+        </button>
+      <?php endif; ?>
     </div>
+    <?php if (!empty($bookingDetails)): ?>
     <div class="card-body">
       <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse;">
@@ -768,19 +789,22 @@ if (!$booking) {
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Họ tên</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Giới tính</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Ngày sinh</th>
-              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">CMND/CCCD</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">SĐT</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Loại khách</th>
+              <?php if (!empty($attendanceRecords)): ?>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Điểm danh</th>
+              <?php endif; ?>
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($bookingDetails as $index => $detail): ?>
+            <?php foreach ($bookingDetails as $index => $detail): 
+              $memberAttendance = $attendanceRecords[$detail['id']] ?? null;
+            ?>
             <tr style="border-bottom: 1px solid #e5e7eb;">
               <td style="padding: 12px;"><?= $index + 1 ?></td>
               <td style="padding: 12px; font-weight: 600;"><?= safe_html($detail['ho_ten']) ?></td>
               <td style="padding: 12px;"><?= $detail['gioi_tinh'] === 1 ? 'Nam' : ($detail['gioi_tinh'] === 0 ? 'Nữ' : 'N/A') ?></td>
               <td style="padding: 12px;"><?= $detail['ngay_sinh'] ? formatDate($detail['ngay_sinh']) : 'N/A' ?></td>
-              <td style="padding: 12px;"><?= safe_html($detail['so_cmnd_cccd'] ?? 'N/A') ?></td>
               <td style="padding: 12px;"><?= safe_html($detail['so_dien_thoai'] ?? 'N/A') ?></td>
               <td style="padding: 12px;">
                 <?php
@@ -788,13 +812,157 @@ if (!$booking) {
                 echo safe_html($loaiKhachLabels[$detail['loai_khach'] ?? 1] ?? 'N/A');
                 ?>
               </td>
+              <?php if (!empty($attendanceRecords)): ?>
+              <td style="padding: 12px;">
+                <?php if ($memberAttendance): 
+                  $trangThaiLabels = [1 => 'Có mặt', 2 => 'Vắng mặt', 3 => 'Có lý do'];
+                  $trangThaiClasses = [1 => 'success', 2 => 'danger', 3 => 'warning'];
+                  $trangThaiIcons = [1 => 'check-circle', 2 => 'times-circle', 3 => 'exclamation-circle'];
+                  $trangThai = $memberAttendance['trang_thai'] ?? 1;
+                ?>
+                  <span class="status-badge <?= $trangThaiClasses[$trangThai] ?? 'secondary' ?>" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; background: <?= $trangThai == 1 ? '#d1fae5' : ($trangThai == 2 ? '#fee2e2' : '#fef3c7') ?>; color: <?= $trangThai == 1 ? '#065f46' : ($trangThai == 2 ? '#991b1b' : '#92400e') ?>;">
+                    <i class="fas fa-<?= $trangThaiIcons[$trangThai] ?? 'question' ?>"></i>
+                    <?= safe_html($trangThaiLabels[$trangThai] ?? 'N/A') ?>
+                  </span>
+                  <br>
+                  <small style="color: #6b7280; font-size: 12px;">
+                    <?= formatDateTime($memberAttendance['thoi_gian_diem_dan']) ?>
+                    <?php if ($memberAttendance['ten_hdv']): ?>
+                      <br>Bởi: <?= safe_html($memberAttendance['ten_hdv']) ?>
+                    <?php endif; ?>
+                  </small>
+                  <?php if ($memberAttendance['ghi_chu']): ?>
+                    <br>
+                    <small style="color: #6b7280; font-size: 12px; font-style: italic;">
+                      <?= safe_html($memberAttendance['ghi_chu']) ?>
+                    </small>
+                  <?php endif; ?>
+                <?php else: ?>
+                  <span style="color: #9ca3af; font-size: 13px;">Chưa điểm danh</span>
+                <?php endif; ?>
+              </td>
+              <?php endif; ?>
             </tr>
             <?php endforeach; ?>
           </tbody>
         </table>
       </div>
     </div>
+    <?php else: ?>
+    <div class="card-body" style="text-align: center; padding: 40px;">
+      <i class="fas fa-users" style="font-size: 48px; color: #d1d5db; margin-bottom: 16px;"></i>
+      <p style="color: #6b7280; margin-bottom: 16px;">Chưa có thành viên nào</p>
+      <?php if ($canEdit): ?>
+        <button onclick="showAddMemberModal()" class="btn-primary" style="padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; background: var(--primary); color: white;">
+          <i class="fas fa-plus"></i> Thêm thành viên đầu tiên
+        </button>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
   </div>
+
+  <!-- Modal Add Member -->
+  <?php if ($canEdit): ?>
+  <div id="addMemberModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; border-radius: 16px; padding: 24px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+      <h2 style="margin-top: 0; margin-bottom: 20px;">
+        <i class="fas fa-user-plus"></i> Thêm thành viên mới
+      </h2>
+      <form id="addMemberForm">
+        <input type="hidden" name="id_booking" value="<?= $booking['id'] ?>">
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Họ tên đầy đủ <span style="color: red;">*</span></label>
+          <input type="text" name="ho_ten" required style="width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Giới tính</label>
+            <select name="gioi_tinh" style="width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+              <option value="">Chọn giới tính</option>
+              <option value="1">Nam</option>
+              <option value="0">Nữ</option>
+            </select>
+          </div>
+          
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Loại khách <span style="color: red;">*</span></label>
+            <select name="loai_khach" required style="width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+              <option value="1">Người lớn</option>
+              <option value="2">Trẻ em</option>
+              <option value="3">Trẻ nhỏ</option>
+              <option value="4">Em bé</option>
+            </select>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Ngày sinh</label>
+          <input type="date" name="ngay_sinh" style="width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Số điện thoại</label>
+            <input type="text" name="so_dien_thoai" placeholder="0xxxxxxxxx" style="width: 100%; padding: 12px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+          </div>
+          
+        </div>
+        
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" onclick="closeAddMemberModal()" class="btn-cancel" style="padding: 10px 20px; border-radius: 8px; border: 1px solid #e5e7eb; background: white; cursor: pointer;">
+            Hủy
+          </button>
+          <button type="submit" class="btn-primary" style="padding: 10px 20px; border-radius: 8px; border: none; background: var(--primary); color: white; cursor: pointer;">
+            <i class="fas fa-save"></i> Lưu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  function showAddMemberModal() {
+    document.getElementById('addMemberModal').style.display = 'flex';
+    document.getElementById('addMemberForm').reset();
+  }
+
+  function closeAddMemberModal() {
+    document.getElementById('addMemberModal').style.display = 'none';
+  }
+
+  document.getElementById('addMemberForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('<?= BASE_URL ?>?act=admin-booking-member-add', {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Thêm thành viên thành công');
+          location.reload();
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi thêm thành viên');
+      });
+  });
+
+  // Đóng modal khi click outside
+  document.getElementById('addMemberModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeAddMemberModal();
+    }
+  });
+  </script>
   <?php endif; ?>
 
   <!-- Ghi chú -->

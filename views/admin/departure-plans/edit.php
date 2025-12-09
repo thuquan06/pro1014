@@ -7,6 +7,9 @@
 function safe_html($value) {
     return htmlentities($value ?? '', ENT_QUOTES, 'UTF-8');
 }
+
+$assignments = $assignments ?? [];
+$guides = $guides ?? [];
 ?>
 
 <style>
@@ -461,7 +464,32 @@ function safe_html($value) {
           <span class="help-text">Các ghi chú về vận hành, lưu ý đặc biệt cho tour này</span>
         </div>
       </div>
+    </div>
 
+    <!-- Phân công Hướng dẫn viên -->
+    <div class="form-card">
+      <div class="card-header">
+        <i class="fas fa-user-tie"></i>
+        <h3>Phân công Hướng dẫn viên</h3>
+      </div>
+      
+      <div id="hdv-assignments-container">
+        <!-- HDV assignments will be added here -->
+      </div>
+      
+      <div style="margin-top: 16px;">
+        <button type="button" id="add-hdv-btn" class="btn btn-primary" style="padding: 10px 20px;">
+          <i class="fas fa-plus"></i> Thêm HDV
+        </button>
+      </div>
+    </div>
+
+    <!-- Lịch trình tour -->
+    <div class="form-card">
+      <div class="card-header">
+        <i class="fas fa-route"></i>
+        <h3>Lịch trình tour</h3>
+      </div>
       <div class="form-row">
         <div class="form-group-modern full-width">
           <label>
@@ -686,8 +714,134 @@ function parseAndLoadExistingItinerary(html) {
     }
 }
 
+// HDV Assignment Management
+let hdvAssignmentCount = 0;
+const selectedHdvIds = new Set();
+
+function addHdvAssignment(hdvId = '', vaiTro = '', luong = '', ghiChu = '') {
+    hdvAssignmentCount++;
+    const container = document.getElementById('hdv-assignments-container');
+    
+    const hdvRow = document.createElement('div');
+    hdvRow.className = 'hdv-assignment-row';
+    hdvRow.style.cssText = 'display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 16px; padding: 16px; background: #f9fafb; border-radius: 8px;';
+    hdvRow.id = `hdv-row-${hdvAssignmentCount}`;
+    
+    hdvRow.innerHTML = `
+        <div class="form-group-modern">
+            <label>Hướng dẫn viên <span class="required">*</span></label>
+            <select name="hdv_assignments[${hdvAssignmentCount}][id_hdv]" class="hdv-select" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                <option value="">Chọn HDV</option>
+                <?php if (!empty($guides)): ?>
+                    <?php foreach ($guides as $guide): ?>
+                        <option value="<?= $guide['id'] ?>" data-name="<?= safe_html($guide['ho_ten']) ?>" ${hdvId == '<?= $guide['id'] ?>' ? 'selected' : ''}>
+                            <?= safe_html($guide['ho_ten']) ?> - <?= safe_html($guide['so_dien_thoai'] ?? '') ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
+        <div class="form-group-modern">
+            <label>Vai trò <span class="required">*</span></label>
+            <select name="hdv_assignments[${hdvAssignmentCount}][vai_tro]" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                <option value="HDV chính" ${vaiTro == 'HDV chính' ? 'selected' : ''}>HDV chính</option>
+                <option value="HDV phụ" ${vaiTro == 'HDV phụ' ? 'selected' : ''}>HDV phụ</option>
+                <option value="Trợ lý" ${vaiTro == 'Trợ lý' ? 'selected' : ''}>Trợ lý</option>
+            </select>
+        </div>
+        <div class="form-group-modern">
+            <label>Lương</label>
+            <input type="number" name="hdv_assignments[${hdvAssignmentCount}][luong]" placeholder="VNĐ" min="0" step="1000" value="${luong}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        </div>
+        <div class="form-group-modern">
+            <label>Ghi chú</label>
+            <input type="text" name="hdv_assignments[${hdvAssignmentCount}][ghi_chu]" placeholder="Ghi chú..." value="${ghiChu}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        </div>
+        <div>
+            <button type="button" class="btn-remove-hdv" onclick="removeHdvAssignment(${hdvAssignmentCount})" style="padding: 10px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(hdvRow);
+    
+    // Update selected HDV tracking
+    const select = hdvRow.querySelector('.hdv-select');
+    if (hdvId) {
+        select.value = hdvId;
+        selectedHdvIds.add(parseInt(hdvId));
+    }
+    select.addEventListener('change', function() {
+        updateHdvDropdowns();
+    });
+    
+    updateHdvDropdowns();
+}
+
+function removeHdvAssignment(rowId) {
+    const row = document.getElementById(`hdv-row-${rowId}`);
+    if (row) {
+        const select = row.querySelector('.hdv-select');
+        if (select && select.value) {
+            selectedHdvIds.delete(parseInt(select.value));
+        }
+        row.remove();
+        updateHdvDropdowns();
+    }
+}
+
+function updateHdvDropdowns() {
+    // Collect all selected HDV IDs
+    selectedHdvIds.clear();
+    document.querySelectorAll('.hdv-select').forEach(select => {
+        if (select.value) {
+            selectedHdvIds.add(parseInt(select.value));
+        }
+    });
+    
+    // Update all dropdowns to disable selected HDVs
+    document.querySelectorAll('.hdv-select').forEach(select => {
+        const currentValue = select.value;
+        Array.from(select.options).forEach(option => {
+            if (option.value && option.value !== currentValue) {
+                const hdvId = parseInt(option.value);
+                if (selectedHdvIds.has(hdvId)) {
+                    option.disabled = true;
+                    const originalName = option.getAttribute('data-name') || '';
+                    option.textContent = originalName + ' (Đã chọn)';
+                } else {
+                    option.disabled = false;
+                    const originalName = option.getAttribute('data-name') || '';
+                    option.textContent = originalName;
+                }
+            }
+        });
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function() {
+    // HDV Assignment - Thêm HDV
+    const addHdvBtn = document.getElementById('add-hdv-btn');
+    if (addHdvBtn) {
+        addHdvBtn.addEventListener('click', function() {
+            addHdvAssignment();
+        });
+    }
+    
+    // Load các phân công HDV đã có
+    <?php if (!empty($assignments)): ?>
+        <?php foreach ($assignments as $assignment): ?>
+            addHdvAssignment(
+                '<?= $assignment['id_hdv'] ?? '' ?>',
+                '<?= addslashes($assignment['vai_tro'] ?? 'HDV chính') ?>',
+                '<?= $assignment['luong'] ?? '' ?>',
+                '<?= addslashes($assignment['ghi_chu'] ?? '') ?>'
+            );
+        <?php endforeach; ?>
+    <?php endif; ?>
+    
+    // Itinerary Builder - Thêm ngày
     const addDayBtn = document.getElementById('add-day-btn');
     if (addDayBtn) {
         addDayBtn.addEventListener('click', function() {
