@@ -495,8 +495,8 @@ $error = $error ?? null;
                   placeholder="Nhập các ghi chú về vận hành, lưu ý đặc biệt..."><?= safe_html($_POST['ghi_chu_van_hanh'] ?? '') ?></textarea>
         <span class="help-text">Các ghi chú về vận hành, lưu ý đặc biệt cho tour này</span>
       </div>
+      </div>
     </div>
-  </div>
 
   <!-- Phân công Hướng dẫn viên -->
   <div class="form-card">

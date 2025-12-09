@@ -395,7 +395,7 @@ $filters = $filters ?? [];
 </style>
 
 <!-- Page Header -->
-  <div class="assignments-header">
+<div class="assignments-header">
   <h1 class="assignments-title">
     <i class="fas fa-user-tie" style="color: var(--primary);"></i>
     Danh sách Phân công HDV

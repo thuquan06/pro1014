@@ -250,7 +250,7 @@ class DeparturePlanModel extends BaseModel
             $params[':ten_tour'] = '%' . $filters['ten_tour'] . '%';
         }
         
-        $sql .= " ORDER BY dp.ngay_khoi_hanh DESC, dp.gio_khoi_hanh ASC";
+        $sql .= " ORDER BY dp.id DESC, dp.ngay_khoi_hanh DESC, dp.gio_khoi_hanh ASC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
@@ -507,17 +507,25 @@ class DeparturePlanModel extends BaseModel
             
             if (!$result) {
                 $errorInfo = $stmt->errorInfo();
-                $errorMsg = "Lỗi cập nhật lịch khởi hành: " . ($errorInfo[2] ?? 'Unknown error');
+                $errorMsg = "Lỗi cập nhật lịch khởi hành ID: $id | Error: " . ($errorInfo[2] ?? 'Unknown error');
                 $errorMsg .= " | Code: " . ($errorInfo[0] ?? 'N/A');
                 $errorMsg .= " | SQL: " . $sql;
+                $errorMsg .= " | Data: " . json_encode($data);
                 error_log($errorMsg);
+                return false;
             }
             
-            return $result;
+            return true;
         } catch (PDOException $e) {
-            $errorMsg = "Lỗi cập nhật lịch khởi hành: " . $e->getMessage();
+            $errorMsg = "Lỗi cập nhật lịch khởi hành ID: $id | PDOException: " . $e->getMessage();
             $errorMsg .= " | Code: " . $e->getCode();
             $errorMsg .= " | SQL: " . ($sql ?? 'N/A');
+            $errorMsg .= " | Data: " . json_encode($data ?? []);
+            error_log($errorMsg);
+            return false;
+        } catch (Exception $e) {
+            $errorMsg = "Lỗi cập nhật lịch khởi hành ID: $id | Exception: " . $e->getMessage();
+            $errorMsg .= " | Data: " . json_encode($data ?? []);
             error_log($errorMsg);
             return false;
         }

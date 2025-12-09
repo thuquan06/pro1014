@@ -358,13 +358,14 @@ class BookingModel extends BaseModel
                 return ['success' => false, 'message' => $seatCheck['message']];
             }
 
-            // Tính tổng tiền
+            // Tính tổng tiền (chỉ dùng làm fallback nếu không có tong_tien_override)
             $tong_tien = $this->calculateTotal(
                 $data['id_lich_khoi_hanh'],
                 $data['so_nguoi_lon'] ?? 0,
                 $data['so_tre_em'] ?? 0,
                 $data['so_tre_nho'] ?? 0
             );
+            $tong_tien = (float)$tong_tien; // Đảm bảo là số
 
             // Lấy id_tour từ lịch khởi hành
             $sql = "SELECT id_tour FROM lich_khoi_hanh WHERE id = :id";
@@ -392,17 +393,23 @@ class BookingModel extends BaseModel
                 }
             }
 
+            // Xử lý ngày thanh toán
+            $ngay_thanh_toan = null;
+            if (!empty($data['ngay_thanh_toan'])) {
+                $ngay_thanh_toan = $data['ngay_thanh_toan'];
+            }
+            
             // Tạo booking
             $sql = "INSERT INTO booking (
                         ma_booking, id_lich_khoi_hanh, id_tour, id_hdv, vai_tro, voucher_id, voucher_code,
                         ho_ten, so_dien_thoai, email, dia_chi,
                         so_nguoi_lon, so_tre_em, so_tre_nho, loai_booking, tong_tien, voucher_discount, tien_dat_coc,
-                        trang_thai, ghi_chu, nguoi_tao, ngay_dat
+                        trang_thai, ngay_thanh_toan, ghi_chu, nguoi_tao, ngay_dat
                     ) VALUES (
                         :ma_booking, :id_lich_khoi_hanh, :id_tour, :id_hdv, :vai_tro, :voucher_id, :voucher_code,
                         :ho_ten, :so_dien_thoai, :email, :dia_chi,
                         :so_nguoi_lon, :so_tre_em, :so_tre_nho, :loai_booking, :tong_tien, :voucher_discount, :tien_dat_coc,
-                        :trang_thai, :ghi_chu, :nguoi_tao, NOW()
+                        :trang_thai, :ngay_thanh_toan, :ghi_chu, :nguoi_tao, NOW()
                     )";
             
             $stmt = $this->conn->prepare($sql);
@@ -422,10 +429,11 @@ class BookingModel extends BaseModel
                 ':so_tre_em' => $data['so_tre_em'] ?? 0,
                 ':so_tre_nho' => $data['so_tre_nho'] ?? 0,
                 ':loai_booking' => $loai_booking,
-                ':tong_tien' => $data['tong_tien_override'] ?? $tong_tien,
+                ':tong_tien' => isset($data['tong_tien_override']) ? (float)$data['tong_tien_override'] : $tong_tien,
                 ':voucher_discount' => $data['voucher_discount'] ?? 0,
                 ':tien_dat_coc' => $data['tien_dat_coc'] ?? 0,
                 ':trang_thai' => 0, // Mặc định: Chờ xử lý (Đã tạo bởi Admin)
+                ':ngay_thanh_toan' => $ngay_thanh_toan,
                 ':ghi_chu' => $data['ghi_chu'] ?? null,
                 ':nguoi_tao' => $_SESSION['aid'] ?? null
             ]);
@@ -542,21 +550,26 @@ class BookingModel extends BaseModel
             }
 
             // Tính lại tổng tiền nếu thay đổi số khách hoặc voucher
-            $tong_tien = $oldBooking['tong_tien'];
-            $needRecalculate = isset($data['so_nguoi_lon']) || isset($data['so_tre_em']) || isset($data['so_tre_nho']);
-            $voucherChanged = isset($data['voucher_id']) || isset($data['voucher_code']);
-            
-            if ($needRecalculate || $voucherChanged) {
-                $tong_tien = $this->calculateTotal(
-                    $oldBooking['id_lich_khoi_hanh'],
-                    $data['so_nguoi_lon'] ?? $oldBooking['so_nguoi_lon'] ?? 0,
-                    $data['so_tre_em'] ?? $oldBooking['so_tre_em'] ?? 0,
-                    $data['so_tre_nho'] ?? $oldBooking['so_tre_nho'] ?? 0
-                );
+            // Ưu tiên sử dụng tong_tien_override nếu có (đã được tính từ controller)
+            if (isset($data['tong_tien_override'])) {
+                $tong_tien = (float)$data['tong_tien_override'];
+            } else {
+                $tong_tien = $oldBooking['tong_tien'];
+                $needRecalculate = isset($data['so_nguoi_lon']) || isset($data['so_tre_em']) || isset($data['so_tre_nho']);
+                $voucherChanged = isset($data['voucher_id']) || isset($data['voucher_code']);
                 
-                // Áp dụng voucher nếu có
-                $voucherDiscount = (float)($data['voucher_discount'] ?? 0);
-                $tong_tien = max(0, $tong_tien - $voucherDiscount);
+                if ($needRecalculate || $voucherChanged) {
+                    $tong_tien = $this->calculateTotal(
+                        $oldBooking['id_lich_khoi_hanh'],
+                        $data['so_nguoi_lon'] ?? $oldBooking['so_nguoi_lon'] ?? 0,
+                        $data['so_tre_em'] ?? $oldBooking['so_tre_em'] ?? 0,
+                        $data['so_tre_nho'] ?? $oldBooking['so_tre_nho'] ?? 0
+                    );
+                    
+                    // Áp dụng voucher nếu có
+                    $voucherDiscount = (float)($data['voucher_discount'] ?? 0);
+                    $tong_tien = max(0, $tong_tien - $voucherDiscount);
+                }
             }
 
             // Xử lý ngày thanh toán
@@ -1571,8 +1584,15 @@ class BookingModel extends BaseModel
     private function validateMemberData($data)
     {
         // Họ tên bắt buộc
-        if (empty(trim($data['ho_ten'] ?? ''))) {
+        $hoTen = trim($data['ho_ten'] ?? '');
+        if (empty($hoTen)) {
             return ['valid' => false, 'message' => 'Họ tên không được để trống'];
+        }
+        if (mb_strlen($hoTen) < 2) {
+            return ['valid' => false, 'message' => 'Họ tên phải có ít nhất 2 ký tự'];
+        }
+        if (mb_strlen($hoTen) > 255) {
+            return ['valid' => false, 'message' => 'Họ tên không được quá 255 ký tự'];
         }
         
         // Email đúng định dạng (nếu có)
@@ -1586,8 +1606,29 @@ class BookingModel extends BaseModel
         if (!empty($data['so_dien_thoai'] ?? '')) {
             $phone = trim($data['so_dien_thoai']);
             // Kiểm tra định dạng số điện thoại Việt Nam
-            if (!preg_match('/^(0|\+84)[0-9]{9,10}$/', $phone)) {
-                return ['valid' => false, 'message' => 'Số điện thoại không hợp lệ'];
+            if (!self::validatePhone($phone)) {
+                return ['valid' => false, 'message' => 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại 10 số bắt đầu bằng 0'];
+            }
+        }
+        
+        // Ngày sinh format (nếu có)
+        if (!empty($data['ngay_sinh'] ?? '')) {
+            $ngaySinh = trim($data['ngay_sinh']);
+            $d = DateTime::createFromFormat('Y-m-d', $ngaySinh);
+            if (!$d || $d->format('Y-m-d') !== $ngaySinh) {
+                return ['valid' => false, 'message' => 'Ngày sinh không hợp lệ (định dạng: YYYY-MM-DD)'];
+            }
+            // Kiểm tra ngày sinh không được trong tương lai
+            if ($d > new DateTime()) {
+                return ['valid' => false, 'message' => 'Ngày sinh không được trong tương lai'];
+            }
+        }
+        
+        // Giới tính hợp lệ (nếu có)
+        if (isset($data['gioi_tinh']) && $data['gioi_tinh'] !== null && $data['gioi_tinh'] !== '') {
+            $gioiTinh = (int)$data['gioi_tinh'];
+            if (!in_array($gioiTinh, [0, 1])) {
+                return ['valid' => false, 'message' => 'Giới tính không hợp lệ (0: Nữ, 1: Nam)'];
             }
         }
         
@@ -1595,8 +1636,10 @@ class BookingModel extends BaseModel
         if (isset($data['loai_khach'])) {
             $loaiKhach = (int)$data['loai_khach'];
             if (!in_array($loaiKhach, [1, 2, 3, 4])) {
-                return ['valid' => false, 'message' => 'Loại khách không hợp lệ'];
+                return ['valid' => false, 'message' => 'Loại khách không hợp lệ (1: Người lớn, 2: Trẻ em, 3: Trẻ nhỏ, 4: Em bé)'];
             }
+        } else {
+            return ['valid' => false, 'message' => 'Loại khách là bắt buộc'];
         }
         
         return ['valid' => true];

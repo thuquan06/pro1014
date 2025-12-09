@@ -409,18 +409,18 @@ if (!$booking) {
                       </span>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                      <?php if (!empty($hdv['so_dien_thoai'])): ?>
+                    <?php if (!empty($hdv['so_dien_thoai'])): ?>
                         <div style="color: #6b7280; font-size: 13px;">
                           <i class="fas fa-phone" style="color: #3b82f6; margin-right: 6px;"></i>
                           <?= safe_html($hdv['so_dien_thoai']) ?>
-                        </div>
-                      <?php endif; ?>
-                      <?php if (!empty($hdv['email'])): ?>
+                      </div>
+                    <?php endif; ?>
+                    <?php if (!empty($hdv['email'])): ?>
                         <div style="color: #6b7280; font-size: 13px;">
                           <i class="fas fa-envelope" style="color: #3b82f6; margin-right: 6px;"></i>
                           <?= safe_html($hdv['email']) ?>
-                        </div>
-                      <?php endif; ?>
+                      </div>
+                    <?php endif; ?>
                     </div>
                   </div>
                 <?php endforeach; ?>
@@ -857,7 +857,7 @@ if (!$booking) {
           <i class="fas fa-plus"></i> Thêm thành viên đầu tiên
         </button>
       <?php endif; ?>
-    </div>
+  </div>
     <?php endif; ?>
   </div>
 

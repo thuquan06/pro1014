@@ -440,31 +440,43 @@ function getTrangThaiText($status) {
             <i class="fas fa-money-bill-wave" style="color: #3b82f6; margin-right: 8px;"></i>Giá
           </h3>
           
-          <?php if ($departurePlan['gia_nguoi_lon']): ?>
           <div class="price-row">
             <span class="price-label"><i class="fas fa-user"></i> Người lớn</span>
-            <span class="price-value"><?= number_format($departurePlan['gia_nguoi_lon'], 0, ',', '.') ?> đ</span>
+            <span class="price-value">
+              <?php if (isset($departurePlan['gia_nguoi_lon']) && $departurePlan['gia_nguoi_lon'] !== null && $departurePlan['gia_nguoi_lon'] !== ''): ?>
+                <?= number_format((float)$departurePlan['gia_nguoi_lon'], 0, ',', '.') ?> đ
+              <?php else: ?>
+                <span style="color: #9ca3af;">Chưa có giá</span>
+              <?php endif; ?>
+            </span>
           </div>
-          <?php endif; ?>
           
-          <?php if ($departurePlan['gia_tre_em']): ?>
           <div class="price-row">
             <span class="price-label"><i class="fas fa-child"></i> Trẻ em</span>
-            <span class="price-value"><?= number_format($departurePlan['gia_tre_em'], 0, ',', '.') ?> đ</span>
+            <span class="price-value">
+              <?php if (isset($departurePlan['gia_tre_em']) && $departurePlan['gia_tre_em'] !== null && $departurePlan['gia_tre_em'] !== ''): ?>
+                <?= number_format((float)$departurePlan['gia_tre_em'], 0, ',', '.') ?> đ
+              <?php else: ?>
+                <span style="color: #9ca3af;">Chưa có giá</span>
+              <?php endif; ?>
+            </span>
           </div>
-          <?php endif; ?>
           
-          <?php if ($departurePlan['gia_tre_nho']): ?>
           <div class="price-row">
             <span class="price-label"><i class="fas fa-baby"></i> Trẻ nhỏ</span>
-            <span class="price-value"><?= number_format($departurePlan['gia_tre_nho'], 0, ',', '.') ?> đ</span>
+            <span class="price-value">
+              <?php if (isset($departurePlan['gia_tre_nho']) && $departurePlan['gia_tre_nho'] !== null && $departurePlan['gia_tre_nho'] !== ''): ?>
+                <?= number_format((float)$departurePlan['gia_tre_nho'], 0, ',', '.') ?> đ
+              <?php else: ?>
+                <span style="color: #9ca3af;">Chưa có giá</span>
+              <?php endif; ?>
+            </span>
           </div>
-          <?php endif; ?>
           
-          <?php if ($departurePlan['uu_dai_giam_gia']): ?>
+          <?php if (isset($departurePlan['uu_dai_giam_gia']) && $departurePlan['uu_dai_giam_gia'] !== null && $departurePlan['uu_dai_giam_gia'] !== '' && $departurePlan['uu_dai_giam_gia'] > 0): ?>
           <div class="price-row">
             <span class="price-label"><i class="fas fa-tag"></i> Ưu đãi giảm giá</span>
-            <span class="price-value" style="color: #ef4444; font-weight: 700;">-<?= number_format($departurePlan['uu_dai_giam_gia'], 0) ?>%</span>
+            <span class="price-value" style="color: #ef4444; font-weight: 700;">-<?= number_format((float)$departurePlan['uu_dai_giam_gia'], 0) ?>%</span>
           </div>
           <?php endif; ?>
         </div>
@@ -622,8 +634,8 @@ function getTrangThaiText($status) {
             <?php foreach ($assignments as $index => $assignment): ?>
             <tr style="border-bottom: 1px solid #e5e7eb;">
               <td style="padding: 12px;"><?= $index + 1 ?></td>
-              <td style="padding: 12px; font-weight: 600;"><?= htmlspecialchars($assignment['ten_hdv'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
-              <td style="padding: 12px;"><?= htmlspecialchars($assignment['sdt_hdv'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
+              <td style="padding: 12px; font-weight: 600;"><?= htmlspecialchars($assignment['ho_ten'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
+              <td style="padding: 12px;"><?= htmlspecialchars($assignment['so_dien_thoai'] ?? 'N/A', ENT_QUOTES, 'UTF-8') ?></td>
               <td style="padding: 12px;">
                 <?php
                 $vaiTro = $assignment['vai_tro'] ?? 'HDV chính';
