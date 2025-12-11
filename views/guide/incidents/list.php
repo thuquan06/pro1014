@@ -9,9 +9,6 @@
       <a href="?act=guide-assignments" class="btn btn-sm" style="background: var(--bg-light); color: var(--text-dark);">
         <i class="fas fa-calendar-check"></i> Phân công
       </a>
-      <a href="?act=guide-incident-create" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus"></i> Tạo báo cáo
-      </a>
     </div>
   </div>
   <div class="card-body">
@@ -73,8 +70,8 @@
       <div style="text-align: center; padding: 60px 20px; color: var(--text-light);">
         <i class="fas fa-exclamation-triangle" style="font-size: 64px; margin-bottom: 16px; opacity: 0.3;"></i>
         <p style="font-size: 16px; margin-bottom: 24px;">Chưa có báo cáo sự cố nào</p>
-        <a href="?act=guide-assignments" class="btn btn-primary">
-          <i class="fas fa-plus"></i> Tạo báo cáo từ phân công
+        <a href="<?= BASE_URL ?>?act=guide-incident-create" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Tạo báo cáo
         </a>
       </div>
     <?php else: ?>

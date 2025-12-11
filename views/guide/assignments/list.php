@@ -45,32 +45,24 @@
       <div class="table-responsive">
         <table>
           <thead>
-            <tr>
-              <th>Tour</th>
-              <th>Ngày khởi hành</th>
-              <th>Vai trò</th>
-              <th>Thời gian làm việc</th>
-              <th>Lương</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
+          <tr>
+            <th>Mã lịch</th>
+            <th>Tour</th>
+            <th>Ngày khởi hành</th>
+            <th>Vai trò</th>
+            <th>Số khách</th>
+            <th>Điểm tập trung</th>
+            <th>Nhận</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
           </thead>
           <tbody>
             <?php foreach ($assignments as $assignment): ?>
               <tr>
+                <td><strong><?= htmlspecialchars($assignment['id_lich_khoi_hanh'] ?? $assignment['id'] ?? 'N/A') ?></strong></td>
                 <td>
-                  <?php if (!empty($assignment['ten_tour'])): ?>
-                    <strong><?= htmlspecialchars($assignment['ten_tour']) ?></strong>
-                  <?php elseif (!empty($assignment['id_lich_khoi_hanh'])): ?>
-                    <strong style="color: var(--text-light);">Tour #<?= htmlspecialchars($assignment['id_lich_khoi_hanh']) ?></strong>
-                    <br><small style="color: var(--text-light); font-style: italic;">Chưa có thông tin tour</small>
-                  <?php else: ?>
-                    <strong style="color: var(--text-light);">Phân công #<?= htmlspecialchars($assignment['id']) ?></strong>
-                    <br><small style="color: var(--text-light); font-style: italic;">Chưa có lịch khởi hành</small>
-                  <?php endif; ?>
-                  <?php if ($assignment['diem_tap_trung']): ?>
-                    <br><small style="color: var(--text-light);"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($assignment['diem_tap_trung']) ?></small>
-                  <?php endif; ?>
+                  <strong><?= htmlspecialchars($assignment['ten_tour'] ?? 'N/A') ?></strong>
                 </td>
                 <td>
                   <?php if ($assignment['ngay_khoi_hanh']): ?>
@@ -82,43 +74,46 @@
                     <span style="color: var(--text-light);">Chưa xác định</span>
                   <?php endif; ?>
                 </td>
+                <td><?= htmlspecialchars($assignment['vai_tro'] ?? 'HDV chính') ?></td>
                 <td>
-                  <?= htmlspecialchars($assignment['vai_tro'] ?? 'HDV chính') ?>
+                  <?php if (!empty($assignment['tong_khach'])): ?>
+                    <strong><?= (int)$assignment['tong_khach'] ?></strong>
+                  <?php else: ?>
+                    <span style="color: var(--text-light);">0</span>
+                  <?php endif; ?>
                 </td>
                 <td>
-                  <?php if ($assignment['ngay_bat_dau'] && $assignment['ngay_ket_thuc']): ?>
-                    Từ <strong><?= date('d/m/Y', strtotime($assignment['ngay_bat_dau'])) ?></strong><br>
-                    Đến <strong><?= date('d/m/Y', strtotime($assignment['ngay_ket_thuc'])) ?></strong>
-                    <?php
-                    $days = (strtotime($assignment['ngay_ket_thuc']) - strtotime($assignment['ngay_bat_dau'])) / (60 * 60 * 24);
-                    if ($days > 0) {
-                      echo '<br><small style="color: var(--text-light);">(' . ($days + 1) . ' ngày)</small>';
-                    }
-                    ?>
+                  <?php if ($assignment['diem_tap_trung']): ?>
+                    <small style="color: var(--text-dark);"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($assignment['diem_tap_trung']) ?></small>
                   <?php else: ?>
                     <span style="color: var(--text-light);">Chưa cập nhật</span>
                   <?php endif; ?>
                 </td>
                 <td>
-                  <?php if (!empty($assignment['luong'])): ?>
-                    <strong style="color: var(--success);"><?= number_format($assignment['luong'], 0, ',', '.') ?> đ</strong>
-                  <?php else: ?>
-                    <span style="color: var(--text-light);">Chưa cập nhật</span>
-                  <?php endif; ?>
+                  <span style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);">
+                    <i class="fas fa-hourglass-half"></i> Chưa xác nhận
+                  </span>
                 </td>
                 <td>
-                  <?php if ($assignment['trang_thai'] == 1): ?>
-                    <span style="background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                      <i class="fas fa-check-circle"></i> Hoạt động
-                    </span>
-                  <?php else: ?>
-                    <span style="background: #fee2e2; color: #991b1b; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                      <i class="fas fa-times-circle"></i> Tạm dừng
-                    </span>
-                  <?php endif; ?>
+                  <?php
+                    $st = $assignment['trang_thai_hien_thi'] ?? 'Chưa xác định';
+                    $map = [
+                      'Ready' => ['bg' => 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', 'color' => '#1d4ed8', 'icon' => 'clock', 'shadow' => 'rgba(29, 78, 216, 0.1)'],
+                      'Đang diễn ra' => ['bg' => 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', 'color' => '#065f46', 'icon' => 'play', 'shadow' => 'rgba(6, 95, 70, 0.1)'],
+                      'Hoàn thành' => ['bg' => 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)', 'color' => '#374151', 'icon' => 'check', 'shadow' => 'rgba(55, 65, 81, 0.1)'],
+                      'Chưa xác định' => ['bg' => 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', 'color' => '#991b1b', 'icon' => 'question', 'shadow' => 'rgba(153, 27, 27, 0.1)']
+                    ];
+                    $cfg = $map[$st] ?? $map['Chưa xác định'];
+                  ?>
+                  <span style="background: <?= $cfg['bg'] ?>; color: <?= $cfg['color'] ?>; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px <?= $cfg['shadow'] ?>;">
+                    <i class="fas fa-<?= $cfg['icon'] ?>"></i> <?= htmlspecialchars($st) ?>
+                  </span>
                 </td>
                 <td>
                   <div style="display: flex; gap: 8px;">
+                    <a href="?act=guide-assignment-confirm&id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: var(--success); color: white; padding: 6px 12px;" onclick="return confirm('Bạn có chắc muốn xác nhận nhận tour này?')">
+                      <i class="fas fa-check"></i> Xác nhận
+                    </a>
                     <a href="?act=guide-assignment-detail&id=<?= $assignment['id'] ?>" class="btn btn-sm" style="background: var(--info); color: white; padding: 6px 12px;">
                       <i class="fas fa-eye"></i> Chi tiết
                     </a>

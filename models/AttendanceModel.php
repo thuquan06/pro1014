@@ -105,7 +105,7 @@ class AttendanceModel extends BaseModel
                 $params[':ngay_diem_danh'] = $ngay_diem_danh;
             }
             
-            $sql .= " ORDER BY b.ma_booking ASC, bd.ho_ten ASC";
+            $sql .= " ORDER BY a.ngay_diem_danh DESC, a.gio_diem_danh DESC, b.ma_booking ASC, bd.ho_ten ASC";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->execute($params);

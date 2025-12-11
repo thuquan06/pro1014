@@ -1,4 +1,9 @@
 <?php
+require_once './models/BookingModel.php';
+require_once './models/ServiceAssignmentModel.php';
+require_once './models/DeparturePlanModel.php';
+require_once './models/TourModel.php';
+require_once './models/TourJournalModel.php';
 /**
  * GuideController - Quản lý giao diện và chức năng cho Hướng dẫn viên
  */
@@ -11,7 +16,7 @@ class GuideController extends BaseController {
     private $journalModel;
     private $incidentReportModel;
     private $pretripChecklistModel;
-    private $attendanceModel;
+    private $bookingModel;
 
     public function __construct() {
         $this->guideModel = new GuideModel();
@@ -20,6 +25,7 @@ class GuideController extends BaseController {
         $this->departurePlanModel = new DeparturePlanModel();
         $this->tourModel = new TourModel();
         $this->journalModel = new TourJournalModel();
+        $this->bookingModel = new BookingModel();
         // PretripChecklistModel và IncidentReportModel sẽ được khởi tạo khi cần (lazy loading)
     }
 
@@ -169,63 +175,34 @@ class GuideController extends BaseController {
                    strtotime($a['ngay_ket_thuc']) < time();
         });
         
-        // Tính tổng lương
-        $totalSalary = 0;
-        foreach ($allAssignments as $assignment) {
-            if (!empty($assignment['luong'])) {
-                $totalSalary += (float)$assignment['luong'];
-            }
-        }
-        
-        // Thống kê theo tháng (6 tháng gần nhất)
-        $monthlyStats = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = date('Y-m', strtotime("-$i months"));
-            $monthStart = $month . '-01';
-            $monthEnd = date('Y-m-t', strtotime($monthStart));
-            
-            $monthAssignments = array_filter($allAssignments, function($a) use ($monthStart, $monthEnd) {
-                if (empty($a['ngay_bat_dau'])) return false;
-                $date = date('Y-m-d', strtotime($a['ngay_bat_dau']));
-                return $date >= $monthStart && $date <= $monthEnd;
-            });
-            
-            $monthSalary = 0;
-            foreach ($monthAssignments as $assignment) {
-                if (!empty($assignment['luong'])) {
-                    $monthSalary += (float)$assignment['luong'];
-                }
-            }
-            
-            $monthlyStats[] = [
-                'month' => date('m/Y', strtotime($monthStart)),
-                'count' => count($monthAssignments),
-                'salary' => $monthSalary
-            ];
-        }
-        
-        // Lấy số nhật ký và báo cáo sự cố
-        $journals = $this->journalModel->getJournalsByGuideID($guideId);
-        $incidentModel = $this->getIncidentReportModel();
-        $incidents = $incidentModel->getReportsByGuideID($guideId);
-        
         $stats = [
             'total' => count($allAssignments),
             'upcoming' => count($upcomingAssignments),
             'completed' => count($completedAssignments),
             'active' => count(array_filter($allAssignments, function($a) {
                 return $a['trang_thai'] == 1;
-            })),
-            'total_salary' => $totalSalary,
-            'total_journals' => count($journals),
-            'total_incidents' => count($incidents),
-            'monthly_stats' => $monthlyStats
+            }))
         ];
         
         // Lấy các phân công sắp tới (5 cái gần nhất)
         $recentAssignments = array_slice($upcomingAssignments, 0, 5);
+
+        // Lịch hôm nay và trong 7 ngày
+        $today = date('Y-m-d');
+        $weekEnd = date('Y-m-d', strtotime('+7 days'));
+        $todayAssignments = $this->guideModel->getAssignmentsByGuideID($guideId, [
+            'from_date' => $today,
+            'to_date' => $today
+        ]);
+        $weekAssignments = $this->guideModel->getAssignmentsByGuideID($guideId, [
+            'from_date' => $today,
+            'to_date' => $weekEnd
+        ]);
+
+        // Thông báo điều hành (placeholder)
+        $announcements = []; // chưa có nguồn, hiển thị trống
         
-        $this->loadView('guide/dashboard', compact('guide', 'stats', 'recentAssignments'), 'guide/layout');
+        $this->loadView('guide/dashboard', compact('guide', 'stats', 'recentAssignments', 'todayAssignments', 'weekAssignments', 'announcements'), 'guide/layout');
     }
 
     /**
@@ -237,6 +214,9 @@ class GuideController extends BaseController {
         
         $guideId = $_SESSION['guide_id'];
         $filters = [];
+        
+        // Chỉ lấy các phân công chưa xác nhận (da_nhan = 0)
+        $filters['da_nhan'] = 0;
         
         // Filter theo trạng thái
         if (isset($_GET['trang_thai']) && $_GET['trang_thai'] !== '') {
@@ -252,6 +232,27 @@ class GuideController extends BaseController {
         }
         
         $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, $filters);
+
+        // Bổ sung tổng khách và trạng thái (thủ công theo trang_thai hoặc tính theo ngày nếu chưa set)
+        foreach ($assignments as &$a) {
+            $a['tong_khach'] = 0;
+            $a['trang_thai_hien_thi'] = 'Chưa xác định';
+            $a['nhan_trang_thai'] = !empty($a['da_nhan']) ? 'Đã nhận' : 'Chờ nhận';
+            // Trang thái thủ công: 0=Ready,1=Đang diễn ra,2=Hoàn thành
+            if (isset($a['trang_thai'])) {
+                if ($a['trang_thai'] == 0) $a['trang_thai_hien_thi'] = 'Ready';
+                elseif ($a['trang_thai'] == 1) $a['trang_thai_hien_thi'] = 'Đang diễn ra';
+                elseif ($a['trang_thai'] == 2) $a['trang_thai_hien_thi'] = 'Hoàn thành';
+            }
+            if (!empty($a['id_lich_khoi_hanh'])) {
+                $bookings = $this->bookingModel->getBookingsByDeparturePlan($a['id_lich_khoi_hanh']);
+                foreach ($bookings as $b) {
+                    $details = $this->bookingModel->getBookingDetails($b['id']);
+                    $a['tong_khach'] += count($details);
+                }
+            }
+        }
+        unset($a);
         
         $this->loadView('guide/assignments/list', compact('assignments', 'filters'), 'guide/layout');
     }
@@ -276,6 +277,14 @@ class GuideController extends BaseController {
         if (!$assignment || $assignment['id_hdv'] != $guideId) {
             $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền xem';
             $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+
+        // Tính trạng thái hiển thị (thủ công 0/1/2)
+        $assignment['trang_thai_hien_thi'] = 'Chưa xác định';
+        if (isset($assignment['trang_thai'])) {
+            if ($assignment['trang_thai'] == 0) $assignment['trang_thai_hien_thi'] = 'Ready';
+            elseif ($assignment['trang_thai'] == 1) $assignment['trang_thai_hien_thi'] = 'Đang diễn ra';
+            elseif ($assignment['trang_thai'] == 2) $assignment['trang_thai_hien_thi'] = 'Hoàn thành';
         }
         
         // Lấy thông tin lịch khởi hành và tour
@@ -307,38 +316,121 @@ class GuideController extends BaseController {
             }
         }
         
-        // Lấy lịch trình từ departure plan (chuongtrinh) - giống cách parse trong admin
-        $itinerary = [];
-        if ($departurePlan && !empty($departurePlan['chuongtrinh'])) {
-            $chuongtrinh = html_entity_decode($departurePlan['chuongtrinh'], ENT_QUOTES, 'UTF-8');
-            
-            if (!empty($chuongtrinh)) {
-                // Tìm tất cả các vị trí có "NGÀY X"
-                preg_match_all('/(?:NGÀY|Day|Ngày)\s*(\d+)(?:\s*:\s*([^<\n]+))?/i', $chuongtrinh, $matches, PREG_OFFSET_CAPTURE);
+        // Lấy bookings và khách
+        $bookings = [];
+        $members = [];
+        $guestStats = ['NL' => 0, 'TE' => 0, 'EB' => 0];
+        $tongTienTour = 0; // Tổng tiền từ tất cả bookings
+        $attendanceStats = ['total' => 0, 'co_mat' => 0, 'vang_mat' => 0, 'chua_diem_danh' => 0]; // Thống kê điểm danh
+        if ($departurePlan) {
+            $bookings = $this->bookingModel->getBookingsByDeparturePlan($departurePlan['id']);
+            foreach ($bookings as $booking) {
+                // Tính tổng tiền từ các booking
+                if (!empty($booking['tong_tien'])) {
+                    $tongTienTour += (float)$booking['tong_tien'];
+                }
                 
+                $details = $this->bookingModel->getBookingDetails($booking['id']);
+                foreach ($details as $detail) {
+                    $members[] = [
+                        'id' => $detail['id'],
+                        'id_booking' => $booking['id'],
+                        'ma_booking' => $booking['ma_booking'],
+                        'ho_ten' => $detail['ho_ten'],
+                        'so_dien_thoai' => $detail['so_dien_thoai'],
+                        'loai_khach' => $detail['loai_khach']
+                    ];
+                    $lk = strtoupper($detail['loai_khach'] ?? '');
+                    if ($lk === 'TE') $guestStats['TE']++;
+                    elseif ($lk === 'EB') $guestStats['EB']++;
+                    else $guestStats['NL']++;
+                }
+            }
+            
+            // Lấy thống kê điểm danh cho ngày hôm nay
+            require_once './models/AttendanceModel.php';
+            $attendanceModel = new AttendanceModel();
+            $todayAttendance = $attendanceModel->getAttendanceByDeparturePlan($departurePlan['id'], date('Y-m-d'));
+            
+            $attendanceStats['total'] = count($members);
+            $attendanceStats['co_mat'] = 0;
+            $attendanceStats['vang_mat'] = 0;
+            $attendanceStats['chua_diem_danh'] = count($members);
+            
+            if (!empty($todayAttendance)) {
+                foreach ($todayAttendance as $att) {
+                    if ($att['trang_thai'] == 1) {
+                        $attendanceStats['co_mat']++;
+                    } elseif ($att['trang_thai'] == 0) {
+                        $attendanceStats['vang_mat']++;
+                    }
+                }
+                $attendanceStats['chua_diem_danh'] = $attendanceStats['total'] - count($todayAttendance);
+            }
+        }
+
+        // Tự động điền số điều hành bằng số điện thoại HDV nếu chưa có
+        if (empty($assignment['so_dieu_hanh']) && !empty($assignment['so_dien_thoai'])) {
+            // Tự động cập nhật số điều hành bằng số điện thoại HDV
+            $this->assignmentModel->updateContactNumbers($assignmentId, $assignment['so_dien_thoai'], $assignment['so_khan_cap'] ?? null);
+            // Reload assignment để lấy giá trị mới
+            $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        }
+        
+        // Parse lịch trình theo ngày
+        $itineraryDays = [];
+        if (!empty($departurePlan['chuongtrinh'])) {
+            $chuongtrinh_raw = trim($departurePlan['chuongtrinh']);
+            
+            // Thử parse JSON trước (format mới)
+            // Loại bỏ các ký tự whitespace thừa ở đầu và cuối
+            $chuongtrinh_clean = trim($chuongtrinh_raw);
+            // Tìm phần JSON hợp lệ (bắt đầu bằng [ và kết thúc bằng ])
+            if (preg_match('/\[.*\]/s', $chuongtrinh_clean, $jsonMatch)) {
+                $jsonString = $jsonMatch[0];
+            } else {
+                $jsonString = $chuongtrinh_clean;
+            }
+            
+            $jsonData = json_decode($jsonString, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData) && !empty($jsonData)) {
+                // Format JSON: [{"ngay": 1, "tieu_de": "...", "noi_dung": "..."}, ...]
+                foreach ($jsonData as $day) {
+                    if (isset($day['ngay']) && isset($day['noi_dung'])) {
+                        $dayNum = (int)$day['ngay'];
+                        $dayTitle = 'Ngày ' . $dayNum;
+                        if (!empty($day['tieu_de'])) {
+                            $dayTitle .= ': ' . htmlspecialchars($day['tieu_de']);
+                        }
+                        // Làm sạch nội dung HTML
+                        $content = trim($day['noi_dung']);
+                        // Đảm bảo không có ký tự JSON thừa
+                        $content = preg_replace('/[\s]*[\}\]\"]+[\s]*$/', '', $content);
+                        $content = preg_replace('/^[\s]*[\{\[\"]+[\s]*/', '', $content);
+                        $itineraryDays[$dayNum] = [
+                            'title' => $dayTitle,
+                            'content' => $content // Đã là HTML và đã làm sạch
+                        ];
+                    }
+                }
+                ksort($itineraryDays);
+            } else {
+                // Format cũ: HTML/text với markers "Ngày X"
+                $chuongtrinh = html_entity_decode((string)$chuongtrinh_raw, ENT_QUOTES, 'UTF-8');
+                preg_match_all('/(?:NGÀY|Day|Ngày)\s*(\d+)(?:\s*:\s*([^<\n]+))?/i', $chuongtrinh, $matches, PREG_OFFSET_CAPTURE);
                 if (!empty($matches[0])) {
                     $markers = [];
-                    
-                    // Lấy tất cả các marker
                     for ($i = 0; $i < count($matches[0]); $i++) {
                         $dayNum = (int)$matches[1][$i][0];
                         $pos = $matches[0][$i][1];
                         $fullMatch = $matches[0][$i][0];
                         $title = isset($matches[2][$i]) ? trim(strip_tags($matches[2][$i][0])) : '';
-                        
-                        // Tìm vị trí kết thúc của tag HTML chứa marker (nếu có)
                         $afterText = substr($chuongtrinh, $pos, 500);
                         $endPos = $pos + strlen($fullMatch);
-                        
-                        // Tìm tag đóng sau marker
                         if (preg_match('/<\/[^>]+>/', $afterText, $closeTag, PREG_OFFSET_CAPTURE)) {
                             $tagEnd = $pos + $closeTag[0][1] + strlen($closeTag[0][0]);
-                            if ($tagEnd > $endPos) {
-                                $endPos = $tagEnd;
-                            }
+                            if ($tagEnd > $endPos) $endPos = $tagEnd;
                         }
-                        
-                        // Chỉ giữ marker đầu tiên của mỗi ngày
                         if (!isset($markers[$dayNum]) || $markers[$dayNum]['pos'] > $pos) {
                             $markers[$dayNum] = [
                                 'day' => $dayNum,
@@ -348,91 +440,160 @@ class GuideController extends BaseController {
                             ];
                         }
                     }
-                    
-                    // Sắp xếp theo vị trí
-                    uasort($markers, function($a, $b) {
-                        return $a['pos'] - $b['pos'];
-                    });
-                    
-                    // Chia nội dung theo các marker
+                    uasort($markers, fn($a, $b) => $a['pos'] - $b['pos']);
                     $markerList = array_values($markers);
-                    
                     for ($i = 0; $i < count($markerList); $i++) {
                         $marker = $markerList[$i];
                         $dayNum = $marker['day'];
-                        
-                        // Vị trí bắt đầu nội dung (sau marker)
                         $contentStart = $marker['end_pos'];
-                        
-                        // Vị trí kết thúc (trước marker tiếp theo hoặc cuối chuỗi)
-                        $contentEnd = ($i < count($markerList) - 1) 
-                            ? $markerList[$i + 1]['pos'] 
-                            : strlen($chuongtrinh);
-                        
-                        // Lấy nội dung của ngày này
-                        $dayContent = substr($chuongtrinh, $contentStart, $contentEnd - $contentStart);
+                        $contentEnd = ($i < count($markerList) - 1) ? $markerList[$i + 1]['pos'] : strlen($chuongtrinh);
+                        $dayContent = trim(substr($chuongtrinh, $contentStart, $contentEnd - $contentStart));
+                        $dayContent = preg_replace('/<[^>]*>\s*(?:NGÀY|Day|Ngày)\s*\d+[^<]*\s*<\/[^>]*>/is', '', $dayContent);
                         $dayContent = trim($dayContent);
-                        
-                        // Loại bỏ header "NGÀY X" khỏi content nếu còn sót
-                        $dayContent = preg_replace('/<h[1-6][^>]*>\s*<strong[^>]*>\s*(?:NGÀY|Day|Ngày)\s*\d+[^<]*\s*<\/strong>\s*<\/h[1-6]>/is', '', $dayContent);
-                        $dayContent = trim($dayContent);
-                        
-                        // Đảm bảo HTML không bị escape
-                        $dayContent = html_entity_decode($dayContent, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                        
-                        // Tạo title
-                        $dayTitle = $marker['title'];
-                        
-                        // Parse thông tin từ content HTML
-                        $mota = strip_tags($dayContent);
-                        $diemden = '';
-                        $thoiluong = '';
-                        $buaan = '';
-                        $noinghi = '';
-                        $hoatdong = '';
-                        
-                        // Tìm các thông tin trong content
-                        if (preg_match('/Điểm đến[:\s]+([^<\n]+)/i', $dayContent, $match)) {
-                            $diemden = trim(strip_tags($match[1]));
+                        $dayTitle = 'Ngày ' . $dayNum;
+                        if (!empty($marker['title'])) {
+                            $dayTitle .= ': ' . htmlspecialchars($marker['title']);
                         }
-                        if (preg_match('/Thời lượng[:\s]+([^<\n]+)/i', $dayContent, $match)) {
-                            $thoiluong = trim(strip_tags($match[1]));
-                        }
-                        if (preg_match('/Bữa ăn[:\s]+([^<\n]+)/i', $dayContent, $match)) {
-                            $buaan = trim(strip_tags($match[1]));
-                        }
-                        if (preg_match('/Nơi nghỉ[:\s]+([^<\n]+)/i', $dayContent, $match)) {
-                            $noinghi = trim(strip_tags($match[1]));
-                        }
-                        if (preg_match('/Hoạt động[:\s]+([^<\n]+)/i', $dayContent, $match)) {
-                            $hoatdong = trim(strip_tags($match[1]));
-                        }
-                        
-                        $itinerary[] = [
-                            'ngay_thu' => $dayNum,
-                            'tieude' => $dayTitle,
-                            'mota' => $mota,
-                            'diemden' => $diemden,
-                            'thoiluong' => $thoiluong,
-                            'buaan' => $buaan,
-                            'noinghi' => $noinghi,
-                            'hoatdong' => $hoatdong,
-                            'content_html' => $dayContent
+                        $itineraryDays[$dayNum] = [
+                            'title' => $dayTitle,
+                            'content' => $dayContent
                         ];
                     }
-                } else {
-                    // Nếu không tìm thấy marker, hiển thị toàn bộ trong 1 ngày
-                    $itinerary[] = [
-                        'ngay_thu' => '1',
-                        'tieude' => '',
-                        'mota' => strip_tags($chuongtrinh),
-                        'content_html' => $chuongtrinh
+                }
+                if (empty($itineraryDays)) {
+                    $itineraryDays[1] = [
+                        'title' => 'Ngày 1',
+                        'content' => $chuongtrinh
                     ];
                 }
+                ksort($itineraryDays);
             }
         }
         
-        $this->loadView('guide/assignments/detail', compact('assignment', 'departurePlan', 'tour', 'services', 'checklist', 'checklistItems', 'completionPercentage', 'itinerary'), 'guide/layout');
+        // Lấy thông tin điểm danh cho từng thành viên
+        $todayAttendanceMap = [];
+        if ($departurePlan && !empty($members)) {
+            require_once './models/AttendanceModel.php';
+            $attendanceModel = new AttendanceModel();
+            $todayAttendance = $attendanceModel->getAttendanceByDeparturePlan($departurePlan['id'], date('Y-m-d'));
+            foreach ($todayAttendance as $att) {
+                $todayAttendanceMap[$att['id_booking_detail']] = $att;
+            }
+        }
+        
+        $this->loadView(
+            'guide/assignments/detail',
+            compact('assignment', 'departurePlan', 'tour', 'services', 'checklist', 'checklistItems', 'completionPercentage', 'bookings', 'members', 'guestStats', 'itineraryDays', 'tongTienTour', 'attendanceStats', 'todayAttendanceMap'),
+            'guide/layout'
+        );
+    }
+
+    /**
+     * Xác nhận đã nhận tour
+     * Route: ?act=guide-assignment-confirm&id=X
+     */
+    public function confirmAssignment() {
+        $this->checkLogin();
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['id'] ?? null;
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+
+        $ok = $this->assignmentModel->confirmReceived($assignmentId);
+        if ($ok) {
+            $_SESSION['success'] = 'Đã xác nhận nhận tour. Tour đã được chuyển sang Lịch làm việc.';
+            // Redirect về trang schedule (lịch làm việc) sau khi xác nhận
+            $this->redirect(BASE_URL . '?act=guide-schedule');
+        } else {
+            $_SESSION['error'] = 'Không thể xác nhận nhận tour.';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái phân công (Ready/Đang diễn ra/Hoàn thành)
+     * Route: ?act=guide-assignment-status (POST)
+     */
+    public function updateAssignmentStatus() {
+        $this->checkLogin();
+        $guideId = $_SESSION['guide_id'];
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        $assignmentId = $_POST['assignment_id'] ?? null;
+        $status = isset($_POST['trang_thai']) ? (int)$_POST['trang_thai'] : null;
+        if ($assignmentId === null || $status === null || $status < 0 || $status > 2) {
+            $_SESSION['error'] = 'Dữ liệu trạng thái không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+
+        // Chỉ cho phép tiến tới (Ready -> Đang diễn ra -> Hoàn thành), không hạ cấp
+        $currentStatus = isset($assignment['trang_thai']) ? (int)$assignment['trang_thai'] : 0;
+        if ($status < $currentStatus) {
+            $_SESSION['error'] = 'Không thể chuyển ngược trạng thái (chỉ được tiến tới).';
+            $this->redirect(BASE_URL . '?act=guide-assignment-detail&id=' . $assignmentId);
+        }
+
+        $ok = $this->assignmentModel->setStatus($assignmentId, $status);
+        if ($ok) {
+            $_SESSION['success'] = 'Đã cập nhật trạng thái.';
+        } else {
+            $_SESSION['error'] = 'Không thể cập nhật trạng thái.';
+        }
+        $this->redirect(BASE_URL . '?act=guide-assignment-detail&id=' . $assignmentId);
+    }
+
+    /**
+     * Cập nhật số điều hành và số khẩn cấp
+     * Route: ?act=guide-assignment-update-contacts (POST)
+     */
+    public function updateContactNumbers() {
+        $this->checkLogin();
+        $guideId = $_SESSION['guide_id'];
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        $assignmentId = filter_var($_POST['assignment_id'] ?? 0, FILTER_VALIDATE_INT);
+        $soDieuHanh = trim($_POST['so_dieu_hanh'] ?? '');
+        $soKhanCap = trim($_POST['so_khan_cap'] ?? '');
+        
+        if (!$assignmentId) {
+            $_SESSION['error'] = 'ID phân công không hợp lệ';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+        if (!$assignment || $assignment['id_hdv'] != $guideId) {
+            $_SESSION['error'] = 'Không tìm thấy phân công hoặc bạn không có quyền';
+            $this->redirect(BASE_URL . '?act=guide-assignments');
+            return;
+        }
+        
+        $result = $this->assignmentModel->updateContactNumbers($assignmentId, $soDieuHanh, $soKhanCap);
+        
+        if ($result) {
+            $_SESSION['success'] = 'Đã cập nhật số liên hệ thành công!';
+        } else {
+            $_SESSION['error'] = 'Có lỗi xảy ra khi cập nhật số liên hệ.';
+        }
+        
+        $this->redirect(BASE_URL . '?act=guide-assignment-detail&id=' . $assignmentId);
     }
 
     /**
@@ -465,16 +626,19 @@ class GuideController extends BaseController {
             $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
             if ($departurePlan && $departurePlan['id_tour']) {
                 $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
-                // Thêm tên tour vào departurePlan để view dễ sử dụng
-                if ($tour) {
-                    $departurePlan['ten_tour'] = $tour['tengoi'] ?? null;
-                }
             }
         }
         
         if (!$departurePlan) {
             $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
             $this->redirect(BASE_URL . '?act=guide-assignments');
+        }
+        
+        // Lấy tên tour từ tour hoặc departurePlan
+        if ($tour && !empty($tour['tengoi'])) {
+            $departurePlan['ten_tour'] = $tour['tengoi'];
+        } elseif (empty($departurePlan['ten_tour'])) {
+            $departurePlan['ten_tour'] = 'Tour chưa có tên';
         }
         
         // Lấy danh sách thành viên từ các booking trong lịch khởi hành
@@ -495,8 +659,10 @@ class GuideController extends BaseController {
                     'id_booking' => $booking['id'],
                     'ma_booking' => $booking['ma_booking'],
                     'ho_ten' => $detail['ho_ten'],
-                    'so_dien_thoai' => $detail['so_dien_thoai'],
-                    'loai_khach' => $detail['loai_khach']
+                    'so_dien_thoai' => $detail['so_dien_thoai'] ?? null,
+                    'loai_khach' => $detail['loai_khach'] ?? null,
+                    'gioi_tinh' => $detail['gioi_tinh'] ?? null,
+                    'ngay_sinh' => $detail['ngay_sinh'] ?? null
                 ];
             }
         }
@@ -512,32 +678,77 @@ class GuideController extends BaseController {
      * Route: ?act=guide-attendance-save
      */
     public function saveAttendance() {
-        $this->checkLogin();
+        // Tắt output buffering và đảm bảo không có output nào trước JSON
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
+        // Set JSON header ngay từ đầu để tránh output HTML
         header('Content-Type: application/json');
         
-        $guideId = $_SESSION['guide_id'];
-        $data = json_decode(file_get_contents('php://input'), true);
+        // Tắt display_errors tạm thời để tránh PHP warnings/errors làm hỏng JSON
+        $oldDisplayErrors = ini_get('display_errors');
+        ini_set('display_errors', 0);
         
-        if (!$data || !isset($data['id_lich_khoi_hanh']) || !isset($data['ngay_diem_danh']) || !isset($data['attendance'])) {
-            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
-            return;
+        // Kiểm tra login mà không redirect (vì đây là AJAX)
+        if (empty($_SESSION['guide_id'])) {
+            echo json_encode(['success' => false, 'message' => 'Chưa đăng nhập. Vui lòng đăng nhập lại.']);
+            ini_set('display_errors', $oldDisplayErrors);
+            exit;
         }
         
-        require_once './models/AttendanceModel.php';
-        $attendanceModel = new AttendanceModel();
-        
-        $result = $attendanceModel->markAttendanceBatch(
-            $data['id_lich_khoi_hanh'],
-            $data['id_hdv'] ?? $guideId,
-            $data['ngay_diem_danh'],
-            $data['attendance']
-        );
-        
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Điểm danh thành công']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Không thể lưu điểm danh']);
+        try {
+            $guideId = $_SESSION['guide_id'];
+            
+            $rawInput = file_get_contents('php://input');
+            $data = json_decode($rawInput, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("JSON decode error: " . json_last_error_msg());
+                echo json_encode(['success' => false, 'message' => 'Dữ liệu JSON không hợp lệ: ' . json_last_error_msg()]);
+                ini_set('display_errors', $oldDisplayErrors);
+                exit;
+            }
+            
+            if (!$data || !isset($data['id_lich_khoi_hanh']) || !isset($data['ngay_diem_danh']) || !isset($data['attendance'])) {
+                error_log("Missing required fields. Data: " . print_r($data, true));
+                echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ. Thiếu thông tin bắt buộc.']);
+                ini_set('display_errors', $oldDisplayErrors);
+                exit;
+            }
+            
+            // Require model trong try-catch để bắt lỗi
+            try {
+                require_once './models/AttendanceModel.php';
+                $attendanceModel = new AttendanceModel();
+            } catch (Exception $e) {
+                error_log("Error loading AttendanceModel: " . $e->getMessage());
+                echo json_encode(['success' => false, 'message' => 'Lỗi khởi tạo model: ' . $e->getMessage()]);
+                ini_set('display_errors', $oldDisplayErrors);
+                exit;
+            }
+            
+            $result = $attendanceModel->markAttendanceBatch(
+                $data['id_lich_khoi_hanh'],
+                $data['id_hdv'] ?? $guideId,
+                $data['ngay_diem_danh'],
+                $data['attendance']
+            );
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Điểm danh thành công']);
+            } else {
+                error_log("markAttendanceBatch failed for lich_khoi_hanh: " . $data['id_lich_khoi_hanh']);
+                echo json_encode(['success' => false, 'message' => 'Không thể lưu điểm danh. Vui lòng kiểm tra lại dữ liệu.']);
+            }
+        } catch (Exception $e) {
+            error_log("saveAttendance exception: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
+        } finally {
+            // Khôi phục display_errors
+            ini_set('display_errors', $oldDisplayErrors);
         }
+        exit; // Đảm bảo không có output nào sau JSON
     }
 
     /**
@@ -648,110 +859,15 @@ class GuideController extends BaseController {
     }
 
     /**
-     * Cập nhật thông tin cá nhân
-     * Route: ?act=guide-profile-update
-     */
-    public function updateProfile() {
-        $this->checkLogin();
-        
-        $guideId = $_SESSION['guide_id'];
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = [
-                'ho_ten' => $_POST['ho_ten'] ?? '',
-                'so_dien_thoai' => $_POST['so_dien_thoai'] ?? null,
-                'dia_chi' => $_POST['dia_chi'] ?? null,
-            ];
-            
-            // Xử lý upload ảnh đại diện nếu có
-            if (!empty($_FILES['anh_dai_dien']['name'])) {
-                require_once './commons/function.php';
-                $uploadedPath = uploadFile($_FILES['anh_dai_dien'], 'uploads/guides/');
-                if ($uploadedPath) {
-                    $data['anh_dai_dien'] = $uploadedPath;
-                }
-            }
-            
-            $result = $this->guideModel->updateGuide($guideId, $data);
-            
-            if ($result) {
-                // Cập nhật session
-                if (!empty($data['ho_ten'])) {
-                    $_SESSION['guide_name'] = $data['ho_ten'];
-                }
-                
-                $_SESSION['success'] = 'Cập nhật thông tin thành công!';
-            } else {
-                $_SESSION['error'] = 'Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại.';
-            }
-        }
-        
-        $this->redirect(BASE_URL . '?act=guide-profile');
-    }
-
-    /**
-     * Đổi mật khẩu
-     * Route: ?act=guide-change-password
-     */
-    public function changePassword() {
-        $this->checkLogin();
-        header('Content-Type: application/json');
-        
-        $guideId = $_SESSION['guide_id'];
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        if (!$data || !isset($data['current_password']) || !isset($data['new_password'])) {
-            echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);
-            return;
-        }
-        
-        $guide = $this->guideModel->getGuideByID($guideId);
-        if (!$guide) {
-            echo json_encode(['success' => false, 'message' => 'Không tìm thấy thông tin hướng dẫn viên']);
-            return;
-        }
-        
-        // Kiểm tra mật khẩu hiện tại (CMND/CCCD hoặc số điện thoại)
-        $currentPassword = trim($data['current_password']);
-        $isValid = false;
-        
-        if (!empty($guide['cmnd_cccd']) && trim($guide['cmnd_cccd']) === $currentPassword) {
-            $isValid = true;
-        } elseif (empty($guide['cmnd_cccd']) && !empty($guide['so_dien_thoai']) && trim($guide['so_dien_thoai']) === $currentPassword) {
-            $isValid = true;
-        }
-        
-        if (!$isValid) {
-            echo json_encode(['success' => false, 'message' => 'Mật khẩu hiện tại không đúng']);
-            return;
-        }
-        
-        // Cập nhật mật khẩu mới (lưu vào CMND/CCCD hoặc tạo field password riêng)
-        $newPassword = trim($data['new_password']);
-        if (strlen($newPassword) < 6) {
-            echo json_encode(['success' => false, 'message' => 'Mật khẩu mới phải có ít nhất 6 ký tự']);
-            return;
-        }
-        
-        // Cập nhật CMND/CCCD làm mật khẩu mới (hoặc có thể thêm field password riêng)
-        $result = $this->guideModel->updateGuide($guideId, ['cmnd_cccd' => $newPassword]);
-        
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Đổi mật khẩu thành công!']);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Có lỗi xảy ra khi đổi mật khẩu. Vui lòng thử lại.']);
-        }
-    }
-
-    /**
-     * Lịch làm việc của guide
+     * Lịch làm việc của guide - Chỉ hiển thị các phân công đã xác nhận (da_nhan = 1)
      * Route: ?act=guide-schedule
      */
     public function schedule() {
         $this->checkLogin();
         
         $guideId = $_SESSION['guide_id'];
-        $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['trang_thai' => 1]);
+        // Chỉ lấy các phân công đã xác nhận (da_nhan = 1)
+        $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['da_nhan' => 1]);
         
         $this->loadView('guide/schedule', compact('assignments'), 'guide/layout');
     }
@@ -797,9 +913,10 @@ class GuideController extends BaseController {
         $guideId = $_SESSION['guide_id'];
         $assignmentId = $_GET['assignment_id'] ?? null;
         
+        // Nếu chưa chọn phân công, hiển thị form chọn phân công trước
         if (!$assignmentId) {
-            $_SESSION['error'] = 'ID phân công không hợp lệ';
-            $this->redirect(BASE_URL . '?act=guide-assignments');
+            $assignments = $this->guideModel->getAssignmentsByGuideID($guideId);
+            $this->loadView('guide/journals/select-assignment', compact('assignments'), 'guide/layout');
             return;
         }
         
@@ -1098,35 +1215,43 @@ class GuideController extends BaseController {
      * Route: ?act=guide-incident-create&assignment_id=X
      */
     public function createIncident() {
-        $this->checkLogin();
-        
-        $guideId = $_SESSION['guide_id'];
-        $assignmentId = $_GET['assignment_id'] ?? $_POST['assignment_id'] ?? null;
-        
-        $assignment = null;
-        $departurePlan = null;
-        $tour = null;
-        
-        // Nếu có assignment_id, kiểm tra quyền truy cập
-        if ($assignmentId) {
-            $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
-            if (!$assignment || $assignment['id_hdv'] != $guideId) {
-                $_SESSION['error'] = 'Bạn không có quyền tạo báo cáo sự cố cho phân công này';
-                $this->redirect(BASE_URL . '?act=guide-assignments');
-                return;
-            }
+        try {
+            // Debug log
+            error_log("createIncident called - GET: " . print_r($_GET, true) . " POST: " . print_r($_POST, true));
             
-            // Lấy thông tin phân công và tour
-            if ($assignment['id_lich_khoi_hanh']) {
-                $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
-                if ($departurePlan && $departurePlan['id_tour']) {
-                    $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+            $this->checkLogin();
+            
+            $guideId = $_SESSION['guide_id'];
+            $assignmentId = $_GET['assignment_id'] ?? $_POST['assignment_id'] ?? null;
+            
+            error_log("createIncident - guideId: $guideId, assignmentId: " . ($assignmentId ?? 'null'));
+            
+            $assignment = null;
+            $departurePlan = null;
+            $tour = null;
+            
+            // Nếu có assignment_id, kiểm tra quyền truy cập
+            if ($assignmentId) {
+                $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+                if (!$assignment || $assignment['id_hdv'] != $guideId) {
+                    $_SESSION['error'] = 'Bạn không có quyền tạo báo cáo sự cố cho phân công này';
+                    $this->redirect(BASE_URL . '?act=guide-assignments');
+                    return;
+                }
+                
+                // Lấy thông tin phân công và tour
+                if ($assignment['id_lich_khoi_hanh']) {
+                    $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+                    if ($departurePlan && $departurePlan['id_tour']) {
+                        $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+                    }
                 }
             }
-        }
-        
-        // Xử lý POST request
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            
+            // Không redirect nếu không có assignment_id - chỉ hiển thị form chọn phân công
+            
+            // Xử lý POST request
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$assignmentId) {
                 $_SESSION['error'] = 'Vui lòng chọn phân công';
             } else {
@@ -1204,19 +1329,40 @@ class GuideController extends BaseController {
                     $_SESSION['error'] = 'Có lỗi xảy ra khi tạo báo cáo sự cố. Vui lòng thử lại.';
                 }
             }
+            }
+            
+            // Lấy danh sách phân công để chọn nếu chưa có assignment
+            // Lấy cả phân công đã xác nhận (da_nhan = 1) để có thể tạo báo cáo
+            $assignments = [];
+            if (!$assignment) {
+                // Lấy tất cả phân công đã xác nhận (da_nhan = 1) để có thể tạo báo cáo
+                try {
+                    $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['da_nhan' => 1]);
+                    error_log("createIncident - Found " . count($assignments) . " assignments");
+                } catch (Exception $e) {
+                    error_log("createIncident - Error getting assignments: " . $e->getMessage());
+                    $assignments = [];
+                }
+            }
+            
+            try {
+                $incidentModel = $this->getIncidentReportModel();
+                $incidentTypes = $incidentModel->getIncidentTypes();
+                $severityLevels = $incidentModel->getSeverityLevels();
+                
+                error_log("createIncident - About to load view");
+                
+                // Luôn hiển thị form, kể cả khi không có assignments
+                $this->loadView('guide/incidents/create', compact('assignment', 'departurePlan', 'tour', 'incidentTypes', 'severityLevels', 'assignments'), 'guide/layout');
+            } catch (Exception $e) {
+                error_log("createIncident - Error loading view: " . $e->getMessage());
+                throw $e;
+            }
+        } catch (Exception $e) {
+            error_log("Error in createIncident: " . $e->getMessage());
+            $_SESSION['error'] = 'Có lỗi xảy ra: ' . $e->getMessage();
+            $this->redirect(BASE_URL . '?act=guide-incidents');
         }
-        
-        // Lấy danh sách phân công để chọn nếu chưa có assignment
-        $assignments = [];
-        if (!$assignment) {
-            $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['trang_thai' => 1]);
-        }
-        
-        $incidentModel = $this->getIncidentReportModel();
-        $incidentTypes = $incidentModel->getIncidentTypes();
-        $severityLevels = $incidentModel->getSeverityLevels();
-        
-        $this->loadView('guide/incidents/create', compact('assignment', 'departurePlan', 'tour', 'incidentTypes', 'severityLevels', 'assignments'), 'guide/layout');
     }
 
     /**

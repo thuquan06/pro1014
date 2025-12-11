@@ -5,6 +5,58 @@
  */
 class AssignmentModel extends BaseModel
 {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->ensureColumns();
+    }
+
+    /**
+     * Đảm bảo các cột cần thiết tồn tại
+     */
+    private function ensureColumns()
+    {
+        try {
+            // Kiểm tra và thêm cột da_nhan
+            $col = $this->conn->query("SHOW COLUMNS FROM phan_cong_hdv LIKE 'da_nhan'")->rowCount();
+            if ($col === 0) {
+                $this->conn->exec("ALTER TABLE phan_cong_hdv ADD COLUMN da_nhan TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'HDV đã nhận tour'");
+            }
+            
+            // Kiểm tra và thêm cột so_dieu_hanh
+            $col = $this->conn->query("SHOW COLUMNS FROM phan_cong_hdv LIKE 'so_dieu_hanh'")->rowCount();
+            if ($col === 0) {
+                $this->conn->exec("ALTER TABLE phan_cong_hdv ADD COLUMN so_dieu_hanh VARCHAR(20) NULL COMMENT 'Số điện thoại điều hành'");
+            }
+            
+            // Kiểm tra và thêm cột so_khan_cap
+            $col = $this->conn->query("SHOW COLUMNS FROM phan_cong_hdv LIKE 'so_khan_cap'")->rowCount();
+            if ($col === 0) {
+                $this->conn->exec("ALTER TABLE phan_cong_hdv ADD COLUMN so_khan_cap VARCHAR(20) NULL COMMENT 'Số điện thoại khẩn cấp'");
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi ensureColumns phan_cong_hdv: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Cập nhật số điều hành và số khẩn cấp
+     */
+    public function updateContactNumbers($id, $soDieuHanh, $soKhanCap)
+    {
+        try {
+            $this->ensureColumns();
+            $stmt = $this->conn->prepare("UPDATE phan_cong_hdv SET so_dieu_hanh = :so_dieu_hanh, so_khan_cap = :so_khan_cap, ngay_cap_nhat = NOW() WHERE id = :id");
+            return $stmt->execute([
+                ':so_dieu_hanh' => $soDieuHanh ?: null,
+                ':so_khan_cap' => $soKhanCap ?: null,
+                ':id' => $id
+            ]);
+        } catch (PDOException $e) {
+            error_log("Lỗi updateContactNumbers AssignmentModel: " . $e->getMessage());
+            return false;
+        }
+    }
     /**
      * Lấy tất cả phân công
      */
@@ -77,21 +129,37 @@ class AssignmentModel extends BaseModel
      * Kiểm tra trùng lịch HDV
      * Trả về danh sách các phân công bị trùng
      */
-    public function checkScheduleConflict($idHdv, $ngayBatDau, $ngayKetThuc, $excludeAssignmentId = null)
+    public function checkScheduleConflict($idHdv, $ngayBatDau, $ngayKetThuc, $excludeAssignmentId = null, $idLichKhoiHanh = null)
     {
+        // Kiểm tra conflict dựa trên cả ngày của phân công VÀ ngày của lịch trình
+        // Conflict xảy ra khi có bất kỳ overlap nào giữa 2 khoảng thời gian
+        // Overlap: (start1 <= end2) AND (start2 <= end1)
+        
+        // Đảm bảo ngày không null
+        if (empty($ngayBatDau) || empty($ngayKetThuc)) {
+            return [];
+        }
+        
         $sql = "SELECT pc.*, 
-                       dp.ngay_khoi_hanh, dp.gio_khoi_hanh,
-                       g.tengoi AS ten_tour
+                       dp.ngay_khoi_hanh, dp.ngay_ket_thuc AS dp_ngay_ket_thuc, dp.gio_khoi_hanh,
+                       g.tengoi AS ten_tour,
+                       -- Tính toán ngày thực tế để so sánh (ưu tiên ngày phân công, nếu không có thì dùng ngày lịch trình)
+                       COALESCE(pc.ngay_bat_dau, dp.ngay_khoi_hanh) AS actual_start,
+                       COALESCE(pc.ngay_ket_thuc, dp.ngay_ket_thuc) AS actual_end
                 FROM phan_cong_hdv pc
                 LEFT JOIN lich_khoi_hanh dp ON pc.id_lich_khoi_hanh = dp.id
                 LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
                 WHERE pc.id_hdv = :id_hdv
                   AND pc.trang_thai = 1
                   AND (
-                    (:ngay_bat_dau BETWEEN pc.ngay_bat_dau AND pc.ngay_ket_thuc)
-                    OR (:ngay_ket_thuc BETWEEN pc.ngay_bat_dau AND pc.ngay_ket_thuc)
-                    OR (pc.ngay_bat_dau BETWEEN :ngay_bat_dau AND :ngay_ket_thuc)
-                    OR (pc.ngay_ket_thuc BETWEEN :ngay_bat_dau AND :ngay_ket_thuc)
+                    -- Kiểm tra overlap dựa trên ngày thực tế (ngày phân công hoặc ngày lịch trình)
+                    -- Overlap: (actual_start <= :ngay_ket_thuc) AND (:ngay_bat_dau <= actual_end)
+                    (
+                        COALESCE(pc.ngay_bat_dau, dp.ngay_khoi_hanh) IS NOT NULL 
+                        AND COALESCE(pc.ngay_ket_thuc, dp.ngay_ket_thuc) IS NOT NULL
+                        AND COALESCE(pc.ngay_bat_dau, dp.ngay_khoi_hanh) <= :ngay_ket_thuc 
+                        AND :ngay_bat_dau <= COALESCE(pc.ngay_ket_thuc, dp.ngay_ket_thuc)
+                    )
                   )";
 
         $params = [
@@ -106,9 +174,25 @@ class AssignmentModel extends BaseModel
             $params[':exclude_id'] = $excludeAssignmentId;
         }
 
+        // Loại trừ lịch trình hiện tại nếu đang tạo phân công cho cùng lịch trình
+        if ($idLichKhoiHanh) {
+            $sql .= " AND pc.id_lich_khoi_hanh != :id_lich_khoi_hanh";
+            $params[':id_lich_khoi_hanh'] = $idLichKhoiHanh;
+        }
+
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Log để debug
+        if (!empty($results)) {
+            error_log("Conflict detected for HDV {$idHdv}: " . count($results) . " conflicts found");
+            foreach ($results as $conflict) {
+                error_log("  - Assignment ID: {$conflict['id']}, Lich khoi hanh: {$conflict['id_lich_khoi_hanh']}, Start: {$conflict['ngay_bat_dau']} or {$conflict['ngay_khoi_hanh']}, End: {$conflict['ngay_ket_thuc']} or {$conflict['dp_ngay_ket_thuc']}");
+            }
+        }
+        
+        return $results;
     }
 
     /**
@@ -117,6 +201,22 @@ class AssignmentModel extends BaseModel
     public function createAssignment(array $data)
     {
         try {
+            // Kiểm tra conflict trước khi tạo (nếu chưa được kiểm tra ở controller)
+            if (isset($data['id_hdv']) && isset($data['ngay_bat_dau']) && isset($data['ngay_ket_thuc'])) {
+                $conflicts = $this->checkScheduleConflict(
+                    $data['id_hdv'],
+                    $data['ngay_bat_dau'],
+                    $data['ngay_ket_thuc'],
+                    null,
+                    $data['id_lich_khoi_hanh'] ?? null
+                );
+                
+                if (!empty($conflicts)) {
+                    error_log("Conflict detected when creating assignment: HDV {$data['id_hdv']} from {$data['ngay_bat_dau']} to {$data['ngay_ket_thuc']}");
+                    return false; // Không cho phép tạo nếu có conflict
+                }
+            }
+            
             $sql = "INSERT INTO phan_cong_hdv (
                         id_lich_khoi_hanh, id_hdv, vai_tro,
                         ngay_bat_dau, ngay_ket_thuc, luong,
@@ -206,6 +306,39 @@ class AssignmentModel extends BaseModel
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
             error_log("Lỗi toggle status phân công: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Xác nhận đã nhận tour
+     */
+    public function confirmReceived($id)
+    {
+        try {
+            $this->ensureColumns();
+            $stmt = $this->conn->prepare("UPDATE phan_cong_hdv SET da_nhan = 1, ngay_cap_nhat = NOW() WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Lỗi confirmReceived AssignmentModel: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Đặt trạng thái thủ công (0=Ready,1=Đang diễn ra,2=Hoàn thành)
+     */
+    public function setStatus($id, $status)
+    {
+        try {
+            $this->ensureColumns();
+            $stmt = $this->conn->prepare("UPDATE phan_cong_hdv SET trang_thai = :status, ngay_cap_nhat = NOW() WHERE id = :id");
+            return $stmt->execute([
+                ':id' => $id,
+                ':status' => $status
+            ]);
+        } catch (PDOException $e) {
+            error_log("Lỗi setStatus phân công: " . $e->getMessage());
             return false;
         }
     }

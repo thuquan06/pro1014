@@ -195,7 +195,7 @@ $ngonNgu = $guideModel->parseJsonArray($guide['ngon_ngu'] ?? '[]');
         <?php endforeach; ?>
         <input type="text" class="tag-input" id="kyNangInput" placeholder="VD: Hiking, Swimming">
       </div>
-      <input type="hidden" name="ky_nang" id="kyNangHidden" value="<?= htmlspecialchars(json_encode($kyNang, JSON_UNESCAPED_UNICODE)) ?>">
+      <input type="hidden" name="ky_nang" id="kyNangHidden" value="<?= htmlspecialchars(json_encode($kyNang, JSON_UNESCAPED_UNICODE | JSON_HEX_QUOT | JSON_HEX_APOS), ENT_QUOTES, 'UTF-8') ?>">
     </div>
 
     <div class="form-group-modern">
@@ -209,7 +209,7 @@ $ngonNgu = $guideModel->parseJsonArray($guide['ngon_ngu'] ?? '[]');
         <?php endforeach; ?>
         <input type="text" class="tag-input" id="tuyenChuyenInput" placeholder="VD: Miền Bắc, Miền Trung">
       </div>
-      <input type="hidden" name="tuyen_chuyen" id="tuyenChuyenHidden" value="<?= htmlspecialchars(json_encode($tuyenChuyen, JSON_UNESCAPED_UNICODE)) ?>">
+      <input type="hidden" name="tuyen_chuyen" id="tuyenChuyenHidden" value="<?= htmlspecialchars(json_encode($tuyenChuyen, JSON_UNESCAPED_UNICODE | JSON_HEX_QUOT | JSON_HEX_APOS), ENT_QUOTES, 'UTF-8') ?>">
     </div>
 
     <div class="form-group-modern">
@@ -223,7 +223,7 @@ $ngonNgu = $guideModel->parseJsonArray($guide['ngon_ngu'] ?? '[]');
         <?php endforeach; ?>
         <input type="text" class="tag-input" id="ngonNguInput" placeholder="VD: Tiếng Việt, English, 中文">
       </div>
-      <input type="hidden" name="ngon_ngu" id="ngonNguHidden" value="<?= htmlspecialchars(json_encode($ngonNgu, JSON_UNESCAPED_UNICODE)) ?>">
+      <input type="hidden" name="ngon_ngu" id="ngonNguHidden" value="<?= htmlspecialchars(json_encode($ngonNgu, JSON_UNESCAPED_UNICODE | JSON_HEX_QUOT | JSON_HEX_APOS), ENT_QUOTES, 'UTF-8') ?>">
     </div>
   </div>
 
@@ -239,8 +239,8 @@ $ngonNgu = $guideModel->parseJsonArray($guide['ngon_ngu'] ?? '[]');
       <div class="form-group-modern">
         <label>Trạng thái</label>
         <select name="trang_thai">
-          <option value="1" <?= ($guide['trang_thai'] == 1) ? 'selected' : '' ?>>Hoạt động</option>
-          <option value="0" <?= ($guide['trang_thai'] == 0) ? 'selected' : '' ?>>Tạm dừng</option>
+          <option value="1" <?= (!isset($guide['trang_thai']) || $guide['trang_thai'] == 1) ? 'selected' : '' ?>>Hoạt động</option>
+          <option value="0" <?= (isset($guide['trang_thai']) && $guide['trang_thai'] == 0) ? 'selected' : '' ?>>Tạm dừng</option>
         </select>
       </div>
     </div>
@@ -255,11 +255,63 @@ $ngonNgu = $guideModel->parseJsonArray($guide['ngon_ngu'] ?? '[]');
     <a href="<?= BASE_URL ?>?act=admin-guides" class="btn-cancel">
       <i class="fas fa-times"></i> Hủy
     </a>
-    <button type="submit" class="btn-submit">
+    <button type="submit" class="btn-submit" id="submitBtn">
       <i class="fas fa-save"></i> Cập nhật HDV
     </button>
   </div>
 </form>
+
+<script>
+// Đảm bảo hidden fields được cập nhật trước khi submit
+document.querySelector('form').addEventListener('submit', function(e) {
+  // Log để debug
+  console.log('Form submitting...');
+  
+  const kyNang = document.getElementById('kyNangHidden');
+  const tuyenChuyen = document.getElementById('tuyenChuyenHidden');
+  const ngonNgu = document.getElementById('ngonNguHidden');
+  
+  // Đảm bảo các hidden fields có giá trị hợp lệ JSON
+  if (!kyNang.value || kyNang.value.trim() === '') {
+    kyNang.value = '[]';
+  } else {
+    // Validate JSON
+    try {
+      JSON.parse(kyNang.value);
+    } catch (e) {
+      console.error('Invalid JSON in ky_nang:', kyNang.value);
+      kyNang.value = '[]';
+    }
+  }
+  
+  if (!tuyenChuyen.value || tuyenChuyen.value.trim() === '') {
+    tuyenChuyen.value = '[]';
+  } else {
+    try {
+      JSON.parse(tuyenChuyen.value);
+    } catch (e) {
+      console.error('Invalid JSON in tuyen_chuyen:', tuyenChuyen.value);
+      tuyenChuyen.value = '[]';
+    }
+  }
+  
+  if (!ngonNgu.value || ngonNgu.value.trim() === '') {
+    ngonNgu.value = '[]';
+  } else {
+    try {
+      JSON.parse(ngonNgu.value);
+    } catch (e) {
+      console.error('Invalid JSON in ngon_ngu:', ngonNgu.value);
+      ngonNgu.value = '[]';
+    }
+  }
+  
+  console.log('Final values before submit:');
+  console.log('ky_nang:', kyNang.value);
+  console.log('tuyen_chuyen:', tuyenChuyen.value);
+  console.log('ngon_ngu:', ngonNgu.value);
+});
+</script>
 
 <script>
 function addTag(inputId, containerId, hiddenId) {
@@ -285,7 +337,18 @@ function addTag(inputId, containerId, hiddenId) {
 
 function removeTag(element, type) {
   const tag = element.parentElement;
-  const hidden = document.getElementById(type + 'Hidden');
+  // Map type to correct hidden field ID
+  const hiddenIdMap = {
+    'ky_nang': 'kyNangHidden',
+    'tuyen_chuyen': 'tuyenChuyenHidden',
+    'ngon_ngu': 'ngonNguHidden'
+  };
+  const hiddenId = hiddenIdMap[type] || (type + 'Hidden');
+  const hidden = document.getElementById(hiddenId);
+  if (!hidden) {
+    console.error('Hidden field not found:', hiddenId);
+    return;
+  }
   const tags = JSON.parse(hidden.value || '[]');
   const value = tag.textContent.replace('×', '').trim();
   const index = tags.indexOf(value);

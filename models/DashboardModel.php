@@ -26,13 +26,23 @@ class DashboardModel {
 
     private function countTableByDate(string $table, string $dateField, string $startDate, string $endDate): int {
         try {
-            $sql = "SELECT COUNT(*) FROM `$table` WHERE `$dateField` >= :start AND `$dateField` < :end";
+            // Sử dụng DATE() để so sánh chỉ phần ngày, bỏ qua phần giờ
+            $sql = "SELECT COUNT(*) FROM `$table` WHERE DATE(`$dateField`) >= DATE(:start) AND DATE(`$dateField`) <= DATE(:end)";
             $stm = $this->conn->prepare($sql);
             $stm->execute([':start' => $startDate, ':end' => $endDate]);
             return (int)$stm->fetchColumn();
         } catch (PDOException $e) {
             error_log("Error counting $table by date: " . $e->getMessage());
-            return 0;
+            // Thử cách khác nếu DATE() không hoạt động
+            try {
+                $sql = "SELECT COUNT(*) FROM `$table` WHERE `$dateField` >= :start AND `$dateField` <= :end";
+                $stm = $this->conn->prepare($sql);
+                $stm->execute([':start' => $startDate, ':end' => $endDate]);
+                return (int)$stm->fetchColumn();
+            } catch (PDOException $e2) {
+                error_log("Error counting $table by date (fallback): " . $e2->getMessage());
+                return 0;
+            }
         }
     }
 
@@ -50,21 +60,28 @@ class DashboardModel {
         try {
             $now = new DateTime();
             $startDate = null;
-            $endDate = $now->format('Y-m-d H:i:s');
+            $endDate = null;
 
             switch ($period) {
                 case 'day':
                     $startDate = $now->format('Y-m-d 00:00:00');
+                    $endDate = $now->format('Y-m-d 23:59:59'); // Kết thúc vào cuối ngày
                     break;
                 case 'week':
                     $startDate = (clone $now)->modify('-7 days')->format('Y-m-d 00:00:00');
+                    $endDate = $now->format('Y-m-d 23:59:59');
                     break;
                 case 'month':
                     $startDate = (clone $now)->modify('-30 days')->format('Y-m-d 00:00:00');
+                    $endDate = $now->format('Y-m-d 23:59:59');
                     break;
                 default:
                     $startDate = $now->format('Y-m-d 00:00:00');
+                    $endDate = $now->format('Y-m-d 23:59:59');
             }
+            
+            // Debug log
+            error_log("DashboardModel getStatisticsByPeriod - Period: $period, StartDate: $startDate, EndDate: $endDate");
 
             $tblBooking = $this->getTableName('booking');
             $tblHoaDon = $this->getTableName('hoadon');
@@ -79,37 +96,117 @@ class DashboardModel {
                 'revenue' => 0,
             ];
 
-            // Thống kê booking
+            // Thống kê booking - thử nhiều tên trường có thể
             if ($tblBooking) {
-                $stats['booking'] = $this->countTableByDate($tblBooking, 'ngay_dat', $startDate, $endDate);
+                $bookingDateFields = ['ngay_dat', 'ngay_tao', 'created_at', 'thoi_gian_dat'];
+                $bookingDateField = null;
+                foreach ($bookingDateFields as $field) {
+                    try {
+                        $checkSql = "SHOW COLUMNS FROM `$tblBooking` LIKE '$field'";
+                        $checkStm = $this->conn->prepare($checkSql);
+                        $checkStm->execute();
+                        if ($checkStm->fetch()) {
+                            $bookingDateField = $field;
+                            break;
+                        }
+                    } catch (PDOException $e) {
+                        continue;
+                    }
+                }
                 
-                // Tính doanh thu từ booking
-                try {
-                    $sql = "SELECT SUM(tong_tien) FROM `$tblBooking` 
-                            WHERE ngay_dat >= :start AND ngay_dat < :end 
-                            AND trang_thai IN (3, 4)"; // Đã thanh toán hoặc hoàn thành
-                    $stm = $this->conn->prepare($sql);
-                    $stm->execute([':start' => $startDate, ':end' => $endDate]);
-                    $revenue = $stm->fetchColumn();
-                    $stats['revenue'] = (float)($revenue ?? 0);
-                } catch (PDOException $e) {
-                    error_log("Error calculating revenue: " . $e->getMessage());
+                if ($bookingDateField) {
+                    $stats['booking'] = $this->countTableByDate($tblBooking, $bookingDateField, $startDate, $endDate);
+                    
+                    // Tính doanh thu từ booking
+                    try {
+                        $revenueField = $this->conn->query("SHOW COLUMNS FROM `$tblBooking` LIKE 'tong_tien'")->fetch() ? 'tong_tien' : 
+                                       ($this->conn->query("SHOW COLUMNS FROM `$tblBooking` LIKE 'tong_tien_thanh_toan'")->fetch() ? 'tong_tien_thanh_toan' : null);
+                        if ($revenueField) {
+                            $sql = "SELECT SUM($revenueField) FROM `$tblBooking` 
+                                    WHERE DATE($bookingDateField) >= DATE(:start) AND DATE($bookingDateField) <= DATE(:end) 
+                                    AND (trang_thai IN (3, 4) OR trang_thai IS NULL)"; // Đã thanh toán hoặc hoàn thành hoặc null
+                            $stm = $this->conn->prepare($sql);
+                            $stm->execute([':start' => $startDate, ':end' => $endDate]);
+                            $revenue = $stm->fetchColumn();
+                            $stats['revenue'] = (float)($revenue ?? 0);
+                        }
+                    } catch (PDOException $e) {
+                        error_log("Error calculating revenue: " . $e->getMessage());
+                    }
                 }
             }
 
-            // Thống kê hóa đơn
+            // Thống kê hóa đơn - hóa đơn thường lấy từ booking với điều kiện đã thanh toán
             if ($tblHoaDon) {
-                $stats['hoadon'] = $this->countTableByDate($tblHoaDon, 'ngaydat', $startDate, $endDate);
+                // Thử tìm trường ngày trong bảng hoadon
+                $hoadonDateFields = ['ngaydat', 'ngay_tao', 'created_at', 'ngay_dat', 'thoi_gian_tao'];
+                $foundField = null;
+                foreach ($hoadonDateFields as $field) {
+                    try {
+                        $checkSql = "SHOW COLUMNS FROM `$tblHoaDon` LIKE '$field'";
+                        $checkStm = $this->conn->prepare($checkSql);
+                        $checkStm->execute();
+                        if ($checkStm->fetch()) {
+                            $foundField = $field;
+                            break;
+                        }
+                    } catch (PDOException $e) {
+                        continue;
+                    }
+                }
+                
+                if ($foundField) {
+                    $stats['hoadon'] = $this->countTableByDate($tblHoaDon, $foundField, $startDate, $endDate);
+                } elseif ($tblBooking) {
+                    // Nếu không có bảng hoadon riêng, đếm từ booking đã thanh toán
+                    try {
+                        $sql = "SELECT COUNT(*) FROM `$tblBooking` 
+                                WHERE (DATE(ngay_dat) >= DATE(:start) AND DATE(ngay_dat) <= DATE(:end) 
+                                OR DATE(ngay_thanh_toan) >= DATE(:start) AND DATE(ngay_thanh_toan) <= DATE(:end))
+                                AND trang_thai IN (3, 4)"; // Đã thanh toán hoặc hoàn thành
+                        $stm = $this->conn->prepare($sql);
+                        $stm->execute([':start' => $startDate, ':end' => $endDate]);
+                        $stats['hoadon'] = (int)$stm->fetchColumn();
+                    } catch (PDOException $e) {
+                        error_log("Error counting hoadon from booking: " . $e->getMessage());
+                    }
+                }
             }
 
-            // Thống kê tour
+            // Thống kê tour - thử nhiều tên trường có thể
             if ($tblTour) {
-                $stats['tour'] = $this->countTableByDate($tblTour, 'ngay_tao', $startDate, $endDate);
+                $tourDateFields = ['ngay_tao', 'created_at', 'thoi_gian_tao', 'ngay_dat'];
+                foreach ($tourDateFields as $field) {
+                    try {
+                        $checkSql = "SHOW COLUMNS FROM `$tblTour` LIKE '$field'";
+                        $checkStm = $this->conn->prepare($checkSql);
+                        $checkStm->execute();
+                        if ($checkStm->fetch()) {
+                            $stats['tour'] = $this->countTableByDate($tblTour, $field, $startDate, $endDate);
+                            break;
+                        }
+                    } catch (PDOException $e) {
+                        continue;
+                    }
+                }
             }
 
-            // Thống kê blog
+            // Thống kê blog - thử nhiều tên trường có thể
             if ($tblBlog) {
-                $stats['blog'] = $this->countTableByDate($tblBlog, 'ngay_tao', $startDate, $endDate);
+                $blogDateFields = ['ngay_tao', 'created_at', 'thoi_gian_tao', 'ngay_dat'];
+                foreach ($blogDateFields as $field) {
+                    try {
+                        $checkSql = "SHOW COLUMNS FROM `$tblBlog` LIKE '$field'";
+                        $checkStm = $this->conn->prepare($checkSql);
+                        $checkStm->execute();
+                        if ($checkStm->fetch()) {
+                            $stats['blog'] = $this->countTableByDate($tblBlog, $field, $startDate, $endDate);
+                            break;
+                        }
+                    } catch (PDOException $e) {
+                        continue;
+                    }
+                }
             }
 
             return $stats;

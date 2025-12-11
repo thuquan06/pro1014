@@ -1,320 +1,100 @@
 <?php
-// views/admin/dashboard.php - Giao diện Dashboard mới hiện đại
+// views/admin/dashboard.php - Dashboard mới với đầy đủ tính năng
 
-// Lấy số liệu an toàn (nếu controller truyền $stats dạng mảng)
-$cnt1 = $stats['cnt1'] ?? 0;     // Hóa đơn
-$cnt2 = $stats['cnt2'] ?? 0;     // Lịch trình
-$goi  = $stats['goi']  ?? 0;     // Tour
-$cnt5 = $stats['cnt5'] ?? 0;     // Booking
-$blog = $stats['blog'] ?? 0;     // Blog
+// Helper functions
+function formatPrice($price) {
+    return number_format($price, 0, ',', '.') . ' đ';
+}
+
+function formatDate($date) {
+    return $date ? date('d/m/Y', strtotime($date)) : '-';
+}
+
+function formatDateTime($datetime) {
+    return $datetime ? date('d/m/Y H:i', strtotime($datetime)) : '-';
+}
+
+function getStatusBadge($status) {
+    // Chuyển đổi status sang int để đảm bảo so sánh đúng
+    $status = (int)$status;
+    // Mapping theo BookingModel: 0=Chờ xử lý, 2=Đã đặt cọc, 3=Đã thanh toán, 4=Hoàn thành, 5=Hủy
+    $badges = [
+        0 => ['text' => 'Chờ xử lý', 'class' => 'warning'],
+        1 => ['text' => 'Chờ xử lý', 'class' => 'warning'], // Fallback
+        2 => ['text' => 'Đã đặt cọc', 'class' => 'info'],
+        3 => ['text' => 'Đã thanh toán', 'class' => 'success'],
+        4 => ['text' => 'Hoàn thành', 'class' => 'success'],
+        5 => ['text' => 'Đã hủy', 'class' => 'danger']
+    ];
+    $badge = $badges[$status] ?? ['text' => 'Không xác định', 'class' => 'secondary'];
+    return '<span class="badge badge-' . $badge['class'] . '">' . $badge['text'] . '</span>';
+}
+
+// Default values
+$stats = $stats ?? [];
+$upcomingDepartures = $upcomingDepartures ?? [];
+$recentBookings = $recentBookings ?? [];
+$todayTours = $todayTours ?? [];
+$notifications = $notifications ?? [];
+$actionsNeeded = $actionsNeeded ?? [];
+$guideStatus = $guideStatus ?? ['active' => 0, 'available' => 0, 'on_tour' => 0];
+$upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
 ?>
 
 <style>
-  /* ===== DASHBOARD CONTAINER ===== */
-  .dashboard-container {
-    padding: 24px;
-    max-width: 1400px;
+.dashboard-container {
+    padding: 20px;
+    max-width: 100%;
     margin: 0 auto;
-  }
+    box-sizing: border-box;
+}
 
-  /* ===== DASHBOARD TITLE ===== */
-  .dashboard-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid var(--border);
-  }
-
-  /* ===== STATS GRID ===== */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 24px;
-    margin-bottom: 32px;
-  }
-
-  .stat-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    text-decoration: none;
-    display: block;
-    color: inherit;
-  }
-
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--card-color, #667eea);
-    transition: width 0.3s ease;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .stat-card:hover::before {
-    width: 100%;
-    opacity: 0.1;
-  }
-
-  .stat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-  }
-
-  .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.dashboard-title {
     font-size: 24px;
-    color: white;
-    background: var(--card-color, #667eea);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .stat-number {
-    font-size: 36px;
     font-weight: 700;
-    color: var(--text-dark);
-    margin: 0;
-    line-height: 1;
-  }
-
-  .stat-label {
-    font-size: 14px;
-    color: var(--text-light);
-    margin-top: 8px;
-    font-weight: 500;
-  }
-
-  .stat-change {
-    font-size: 12px;
-    color: var(--success);
-    margin-top: 4px;
-  }
-
-  /* Màu sắc cho từng card */
-  .stat-card[data-type="invoice"] { --card-color: #3b82f6; }
-  .stat-card[data-type="schedule"] { --card-color: #10b981; }
-  .stat-card[data-type="tour"] { --card-color: #8b5cf6; }
-  .stat-card[data-type="booking"] { --card-color: #f59e0b; }
-  .stat-card[data-type="blog"] { --card-color: #ec4899; }
-
-  /* ===== QUICK ACTIONS ===== */
-  .quick-actions {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    margin-bottom: 32px;
-  }
-
-  .section-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-title i {
-    color: var(--primary);
-  }
-
-  .actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-  }
-
-  .action-btn {
+    color: #1f2937;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px;
-    background: var(--bg-light);
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--text-dark);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-  }
+}
 
-  .action-btn:hover {
-    background: white;
-    border-color: var(--primary);
-    transform: translateX(4px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    text-decoration: none;
-    color: var(--text-dark);
-  }
-
-  .action-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: white;
-    background: var(--primary);
-  }
-
-  .action-text {
-    font-weight: 600;
-    font-size: 15px;
-  }
-
-  /* ===== CHART SECTION ===== */
-  .chart-section {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    margin-bottom: 32px;
-  }
-
-  .chart-container {
-    position: relative;
-    height: 300px;
-    margin-top: 20px;
-  }
-
-  /* ===== RESPONSIVE ===== */
-  @media (max-width: 1200px) {
-    .stats-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  @media (max-width: 768px) {
-    .dashboard-container {
-      padding: 16px;
-    }
-
-    .stats-grid {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-
-    .actions-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* ===== ANIMATIONS ===== */
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .stat-card {
-    animation: fadeInUp 0.5s ease forwards;
-    opacity: 0;
-  }
-
-  .stat-card:nth-child(1) { animation-delay: 0.1s; }
-  .stat-card:nth-child(2) { animation-delay: 0.2s; }
-  .stat-card:nth-child(3) { animation-delay: 0.3s; }
-  .stat-card:nth-child(4) { animation-delay: 0.4s; }
-  .stat-card:nth-child(5) { animation-delay: 0.5s; }
-
-  /* ===== PERIOD FILTER ===== */
-  .period-btn {
-    padding: 12px 24px;
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    background: white;
-    color: var(--text-dark);
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .period-btn:hover {
-    border-color: var(--primary);
-    background: var(--bg-light);
-    transform: translateY(-2px);
-  }
-
-  .period-btn.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-
-  /* ===== PERIOD STATS GRID ===== */
-  .stats-grid-period {
+/* Overview Cards */
+.stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    gap: 16px;
     margin-bottom: 24px;
-  }
+}
 
-  .period-stat-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid var(--border);
+.stat-card {
+    background: white;
     border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
-  }
+    border-left: 4px solid;
+}
 
-  .period-stat-card:hover {
+.stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  }
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
 
-  .period-stat-label {
-    font-size: 13px;
-    color: var(--text-light);
-    font-weight: 600;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+.stat-card.primary { border-left-color: #3b82f6; }
+.stat-card.success { border-left-color: #10b981; }
+.stat-card.warning { border-left-color: #f59e0b; }
+.stat-card.danger { border-left-color: #ef4444; }
+.stat-card.info { border-left-color: #8b5cf6; }
 
-  .period-stat-value {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 4px;
-  }
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
 
-  .period-stat-icon {
+.stat-icon {
     width: 48px;
     height: 48px;
     border-radius: 10px;
@@ -323,281 +103,616 @@ $blog = $stats['blog'] ?? 0;     // Blog
     justify-content: center;
     font-size: 20px;
     color: white;
-    margin-bottom: 12px;
-  }
+}
 
-  .period-stat-card[data-type="booking"] .period-stat-icon { background: #3b82f6; }
-  .period-stat-card[data-type="hoadon"] .period-stat-icon { background: #8b5cf6; }
-  .period-stat-card[data-type="tour"] .period-stat-icon { background: #10b981; }
-  .period-stat-card[data-type="revenue"] .period-stat-icon { background: #f59e0b; }
+.stat-card.primary .stat-icon { background: #3b82f6; }
+.stat-card.success .stat-icon { background: #10b981; }
+.stat-card.warning .stat-icon { background: #f59e0b; }
+.stat-card.danger .stat-icon { background: #ef4444; }
+.stat-card.info .stat-icon { background: #8b5cf6; }
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* Section Cards */
+.section-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.section-title i {
+    color: #3b82f6;
+}
+
+/* Table Styles */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+.data-table thead {
+    background: #f9fafb;
+}
+
+.data-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    font-size: 13px;
+    border-bottom: 2px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-size: 13px;
+}
+
+.data-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+/* Badge Styles */
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-warning { background: #fef3c7; color: #92400e; }
+.badge-success { background: #d1fae5; color: #065f46; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+.badge-info { background: #dbeafe; color: #1e40af; }
+.badge-secondary { background: #f3f4f6; color: #374151; }
+
+/* Notification Styles */
+.notification-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+}
+
+.notification-item:hover {
+    transform: translateX(4px);
+}
+
+.notification-item.warning { background: #fef3c7; border-left: 4px solid #f59e0b; }
+.notification-item.danger { background: #fee2e2; border-left: 4px solid #ef4444; }
+.notification-item.info { background: #dbeafe; border-left: 4px solid #3b82f6; }
+
+.notification-icon {
+    font-size: 20px;
+}
+
+.notification-item.warning .notification-icon { color: #f59e0b; }
+.notification-item.danger .notification-icon { color: #ef4444; }
+.notification-item.info .notification-icon { color: #3b82f6; }
+
+/* Action Item Styles */
+.action-item {
+    padding: 16px;
+    border-radius: 8px;
+    background: #f9fafb;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.action-item:hover {
+    background: #f3f4f6;
+    transform: translateX(4px);
+}
+
+.action-count {
+    font-size: 24px;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #d1d5db;
+}
+
+/* Two Column Layout */
+.two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+    }
+    
+    .stat-value {
+        font-size: 17px;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .two-column {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-container {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 12px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .stat-card {
+        padding: 12px;
+    }
+    
+    .stat-value {
+        font-size: 16px;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+    }
+    
+    .section-card {
+        padding: 16px;
+    }
+    
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px;
+    }
+}
 </style>
 
 <div class="dashboard-container">
-  <!-- Dashboard Title -->
-  <h1 class="dashboard-title">Dashboard</h1>
+    <h1 class="dashboard-title">
+        <i class="fas fa-chart-line"></i>
+        Dashboard
+    </h1>
 
-  <!-- Statistics Cards -->
-  <div class="stats-grid">
-    <a href="<?= BASE_URL ?>?act=admin-tours" class="stat-card" data-type="tour">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-map-marked-alt"></i>
+    <!-- 1. Thống kê tổng quan -->
+    <div class="stats-grid">
+        <div class="stat-card primary">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+            </div>
+            <div class="stat-value"><?= number_format($stats['total_tours_active'] ?? 0) ?></div>
+            <div class="stat-label">Tour đang mở bán</div>
         </div>
-      </div>
-      <div class="stat-number"><?= number_format($goi) ?></div>
-      <div class="stat-label">Tour</div>
-      <div class="stat-change">↗ Tổng số tour</div>
-    </a>
 
-    <a href="<?= BASE_URL ?>?act=admin-departure-plans" class="stat-card" data-type="schedule">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-calendar-alt"></i>
+        <div class="stat-card success">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="stat-value"><?= number_format($stats['bookings_today'] ?? 0) ?></div>
+            <div class="stat-label">Booking hôm nay</div>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                <?= number_format($stats['bookings_week'] ?? 0) ?> trong tuần
+            </div>
         </div>
-      </div>
-      <div class="stat-number"><?= number_format($cnt2) ?></div>
-      <div class="stat-label">Lịch trình</div>
-      <div class="stat-change">↗ Tổng số lịch trình</div>
-    </a>
 
-    <a href="<?= BASE_URL ?>?act=admin-bookings" class="stat-card" data-type="booking">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-calendar-check"></i>
+        <div class="stat-card info">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+            </div>
+            <div class="stat-value"><?= number_format($stats['upcoming_departures'] ?? 0) ?></div>
+            <div class="stat-label">Lịch khởi hành sắp tới</div>
         </div>
-      </div>
-      <div class="stat-number"><?= number_format($cnt5) ?></div>
-      <div class="stat-label">Booking</div>
-      <div class="stat-change">↗ Tổng số booking</div>
-    </a>
 
-    <a href="<?= BASE_URL ?>?act=hoadon-list" class="stat-card" data-type="invoice">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-file-invoice-dollar"></i>
+        <div class="stat-card warning">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+            </div>
+            <div class="stat-value"><?= formatPrice($stats['revenue_month'] ?? 0) ?></div>
+            <div class="stat-label">Doanh thu tháng này</div>
         </div>
-      </div>
-      <div class="stat-number"><?= number_format($cnt1) ?></div>
-      <div class="stat-label">Hóa đơn</div>
-      <div class="stat-change">↗ Tổng số hóa đơn</div>
-    </a>
 
-    <a href="<?= BASE_URL ?>?act=blog-list" class="stat-card" data-type="blog">
-      <div class="stat-header">
-        <div class="stat-icon">
-          <i class="fas fa-newspaper"></i>
-        </div>
-      </div>
-      <div class="stat-number"><?= number_format($blog) ?></div>
-      <div class="stat-label">Blog</div>
-      <div class="stat-change">↗ Tổng số bài viết</div>
-    </a>
-  </div>
-
-  <!-- Quick Actions -->
-  <div class="quick-actions">
-    <h3 class="section-title">
-      <i class="fas fa-bolt"></i>
-      Hành động nhanh
-    </h3>
-    <div class="actions-grid">
-      <a href="<?= BASE_URL ?>?act=admin-tour-create" class="action-btn">
-        <div class="action-icon">
-          <i class="fas fa-plus"></i>
-        </div>
-        <div class="action-text">Thêm tour mới</div>
-      </a>
-      <a href="<?= BASE_URL ?>?act=blog-create" class="action-btn">
-        <div class="action-icon">
-          <i class="fas fa-edit"></i>
-        </div>
-        <div class="action-text">Viết blog mới</div>
-      </a>
-      <a href="<?= BASE_URL ?>?act=hoadon-list" class="action-btn">
-        <div class="action-icon">
-          <i class="fas fa-list"></i>
-        </div>
-        <div class="action-text">Xem hóa đơn</div>
-      </a>
-    </div>
-  </div>
-
-  <!-- Statistics by Period -->
-  <div class="chart-section">
-    <h3 class="section-title">
-      <i class="fas fa-chart-line"></i>
-      Thống kê theo thời gian
-    </h3>
-    
-    <!-- Period Filter -->
-    <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
-      <button class="period-btn active" data-period="day" onclick="switchPeriod('day')">
-        <i class="fas fa-calendar-day"></i> Hôm nay
-      </button>
-      <button class="period-btn" data-period="week" onclick="switchPeriod('week')">
-        <i class="fas fa-calendar-week"></i> 7 ngày qua
-      </button>
-      <button class="period-btn" data-period="month" onclick="switchPeriod('month')">
-        <i class="fas fa-calendar-alt"></i> 30 ngày qua
-      </button>
     </div>
 
-    <!-- Statistics Cards by Period -->
-    <div class="stats-grid-period" id="periodStats">
-      <!-- Sẽ được cập nhật bởi JavaScript -->
+    <!-- 2. Lịch khởi hành sắp tới -->
+    <div class="section-card">
+        <h3 class="section-title">
+            <i class="fas fa-calendar-alt"></i>
+            Lịch khởi hành sắp tới
+        </h3>
+        <?php if (!empty($upcomingDepartures)): ?>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tour</th>
+                            <th>Ngày khởi hành</th>
+                            <th>Số khách</th>
+                            <th>Trạng thái</th>
+                            <th>HDV</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($upcomingDepartures as $dep): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= htmlspecialchars($dep['ten_tour'] ?? 'N/A') ?></strong>
+                                </td>
+                                <td><?= formatDate($dep['ngay_khoi_hanh']) ?></td>
+                                <td><?= number_format($dep['so_khach'] ?? 0) ?></td>
+                                <td>
+                                    <?php if ($dep['trang_thai'] == 'Assigned'): ?>
+                                        <span class="badge badge-success">Assigned</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-warning">Open</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= htmlspecialchars($dep['hdv_phu_trach'] ?? 'Chưa phân công') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>Chưa có lịch khởi hành sắp tới</p>
+            </div>
+        <?php endif; ?>
     </div>
-  </div>
 
-  <!-- Chart Section -->
-  <div class="chart-section">
-    <h3 class="section-title">
-      <i class="fas fa-chart-bar"></i>
-      Biểu đồ thống kê tổng quan
-    </h3>
-    <div class="chart-container">
-      <canvas id="statsChart"></canvas>
+    <!-- 3. Booking mới nhất -->
+    <div class="section-card">
+        <h3 class="section-title">
+            <i class="fas fa-clipboard-list"></i>
+            Booking mới nhất
+        </h3>
+        <?php if (!empty($recentBookings)): ?>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mã booking</th>
+                            <th>Tên khách</th>
+                            <th>Tour</th>
+                            <th>Ngày đặt</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recentBookings as $booking): ?>
+                            <tr>
+                                <td>
+                                    <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $booking['id'] ?>" 
+                                       style="color: #3b82f6; font-weight: 600;">
+                                        <?= htmlspecialchars($booking['ma_booking'] ?? 'N/A') ?>
+                                    </a>
+                                </td>
+                                <td><?= htmlspecialchars($booking['ho_ten'] ?? 'N/A') ?></td>
+                                <td><?= htmlspecialchars($booking['ten_tour'] ?? 'N/A') ?></td>
+                                <td><?= formatDateTime($booking['ngay_dat']) ?></td>
+                                <td style="color: #10b981; font-weight: 600;">
+                                    <?= formatPrice($booking['tong_tien'] ?? 0) ?>
+                                </td>
+                                <td><?= getStatusBadge($booking['trang_thai'] ?? 0) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="empty-state">
+                <i class="fas fa-clipboard"></i>
+                <p>Chưa có booking nào</p>
+            </div>
+        <?php endif; ?>
     </div>
-  </div>
+
+    <!-- 4. Tình trạng tour hôm nay -->
+    <div class="section-card">
+        <h3 class="section-title">
+            <i class="fas fa-route"></i>
+            Tình trạng tour hôm nay
+        </h3>
+        <?php if (!empty($todayTours)): ?>
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tour</th>
+                            <th>Giờ khởi hành</th>
+                            <th>Điểm tập trung</th>
+                            <th>HDV phụ trách</th>
+                            <th>Số điện thoại</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($todayTours as $tour): ?>
+                            <tr>
+                                <td>
+                                    <strong><?= htmlspecialchars($tour['ten_tour'] ?? 'N/A') ?></strong>
+                                </td>
+                                <td><?= $tour['gio_khoi_hanh'] ? date('H:i', strtotime($tour['gio_khoi_hanh'])) : '-' ?></td>
+                                <td><?= htmlspecialchars($tour['diem_tap_trung'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($tour['hdv']['ho_ten'] ?? 'Chưa phân công') ?></td>
+                                <td>
+                                    <?php if (!empty($tour['hdv']['so_dien_thoai'])): ?>
+                                        <a href="tel:<?= htmlspecialchars($tour['hdv']['so_dien_thoai']) ?>" 
+                                           style="color: #3b82f6;">
+                                            <?= htmlspecialchars($tour['hdv']['so_dien_thoai']) ?>
+                                        </a>
+                                    <?php else: ?>
+                                        -
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <p>Không có tour khởi hành hôm nay</p>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- 7. Biểu đồ thống kê -->
+    <div class="section-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="section-title" style="margin: 0;">
+                <i class="fas fa-chart-bar"></i>
+                Biểu đồ thống kê
+            </h3>
+            <div style="display: flex; gap: 8px;">
+                <button class="chart-filter-btn active" data-period="day">Theo ngày</button>
+                <button class="chart-filter-btn" data-period="week">Theo tuần</button>
+                <button class="chart-filter-btn" data-period="month">Theo tháng</button>
+            </div>
+        </div>
+        
+        <div style="position: relative; height: 400px;">
+            <canvas id="statsChart"></canvas>
+        </div>
+    </div>
+
 </div>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+.chart-filter-btn {
+    padding: 8px 16px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.chart-filter-btn:hover {
+    background: #f9fafb;
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.chart-filter-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+</style>
+
 <script>
-// Dữ liệu thống kê theo thời gian
-const periodStats = {
-  day: <?= json_encode($statsByDay ?? []) ?>,
-  week: <?= json_encode($statsByWeek ?? []) ?>,
-  month: <?= json_encode($statsByMonth ?? []) ?>
-};
+let statsChart = null;
+let currentPeriod = 'day';
 
-// Hàm format số tiền
-function formatPrice(price) {
-  return new Intl.NumberFormat('vi-VN').format(Math.round(price)) + ' đ';
-}
-
-// Hàm hiển thị thống kê theo period
-function displayPeriodStats(period) {
-  const stats = periodStats[period] || {};
-  const container = document.getElementById('periodStats');
-  
-  const periodLabels = {
-    day: 'Hôm nay',
-    week: '7 ngày qua',
-    month: '30 ngày qua'
-  };
-
-  container.innerHTML = `
-    <div class="period-stat-card" data-type="booking">
-      <div class="period-stat-icon">
-        <i class="fas fa-calendar-check"></i>
-      </div>
-      <div class="period-stat-label">Booking</div>
-      <div class="period-stat-value">${stats.booking || 0}</div>
-      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
-    </div>
+// Khởi tạo biểu đồ
+function initChart(period = 'day') {
+    currentPeriod = period;
     
-    <div class="period-stat-card" data-type="hoadon">
-      <div class="period-stat-icon">
-        <i class="fas fa-file-invoice-dollar"></i>
-      </div>
-      <div class="period-stat-label">Hóa đơn</div>
-      <div class="period-stat-value">${stats.hoadon || 0}</div>
-      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
-    </div>
-    
-    <div class="period-stat-card" data-type="tour">
-      <div class="period-stat-icon">
-        <i class="fas fa-map-marked-alt"></i>
-      </div>
-      <div class="period-stat-label">Tour mới</div>
-      <div class="period-stat-value">${stats.tour || 0}</div>
-      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
-    </div>
-    
-    <div class="period-stat-card" data-type="revenue">
-      <div class="period-stat-icon">
-        <i class="fas fa-money-bill-wave"></i>
-      </div>
-      <div class="period-stat-label">Doanh thu</div>
-      <div class="period-stat-value">${formatPrice(stats.revenue || 0)}</div>
-      <div style="font-size: 12px; color: var(--text-light);">${periodLabels[period]}</div>
-    </div>
-  `;
-}
-
-// Hàm chuyển đổi period
-function switchPeriod(period) {
-  // Cập nhật active button
-  document.querySelectorAll('.period-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.dataset.period === period) {
-      btn.classList.add('active');
-    }
-  });
-  
-  // Hiển thị thống kê
-  displayPeriodStats(period);
-}
-
-// Biểu đồ thống kê
-document.addEventListener('DOMContentLoaded', function() {
-  // Hiển thị thống kê mặc định (hôm nay)
-  displayPeriodStats('day');
-  
-  const ctx = document.getElementById('statsChart');
-  if (ctx) {
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Tour', 'Lịch trình', 'Booking', 'Hóa đơn', 'Blog'],
-        datasets: [{
-          label: 'Số lượng',
-          data: [
-            <?= $goi ?>,
-            <?= $cnt2 ?>,
-            <?= $cnt5 ?>,
-            <?= $cnt1 ?>,
-            <?= $blog ?>
-          ],
-          backgroundColor: [
-            'rgba(139, 92, 246, 0.8)',
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(245, 158, 11, 0.8)',
-            'rgba(59, 130, 246, 0.8)',
-            'rgba(236, 72, 153, 0.8)'
-          ],
-          borderColor: [
-            'rgb(139, 92, 246)',
-            'rgb(16, 185, 129)',
-            'rgb(245, 158, 11)',
-            'rgb(59, 130, 246)',
-            'rgb(236, 72, 153)'
-          ],
-          borderWidth: 2,
-          borderRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
-            }
-          },
-          x: {
-            grid: {
-              display: false
-            }
-          }
+    // Cập nhật active button
+    document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.period === period) {
+            btn.classList.add('active');
         }
-      }
     });
-  }
+    
+    // Load dữ liệu
+    fetch(`?act=admin-dashboard-chart-data&period=${period}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading chart data:', data.error);
+                return;
+            }
+            
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            
+            // Xóa biểu đồ cũ nếu có
+            if (statsChart) {
+                statsChart.destroy();
+            }
+            
+            // Tạo biểu đồ mới
+            statsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: 'Số booking',
+                            data: data.bookings,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Doanh thu (triệu VNĐ)',
+                            data: data.revenue.map(r => r / 1000000), // Chuyển sang triệu VNĐ
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 1) {
+                                        // Doanh thu
+                                        label += new Intl.NumberFormat('vi-VN').format(context.parsed.y) + ' triệu VNĐ';
+                                    } else {
+                                        // Booking
+                                        label += context.parsed.y + ' booking';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Số booking'
+                            },
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Doanh thu (triệu VNĐ)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading chart:', error);
+        });
+}
+
+// Event listeners cho các nút filter
+document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const period = this.dataset.period;
+        initChart(period);
+    });
+});
+
+// Khởi tạo biểu đồ khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+    initChart('day');
 });
 </script>
+

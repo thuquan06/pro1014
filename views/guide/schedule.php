@@ -19,15 +19,7 @@
             <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 16px;">
               <div style="flex: 1; min-width: 250px;">
                 <h4 style="font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
-                  <?php if (!empty($assignment['ten_tour'])): ?>
-                    <?= htmlspecialchars($assignment['ten_tour']) ?>
-                  <?php elseif (!empty($assignment['id_lich_khoi_hanh'])): ?>
-                    Tour #<?= htmlspecialchars($assignment['id_lich_khoi_hanh']) ?>
-                    <small style="display: block; font-size: 12px; font-weight: 400; color: var(--text-light); font-style: italic; margin-top: 4px;">Chưa có thông tin tour</small>
-                  <?php else: ?>
-                    Phân công #<?= htmlspecialchars($assignment['id']) ?>
-                    <small style="display: block; font-size: 12px; font-weight: 400; color: var(--text-light); font-style: italic; margin-top: 4px;">Chưa có lịch khởi hành</small>
-                  <?php endif; ?>
+                  <?= htmlspecialchars($assignment['ten_tour'] ?? 'N/A') ?>
                 </h4>
                 <div style="display: flex; flex-direction: column; gap: 8px; color: var(--text-dark);">
                   <div>
@@ -82,15 +74,9 @@
               </div>
               
               <div style="display: flex; flex-direction: column; gap: 12px; align-items: end;">
-                <?php if ($assignment['trang_thai'] == 1): ?>
-                  <span style="background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                    <i class="fas fa-check-circle"></i> Hoạt động
-                  </span>
-                <?php else: ?>
-                  <span style="background: #fee2e2; color: #991b1b; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                    <i class="fas fa-times-circle"></i> Tạm dừng
-                  </span>
-                <?php endif; ?>
+                <span style="background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
+                  <i class="fas fa-check-circle"></i> Đã xác nhận
+                </span>
                 
                 <a href="?act=guide-assignment-detail&id=<?= $assignment['id'] ?>" class="btn btn-primary btn-sm">
                   <i class="fas fa-eye"></i> Xem chi tiết

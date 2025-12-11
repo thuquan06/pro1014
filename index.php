@@ -111,6 +111,9 @@ try {
         case 'admin':
             (new AdminController())->dashboard();
             break;
+        case 'admin-dashboard-chart-data':
+            (new AdminController())->getChartData();
+            break;
 
         // --- Tour Management ---
         case 'admin-tours':
@@ -160,6 +163,14 @@ try {
 
         case 'admin-departure-plan-edit':
             (new AdminController())->editDeparturePlan();
+            break;
+
+        case 'admin-departure-plan-itinerary':
+            (new AdminController())->editDeparturePlanItinerary();
+            break;
+
+        case 'admin-departure-plan-itinerary-save':
+            (new AdminController())->saveDeparturePlanItinerary();
             break;
 
         case 'admin-departure-plan-update':
@@ -247,7 +258,10 @@ try {
             break;
 
         case 'admin-guide-edit':
+            require_once './models/BaseModel.php';
             require_once './models/GuideModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/AdminController.php';
             (new AdminController())->editGuide();
             break;
 
@@ -263,8 +277,52 @@ try {
 
         // ==================== ASSIGNMENT MANAGEMENT ====================
         case 'admin-assignments':
+            require_once './models/BaseModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './controllers/BaseController.php';
             require_once './controllers/AdminController.php';
             (new AdminController())->listAssignments();
+            break;
+
+        case 'admin-assignment-create':
+            require_once './models/BaseModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/AdminController.php';
+            (new AdminController())->createAssignment();
+            break;
+
+        case 'admin-assignment-edit':
+            require_once './models/BaseModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/DeparturePlanModel.php';
+            require_once './models/TourModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/AdminController.php';
+            (new AdminController())->editAssignment();
+            break;
+
+        case 'admin-assignment-delete':
+            require_once './models/BaseModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/AdminController.php';
+            (new AdminController())->deleteAssignment();
+            break;
+
+        case 'admin-assignment-toggle':
+            require_once './models/BaseModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/AdminController.php';
+            (new AdminController())->toggleAssignmentStatus();
             break;
 
         // ==================== SERVICE MANAGEMENT ====================
@@ -614,21 +672,44 @@ try {
             require_once './models/DeparturePlanModel.php';
             require_once './models/TourModel.php';
             require_once './models/TourJournalModel.php';
-            require_once './models/TourChiTietModel.php';
             require_once './models/PretripChecklistModel.php';
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->assignmentDetail();
             break;
 
+        case 'guide-assignment-confirm':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->confirmAssignment();
+            break;
+
+        case 'guide-assignment-status':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->updateAssignmentStatus();
+            break;
+
+        case 'guide-assignment-update-contacts':
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
+            require_once './models/AssignmentModel.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
+            (new GuideController())->updateContactNumbers();
+            break;
+
         case 'guide-attendance':
             require_once './models/BaseModel.php';
             require_once './models/GuideModel.php';
             require_once './models/AssignmentModel.php';
-            require_once './models/ServiceAssignmentModel.php';
             require_once './models/DeparturePlanModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/TourJournalModel.php';
             require_once './models/BookingModel.php';
             require_once './models/AttendanceModel.php';
             require_once './controllers/BaseController.php';
@@ -637,17 +718,45 @@ try {
             break;
 
         case 'guide-attendance-save':
-            require_once './models/BaseModel.php';
-            require_once './models/GuideModel.php';
-            require_once './models/AssignmentModel.php';
-            require_once './models/ServiceAssignmentModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/TourJournalModel.php';
-            require_once './models/AttendanceModel.php';
-            require_once './controllers/BaseController.php';
-            require_once './controllers/GuideController.php';
-            (new GuideController())->saveAttendance();
+            // Bắt đầu output buffering để bắt mọi output không mong muốn
+            ob_start();
+            
+            // Tắt display_errors ngay từ đầu cho AJAX request
+            $oldDisplayErrors = ini_get('display_errors');
+            ini_set('display_errors', 0);
+            
+            try {
+                require_once './models/BaseModel.php';
+                require_once './models/GuideModel.php';
+                require_once './models/AssignmentModel.php';
+                require_once './models/AttendanceModel.php';
+                require_once './models/BookingModel.php';
+                require_once './models/ServiceAssignmentModel.php';
+                require_once './models/DeparturePlanModel.php';
+                require_once './models/TourModel.php';
+                require_once './models/TourJournalModel.php';
+                require_once './controllers/BaseController.php';
+                require_once './controllers/GuideController.php';
+                
+                // Xóa mọi output đã bắt được
+                ob_end_clean();
+                
+                // Gọi method
+                (new GuideController())->saveAttendance();
+            } catch (Throwable $e) {
+                // Xóa output buffer và trả về JSON error
+                if (ob_get_level()) {
+                    ob_end_clean();
+                }
+                header('Content-Type: application/json');
+                error_log("guide-attendance-save error: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
+                echo json_encode(['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
+                ini_set('display_errors', $oldDisplayErrors);
+                exit;
+            }
+            
+            // Khôi phục display_errors
+            ini_set('display_errors', $oldDisplayErrors);
             break;
 
         case 'guide-checklist':
@@ -675,32 +784,6 @@ try {
             require_once './controllers/BaseController.php';
             require_once './controllers/GuideController.php';
             (new GuideController())->profile();
-            break;
-
-        case 'guide-profile-update':
-            require_once './models/BaseModel.php';
-            require_once './models/GuideModel.php';
-            require_once './models/AssignmentModel.php';
-            require_once './models/ServiceAssignmentModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/TourJournalModel.php';
-            require_once './controllers/BaseController.php';
-            require_once './controllers/GuideController.php';
-            (new GuideController())->updateProfile();
-            break;
-
-        case 'guide-change-password':
-            require_once './models/BaseModel.php';
-            require_once './models/GuideModel.php';
-            require_once './models/AssignmentModel.php';
-            require_once './models/ServiceAssignmentModel.php';
-            require_once './models/DeparturePlanModel.php';
-            require_once './models/TourModel.php';
-            require_once './models/TourJournalModel.php';
-            require_once './controllers/BaseController.php';
-            require_once './controllers/GuideController.php';
-            (new GuideController())->changePassword();
             break;
 
         case 'guide-schedule':
