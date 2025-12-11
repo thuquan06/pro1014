@@ -48,7 +48,7 @@
       <div style="text-align: center; padding: 60px 20px; color: var(--text-light);">
         <i class="fas fa-book-open" style="font-size: 64px; margin-bottom: 16px; opacity: 0.3;"></i>
         <p style="font-size: 16px; margin-bottom: 24px;">Chưa có nhật ký nào</p>
-        <a href="?act=guide-assignments" class="btn btn-primary">
+        <a href="?act=guide-journal-create" class="btn btn-primary">
           <i class="fas fa-plus"></i> Tạo nhật ký từ phân công
         </a>
       </div>

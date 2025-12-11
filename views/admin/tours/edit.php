@@ -567,7 +567,18 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
       <h3>Nội dung tour</h3>
     </div>
 
+    <div class="form-group-modern">
+      <p style="color: var(--text-light); margin: -4px 0 12px;">Tách riêng lịch trình tour, có thể thêm nhiều ngày chi tiết.</p>
+      <div style="margin-bottom: 16px;">
+        <button type="button" id="add-day-btn" class="btn-submit" style="padding: 10px 18px; gap: 6px;">
+          <i class="fas fa-plus"></i> Thêm lịch trình
+        </button>
+      </div>
+      <div id="days-container"></div>
+      <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display:none;"><?= htmlspecialchars($chuongtrinh ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+    </div>
 
+    <hr style="margin:20px 0; border: none; border-top:1px solid var(--border);">
 
     <div class="form-group-modern">
       <label for="packagedetails2">Lưu ý <span class="required">*</span></label>
@@ -694,8 +705,11 @@ const ckConfig = {
     filebrowserImageUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images',
 };
 
+// -------- Itinerary builder --------
+let tourDayCounter = 0;
+const tourDayEditors = {};
 const dayEditorConfig = {
-    height: 300,
+    height: 280,
     filebrowserBrowseUrl: 'assets/ckfinder/ckfinder.html',
     filebrowserImageBrowseUrl: 'assets/ckfinder/ckfinder.html?type=Images',
     filebrowserUploadUrl: 'assets/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files',
@@ -705,12 +719,128 @@ const dayEditorConfig = {
 // Khởi tạo CKEditor cho "Lưu ý"
 CKEDITOR.replace('packagedetails2', ckConfig);
 
+function addItineraryDay(dayTitle = '', dayContent = '') {
+    tourDayCounter++;
+    const dayId = `tour-day-${tourDayCounter}`;
+    const editorId = `tour-day-editor-${tourDayCounter}`;
+    const safeTitle = dayTitle.replace(/"/g, '&quot;');
+    const safeContent = dayContent.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const template = `
+      <div class="day-item" id="${dayId}" style="margin-bottom: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-light);">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 style="margin:0; color: var(--primary); font-size: 15px;"><i class="fas fa-calendar-day"></i> Ngày ${tourDayCounter}</h4>
+          <button type="button" class="btn-cancel" style="padding: 8px 12px;" onclick="removeItineraryDay(${tourDayCounter})">
+            <i class="fas fa-trash"></i> Xóa
+          </button>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Tiêu đề ngày (tùy chọn)</label>
+          <input type="text" class="day-title-input" data-day="${tourDayCounter}" value="${safeTitle}" placeholder="Ví dụ: Tham quan thành phố" style="width:100%; padding: 10px; border:1px solid var(--border); border-radius:8px;">
+        </div>
+        <div>
+          <label style="display:block; font-weight:600; margin-bottom:6px;">Nội dung</label>
+          <textarea class="day-content-editor" id="${editorId}" data-day="${tourDayCounter}" style="width:100%; min-height:220px;">${safeContent}</textarea>
+        </div>
+      </div>`;
+
+    const container = document.getElementById('days-container');
+    if (container) {
+        container.insertAdjacentHTML('beforeend', template);
+        setTimeout(() => {
+            tourDayEditors[tourDayCounter] = CKEDITOR.replace(editorId, dayEditorConfig);
+            if (dayContent) {
+                tourDayEditors[tourDayCounter].on('instanceReady', function() {
+                    this.setData(dayContent);
+                });
+            }
+        }, 150);
+    }
+}
+
+function removeItineraryDay(dayNum) {
+    const el = document.getElementById(`tour-day-${dayNum}`);
+    if (!el) return;
+    if (tourDayEditors[dayNum]) {
+        tourDayEditors[dayNum].destroy();
+        delete tourDayEditors[dayNum];
+    }
+    el.remove();
+    renumberItineraryDays();
+}
+
+function renumberItineraryDays() {
+    const items = document.querySelectorAll('.day-item');
+    items.forEach((item, idx) => {
+        const newNum = idx + 1;
+        const titleInput = item.querySelector('.day-title-input');
+        const contentArea = item.querySelector('.day-content-editor');
+        const heading = item.querySelector('h4');
+        if (heading) heading.innerHTML = `<i class="fas fa-calendar-day"></i> Ngày ${newNum}`;
+        if (titleInput) titleInput.dataset.day = newNum;
+        if (contentArea) contentArea.dataset.day = newNum;
+        const btn = item.querySelector('button');
+        if (btn) btn.setAttribute('onclick', `removeItineraryDay(${newNum})`);
+    });
+    tourDayCounter = items.length;
+}
+
+function buildItineraryHTML() {
+    let html = '';
+    const items = document.querySelectorAll('.day-item');
+    items.forEach((item, idx) => {
+        const dayNum = idx + 1;
+        const title = (item.querySelector('.day-title-input')?.value || '').trim();
+        const textarea = item.querySelector('.day-content-editor');
+        const dayKey = textarea ? parseInt(textarea.dataset.day) : dayNum;
+        let content = '';
+        if (tourDayEditors[dayKey]) {
+            content = tourDayEditors[dayKey].getData();
+        } else if (textarea) {
+            content = textarea.value;
+        }
+        if (content.trim()) {
+            const header = title
+              ? `<h3><strong>NGÀY ${dayNum}: ${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</strong></h3>`
+              : `<h3><strong>NGÀY ${dayNum}</strong></h3>`;
+            html += header + content;
+        }
+    });
+    return html;
+}
+
+function parseExistingItinerary(html) {
+    if (!html || !html.trim()) return;
+    const regex = /<h[1-6][^>]*>\s*<strong[^>]*>\s*NGÀY\s*(\d+)(?::\s*([^<]+))?\s*<\/strong>\s*<\/h[1-6]>/gi;
+    const sections = [];
+    let m;
+    while ((m = regex.exec(html)) !== null) {
+        const start = m.index + m[0].length;
+        const nextMatch = regex.exec(html);
+        regex.lastIndex = m.index + m[0].length;
+        const end = nextMatch ? nextMatch.index : html.length;
+        sections.push({
+            title: m[2] ? m[2].trim() : '',
+            content: html.substring(start, end).trim()
+        });
+    }
+    if (sections.length) {
+        sections.forEach(s => addItineraryDay(s.title, s.content));
+    } else {
+        addItineraryDay('', html);
+    }
+}
+
 // Xử lý khi submit form
 function updateCKEditorBeforeSubmit() {
     try {
         // Cập nhật tất cả editor instances
         for (var instance in CKEDITOR.instances) {
             CKEDITOR.instances[instance].updateElement();
+        }
+        const hiddenField = document.getElementById('chuongtrinh-hidden');
+        if (hiddenField) {
+            hiddenField.value = buildItineraryHTML();
         }
         
         return true;
@@ -742,6 +872,17 @@ document.addEventListener('DOMContentLoaded', function() {
     r2.addEventListener('change', toggle);
     toggle();
 
-
+    // Itinerary builder init
+    const addDayBtn = document.getElementById('add-day-btn');
+    if (addDayBtn) {
+        addDayBtn.addEventListener('click', () => addItineraryDay());
+    }
+    const hiddenField = document.getElementById('chuongtrinh-hidden');
+    const existing = hiddenField ? hiddenField.value : '';
+    if (existing && existing.trim()) {
+        parseExistingItinerary(existing);
+    } else {
+        addItineraryDay();
+    }
 });
 </script>

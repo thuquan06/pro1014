@@ -23,7 +23,7 @@
           <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--text-dark);">
             Chọn phân công <span style="color: var(--danger);">*</span>
           </label>
-          <select name="assignment_id" id="assignment_select" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" onchange="window.location.href='?act=guide-incident-create&assignment_id=' + this.value">
+          <select name="assignment_id" id="assignment_select" required style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px;" onchange="if(this.value) window.location.href='?act=guide-incident-create&assignment_id=' + this.value">
             <option value="">-- Chọn phân công --</option>
             <?php if (!empty($assignments)): ?>
               <?php foreach ($assignments as $ass): ?>
@@ -32,10 +32,17 @@
                   KH: <?= $ass['ngay_khoi_hanh'] ? date('d/m/Y', strtotime($ass['ngay_khoi_hanh'])) : 'N/A' ?>
                 </option>
               <?php endforeach; ?>
+            <?php else: ?>
+              <option value="" disabled>Chưa có phân công đã xác nhận</option>
             <?php endif; ?>
           </select>
           <small style="color: var(--text-light); margin-top: 4px; display: block;">
-            Hoặc <a href="?act=guide-assignments" style="color: var(--primary);">chọn từ danh sách phân công</a>
+            <?php if (empty($assignments)): ?>
+              <i class="fas fa-info-circle"></i> Bạn cần xác nhận phân công trước khi tạo báo cáo sự cố. 
+              <a href="?act=guide-assignments" style="color: var(--primary);">Xem danh sách phân công</a>
+            <?php else: ?>
+              Hoặc <a href="?act=guide-assignments" style="color: var(--primary);">chọn từ danh sách phân công</a>
+            <?php endif; ?>
           </small>
         </div>
         

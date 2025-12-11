@@ -5,6 +5,15 @@
  */
 class GuideModel extends BaseModel
 {
+    private $lastError = null;
+    
+    /**
+     * Lấy lỗi cuối cùng
+     */
+    public function getLastError()
+    {
+        return $this->lastError;
+    }
     /**
      * Lấy tất cả HDV
      */
@@ -74,17 +83,17 @@ class GuideModel extends BaseModel
             $stmt = $this->conn->prepare($sql);
             $stmt->execute([
                 ':ho_ten' => $data['ho_ten'] ?? '',
-                ':email' => $data['email'] ?? null,
-                ':so_dien_thoai' => $data['so_dien_thoai'] ?? null,
-                ':cmnd_cccd' => $data['cmnd_cccd'] ?? null,
-                ':dia_chi' => $data['dia_chi'] ?? null,
+                ':email' => !empty($data['email']) ? trim($data['email']) : null,
+                ':so_dien_thoai' => !empty($data['so_dien_thoai']) ? trim($data['so_dien_thoai']) : null,
+                ':cmnd_cccd' => !empty($data['cmnd_cccd']) ? trim($data['cmnd_cccd']) : null,
+                ':dia_chi' => !empty($data['dia_chi']) ? trim($data['dia_chi']) : null,
                 ':ky_nang' => $this->prepareJsonArray($data['ky_nang'] ?? []),
                 ':tuyen_chuyen' => $this->prepareJsonArray($data['tuyen_chuyen'] ?? []),
                 ':ngon_ngu' => $this->prepareJsonArray($data['ngon_ngu'] ?? []),
-                ':kinh_nghiem' => $data['kinh_nghiem'] ?? 0,
-                ':danh_gia' => $data['danh_gia'] ?? 0.00,
-                ':trang_thai' => $data['trang_thai'] ?? 1,
-                ':ghi_chu' => $data['ghi_chu'] ?? null,
+                ':kinh_nghiem' => isset($data['kinh_nghiem']) ? (string)$data['kinh_nghiem'] : '0',
+                ':danh_gia' => isset($data['danh_gia']) ? (float)$data['danh_gia'] : 0.00,
+                ':trang_thai' => isset($data['trang_thai']) ? (int)$data['trang_thai'] : 1,
+                ':ghi_chu' => !empty($data['ghi_chu']) ? trim($data['ghi_chu']) : null,
             ]);
 
             return $this->conn->lastInsertId();
@@ -100,39 +109,79 @@ class GuideModel extends BaseModel
     public function updateGuide($id, array $data)
     {
         try {
-            // Xây dựng SQL động để chỉ cập nhật các field có trong $data
-            $fields = [];
-            $params = [':id' => $id];
+            $sql = "UPDATE huong_dan_vien SET
+                        ho_ten = :ho_ten,
+                        email = :email,
+                        so_dien_thoai = :so_dien_thoai,
+                        cmnd_cccd = :cmnd_cccd,
+                        dia_chi = :dia_chi,
+                        ky_nang = :ky_nang,
+                        tuyen_chuyen = :tuyen_chuyen,
+                        ngon_ngu = :ngon_ngu,
+                        kinh_nghiem = :kinh_nghiem,
+                        danh_gia = :danh_gia,
+                        trang_thai = :trang_thai,
+                        ghi_chu = :ghi_chu,
+                        ngay_cap_nhat = NOW()
+                    WHERE id = :id";
+
+            $stmt = $this->conn->prepare($sql);
             
-            $allowedFields = [
-                'ho_ten', 'email', 'so_dien_thoai', 'cmnd_cccd', 'dia_chi',
-                'ky_nang', 'tuyen_chuyen', 'ngon_ngu', 'kinh_nghiem',
-                'danh_gia', 'trang_thai', 'ghi_chu', 'anh_dai_dien'
+            // Prepare data - đặc biệt xử lý các trường JSON
+            $kyNang = isset($data['ky_nang']) ? $data['ky_nang'] : '[]';
+            $tuyenChuyen = isset($data['tuyen_chuyen']) ? $data['tuyen_chuyen'] : '[]';
+            $ngonNgu = isset($data['ngon_ngu']) ? $data['ngon_ngu'] : '[]';
+            
+            // Log để debug
+            error_log("Raw data - ky_nang: " . var_export($kyNang, true));
+            error_log("Raw data - tuyen_chuyen: " . var_export($tuyenChuyen, true));
+            error_log("Raw data - ngon_ngu: " . var_export($ngonNgu, true));
+            
+            $params = [
+                ':id' => $id,
+                ':ho_ten' => $data['ho_ten'] ?? '',
+                ':email' => !empty($data['email']) ? trim($data['email']) : null,
+                ':so_dien_thoai' => !empty($data['so_dien_thoai']) ? trim($data['so_dien_thoai']) : null,
+                ':cmnd_cccd' => !empty($data['cmnd_cccd']) ? trim($data['cmnd_cccd']) : null,
+                ':dia_chi' => !empty($data['dia_chi']) ? trim($data['dia_chi']) : null,
+                ':ky_nang' => $this->prepareJsonArray($kyNang),
+                ':tuyen_chuyen' => $this->prepareJsonArray($tuyenChuyen),
+                ':ngon_ngu' => $this->prepareJsonArray($ngonNgu),
+                ':kinh_nghiem' => isset($data['kinh_nghiem']) ? (string)$data['kinh_nghiem'] : '0',
+                ':danh_gia' => isset($data['danh_gia']) ? (float)$data['danh_gia'] : 0.00,
+                ':trang_thai' => isset($data['trang_thai']) ? (int)$data['trang_thai'] : 1,
+                ':ghi_chu' => !empty($data['ghi_chu']) ? trim($data['ghi_chu']) : null,
             ];
             
-            foreach ($allowedFields as $field) {
-                if (isset($data[$field])) {
-                    if (in_array($field, ['ky_nang', 'tuyen_chuyen', 'ngon_ngu'])) {
-                        $fields[] = "$field = :$field";
-                        $params[":$field"] = $this->prepareJsonArray($data[$field]);
-                    } else {
-                        $fields[] = "$field = :$field";
-                        $params[":$field"] = $data[$field];
-                    }
-                }
-            }
+            error_log("Prepared params - ky_nang: " . $params[':ky_nang']);
+            error_log("Prepared params - tuyen_chuyen: " . $params[':tuyen_chuyen']);
+            error_log("Prepared params - ngon_ngu: " . $params[':ngon_ngu']);
             
-            if (empty($fields)) {
+            $result = $stmt->execute($params);
+            
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                $this->lastError = $errorInfo[2] ?? 'Unknown error';
+                error_log("Update Guide SQL error: " . print_r($errorInfo, true));
+                error_log("SQL: " . $sql);
+                error_log("Params: " . print_r($params, true));
                 return false;
             }
             
-            $fields[] = "ngay_cap_nhat = NOW()";
-            $sql = "UPDATE huong_dan_vien SET " . implode(', ', $fields) . " WHERE id = :id";
+            // Kiểm tra số dòng bị ảnh hưởng
+            $rowCount = $stmt->rowCount();
+            if ($rowCount === 0) {
+                $this->lastError = 'Không có dòng nào được cập nhật. Có thể ID không tồn tại hoặc dữ liệu không thay đổi.';
+                error_log("Update Guide: No rows affected. ID: " . $id);
+                return false;
+            }
             
-            $stmt = $this->conn->prepare($sql);
-            return $stmt->execute($params);
+            return true;
         } catch (PDOException $e) {
+            $this->lastError = $e->getMessage();
             error_log("Lỗi cập nhật HDV: " . $e->getMessage());
+            error_log("SQL: " . $sql);
+            error_log("Data: " . print_r($data, true));
             return false;
         }
     }
@@ -170,18 +219,32 @@ class GuideModel extends BaseModel
      */
     private function prepareJsonArray($data)
     {
+        // Nếu null hoặc rỗng, trả về mảng rỗng
+        if (empty($data)) {
+            return json_encode([], JSON_UNESCAPED_UNICODE);
+        }
+        
         if (is_string($data)) {
-            // Nếu đã là JSON string, kiểm tra xem có hợp lệ không
+            // Trim whitespace
+            $data = trim($data);
+            
+            // Decode HTML entities nếu có (từ form submission)
+            $data = html_entity_decode($data, ENT_QUOTES, 'UTF-8');
+            
+            // Nếu là JSON string, decode và encode lại
             $decoded = json_decode($data, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return json_encode($decoded, JSON_UNESCAPED_UNICODE);
             }
+            
             // Nếu không phải JSON hợp lệ, coi như là string đơn giản
             return json_encode([$data], JSON_UNESCAPED_UNICODE);
         }
+        
         if (is_array($data)) {
             return json_encode($data, JSON_UNESCAPED_UNICODE);
         }
+        
         return json_encode([], JSON_UNESCAPED_UNICODE);
     }
 
@@ -262,6 +325,12 @@ class GuideModel extends BaseModel
         if (isset($filters['trang_thai'])) {
             $sql .= " AND pc.trang_thai = :trang_thai";
             $params[':trang_thai'] = $filters['trang_thai'];
+        }
+
+        // Filter theo da_nhan (xác nhận)
+        if (isset($filters['da_nhan'])) {
+            $sql .= " AND pc.da_nhan = :da_nhan";
+            $params[':da_nhan'] = $filters['da_nhan'];
         }
 
         // Filter theo ngày

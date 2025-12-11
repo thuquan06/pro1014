@@ -50,9 +50,9 @@ class AdminController extends BaseController {
      * Route: ?act=login
      */
     public function login() {
-        // Nếu đã login → chuyển về dashboard
+        // Nếu đã login → chuyển về trang quản lý tour
         if (!empty($_SESSION['alogin'])) {
-            $this->redirect(BASE_URL . '?act=admin');
+            $this->redirect(BASE_URL . '?act=admin-tours');
         }
         
         // Nếu là POST request → xử lý đăng nhập
@@ -70,9 +70,9 @@ class AdminController extends BaseController {
      * Route: ?act=forgot-password
      */
     public function forgotPassword() {
-        // Nếu đã login → chuyển về dashboard
+        // Nếu đã login → chuyển về trang quản lý tour
         if (!empty($_SESSION['alogin'])) {
-            $this->redirect(BASE_URL . '?act=admin');
+            $this->redirect(BASE_URL . '?act=admin-tours');
         }
         
         $error = null;
@@ -87,9 +87,9 @@ class AdminController extends BaseController {
      * Route: ?act=forgot-password-handle
      */
     public function handleForgotPassword() {
-        // Nếu đã login → chuyển về dashboard
+        // Nếu đã login → chuyển về trang quản lý tour
         if (!empty($_SESSION['alogin'])) {
-            $this->redirect(BASE_URL . '?act=admin');
+            $this->redirect(BASE_URL . '?act=admin-tours');
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -350,9 +350,9 @@ class AdminController extends BaseController {
      * Route: ?act=reset-password&token=XXX
      */
     public function resetPassword() {
-        // Nếu đã login → chuyển về dashboard
+        // Nếu đã login → chuyển về trang quản lý tour
         if (!empty($_SESSION['alogin'])) {
-            $this->redirect(BASE_URL . '?act=admin');
+            $this->redirect(BASE_URL . '?act=admin-tours');
         }
 
         $token = $_GET['token'] ?? '';
@@ -409,9 +409,9 @@ class AdminController extends BaseController {
      * Route: ?act=reset-password-handle
      */
     public function handleResetPassword() {
-        // Nếu đã login → chuyển về dashboard
+        // Nếu đã login → chuyển về trang quản lý tour
         if (!empty($_SESSION['alogin'])) {
-            $this->redirect(BASE_URL . '?act=admin');
+            $this->redirect(BASE_URL . '?act=admin-tours');
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -514,8 +514,8 @@ class AdminController extends BaseController {
             // Log
             error_log("✓ Successful login: " . $username);
             
-            // Redirect đến dashboard
-            $this->redirect(BASE_URL . '?act=admin');
+            // Redirect đến trang quản lý tour
+            $this->redirect(BASE_URL . '?act=admin-tours');
             
         } else {
             // ❌ ĐĂNG NHẬP THẤT BẠI
@@ -571,6 +571,7 @@ class AdminController extends BaseController {
         $this->redirect(BASE_URL . '?act=login');
     }
 
+
     /* ==================== DASHBOARD ==================== */
 
     /**
@@ -579,14 +580,467 @@ class AdminController extends BaseController {
      */
     public function dashboard() {
         $this->checkLogin();
-        $stats = $this->dashboardModel->getStatistics();
         
-        // Lấy thống kê theo ngày, tuần, tháng
-        $statsByDay = $this->dashboardModel->getStatisticsByPeriod('day');
-        $statsByWeek = $this->dashboardModel->getStatisticsByPeriod('week');
-        $statsByMonth = $this->dashboardModel->getStatisticsByPeriod('month');
+        $conn = connectDB();
         
-        $this->loadView('admin/dashboard', compact('stats', 'statsByDay', 'statsByWeek', 'statsByMonth'), 'admin/layout');
+        // 1. Thống kê tổng quan
+        $stats = [
+            'total_tours_active' => 0,
+            'bookings_today' => 0,
+            'bookings_week' => 0,
+            'upcoming_departures' => 0,
+            'revenue_month' => 0,
+            'tours_running' => 0
+        ];
+        
+        // Tổng số tour đang mở bán (trangthai = 1)
+        try {
+            $sql = "SELECT COUNT(*) FROM goidulich WHERE trangthai = 1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $stats['total_tours_active'] = (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error getting total tours active: " . $e->getMessage());
+        }
+        
+        // Booking hôm nay và trong tuần
+        try {
+            // Sử dụng CURDATE() của MySQL để đảm bảo cùng timezone với database
+            $sql = "SELECT COUNT(*) FROM booking 
+                    WHERE DATE(ngay_dat) = CURDATE() 
+                    AND ngay_dat IS NOT NULL";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $stats['bookings_today'] = (int)$stmt->fetchColumn();
+            
+            // Booking trong tuần (7 ngày gần nhất)
+            $sql = "SELECT COUNT(*) FROM booking 
+                    WHERE DATE(ngay_dat) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                    AND ngay_dat IS NOT NULL";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $stats['bookings_week'] = (int)$stmt->fetchColumn();
+            
+            // Debug logging
+            error_log("Dashboard - Bookings today: " . $stats['bookings_today'] . ", week: " . $stats['bookings_week']);
+        } catch (PDOException $e) {
+            error_log("Error getting bookings stats: " . $e->getMessage());
+        }
+        
+        // Số lịch khởi hành sắp tới (trong 30 ngày tới)
+        try {
+            $today = date('Y-m-d');
+            $nextMonth = date('Y-m-d', strtotime('+30 days'));
+            $sql = "SELECT COUNT(*) FROM lich_khoi_hanh WHERE ngay_khoi_hanh >= :today AND ngay_khoi_hanh <= :next_month";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today, ':next_month' => $nextMonth]);
+            $stats['upcoming_departures'] = (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error getting upcoming departures: " . $e->getMessage());
+        }
+        
+        // Doanh thu tháng này
+        try {
+            $monthStart = date('Y-m-01');
+            $monthEnd = date('Y-m-t 23:59:59');
+            $sql = "SELECT SUM(tong_tien) FROM booking 
+                    WHERE ngay_dat >= :month_start AND ngay_dat <= :month_end 
+                    AND trang_thai IN (3, 4)";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':month_start' => $monthStart, ':month_end' => $monthEnd]);
+            $stats['revenue_month'] = (float)($stmt->fetchColumn() ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error getting revenue: " . $e->getMessage());
+        }
+        
+        // Số tour đang chạy (đang khởi hành - ngày hiện tại nằm giữa ngày khởi hành và kết thúc)
+        try {
+            $today = date('Y-m-d');
+            $sql = "SELECT COUNT(*) FROM lich_khoi_hanh 
+                    WHERE ngay_khoi_hanh <= :today AND ngay_ket_thuc >= :today";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today]);
+            $stats['tours_running'] = (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error getting running tours: " . $e->getMessage());
+        }
+        
+        // 2. Lịch khởi hành sắp tới (10 lịch gần nhất)
+        $upcomingDepartures = [];
+        try {
+            $today = date('Y-m-d');
+            $sql = "SELECT lkh.*, t.tengoi as ten_tour, t.hinhanh
+                    FROM lich_khoi_hanh lkh
+                    LEFT JOIN goidulich t ON lkh.id_tour = t.id_goi
+                    WHERE lkh.ngay_khoi_hanh >= :today
+                    ORDER BY lkh.ngay_khoi_hanh ASC
+                    LIMIT 10";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today]);
+            $upcomingDepartures = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Lấy số khách và HDV cho mỗi lịch
+            foreach ($upcomingDepartures as &$dep) {
+                // Đếm số khách từ booking
+                $sql = "SELECT COUNT(*) FROM booking_detail bd
+                        INNER JOIN booking b ON bd.id_booking = b.id
+                        WHERE b.id_lich_khoi_hanh = :id_lich AND b.trang_thai != 5";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':id_lich' => $dep['id']]);
+                $dep['so_khach'] = (int)$stmt->fetchColumn();
+                
+                // Lấy HDV phụ trách
+                $sql = "SELECT hdv.ho_ten, pc.vai_tro
+                        FROM phan_cong_hdv pc
+                        INNER JOIN huong_dan_vien hdv ON pc.id_hdv = hdv.id
+                        WHERE pc.id_lich_khoi_hanh = :id_lich AND pc.da_nhan = 1
+                        LIMIT 1";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':id_lich' => $dep['id']]);
+                $hdv = $stmt->fetch(PDO::FETCH_ASSOC);
+                $dep['hdv_phu_trach'] = $hdv ? $hdv['ho_ten'] : 'Chưa phân công';
+                $dep['trang_thai'] = $hdv ? 'Assigned' : 'Open';
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting upcoming departures: " . $e->getMessage());
+        }
+        
+        // 3. Booking mới nhất (10 booking gần nhất)
+        $recentBookings = [];
+        try {
+            $sql = "SELECT b.*, t.tengoi as ten_tour, lkh.ngay_khoi_hanh
+                    FROM booking b
+                    LEFT JOIN goidulich t ON b.id_tour = t.id_goi
+                    LEFT JOIN lich_khoi_hanh lkh ON b.id_lich_khoi_hanh = lkh.id
+                    ORDER BY b.ngay_dat DESC
+                    LIMIT 10";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $recentBookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting recent bookings: " . $e->getMessage());
+        }
+        
+        // 4. Tình trạng tour hôm nay
+        $todayTours = [];
+        try {
+            $today = date('Y-m-d');
+            $sql = "SELECT lkh.*, t.tengoi as ten_tour
+                    FROM lich_khoi_hanh lkh
+                    LEFT JOIN goidulich t ON lkh.id_tour = t.id_goi
+                    WHERE lkh.ngay_khoi_hanh = :today
+                    ORDER BY lkh.gio_khoi_hanh ASC";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today]);
+            $todayTours = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Lấy HDV cho mỗi tour
+            foreach ($todayTours as &$tour) {
+                $sql = "SELECT hdv.ho_ten, hdv.so_dien_thoai
+                        FROM phan_cong_hdv pc
+                        INNER JOIN huong_dan_vien hdv ON pc.id_hdv = hdv.id
+                        WHERE pc.id_lich_khoi_hanh = :id_lich AND pc.da_nhan = 1
+                        LIMIT 1";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([':id_lich' => $tour['id']]);
+                $hdv = $stmt->fetch(PDO::FETCH_ASSOC);
+                $tour['hdv'] = $hdv;
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting today tours: " . $e->getMessage());
+        }
+        
+        // 5. Thông báo hệ thống
+        $notifications = [];
+        
+        // Booking hủy
+        try {
+            $sql = "SELECT COUNT(*) FROM booking WHERE trang_thai = 5";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $cancelledCount = (int)$stmt->fetchColumn();
+            if ($cancelledCount > 0) {
+                $notifications[] = [
+                    'type' => 'warning',
+                    'icon' => 'exclamation-triangle',
+                    'message' => "Có $cancelledCount booking đã hủy",
+                    'link' => BASE_URL . '?act=admin-bookings&status=5'
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting cancelled bookings: " . $e->getMessage());
+        }
+        
+        // Lịch khởi hành thiếu HDV
+        try {
+            $today = date('Y-m-d');
+            $nextWeek = date('Y-m-d', strtotime('+7 days'));
+            $sql = "SELECT COUNT(*) FROM lich_khoi_hanh lkh
+                    LEFT JOIN phan_cong_hdv pc ON lkh.id = pc.id_lich_khoi_hanh AND pc.da_nhan = 1
+                    WHERE lkh.ngay_khoi_hanh >= :today AND lkh.ngay_khoi_hanh <= :next_week
+                    AND pc.id IS NULL";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today, ':next_week' => $nextWeek]);
+            $missingHdvCount = (int)$stmt->fetchColumn();
+            if ($missingHdvCount > 0) {
+                $notifications[] = [
+                    'type' => 'danger',
+                    'icon' => 'user-times',
+                    'message' => "$missingHdvCount lịch khởi hành sắp tới chưa có HDV",
+                    'link' => BASE_URL . '?act=admin-departure-plans'
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting missing HDV: " . $e->getMessage());
+        }
+        
+        // Thanh toán còn nợ
+        try {
+            $sql = "SELECT COUNT(*) FROM booking WHERE trang_thai IN (1, 2)";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $pendingPaymentCount = (int)$stmt->fetchColumn();
+            if ($pendingPaymentCount > 0) {
+                $notifications[] = [
+                    'type' => 'info',
+                    'icon' => 'money-bill-wave',
+                    'message' => "$pendingPaymentCount booking chưa thanh toán",
+                    'link' => BASE_URL . '?act=admin-bookings'
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting pending payments: " . $e->getMessage());
+        }
+        
+        // 6. Công việc cần xử lý
+        $actionsNeeded = [];
+        
+        // Booking chưa duyệt
+        try {
+            $sql = "SELECT COUNT(*) FROM booking WHERE trang_thai = 1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $pendingCount = (int)$stmt->fetchColumn();
+            if ($pendingCount > 0) {
+                $actionsNeeded[] = [
+                    'type' => 'booking',
+                    'count' => $pendingCount,
+                    'message' => 'Booking chưa duyệt',
+                    'link' => BASE_URL . '?act=admin-bookings&status=1'
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting pending bookings: " . $e->getMessage());
+        }
+        
+        // Tour sắp đầy chỗ (>= 80% chỗ đã đặt)
+        try {
+            $sql = "SELECT COUNT(*) FROM lich_khoi_hanh 
+                    WHERE so_cho > 0 AND (so_cho_da_dat / so_cho) >= 0.8 
+                    AND ngay_khoi_hanh >= CURDATE()";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $almostFullCount = (int)$stmt->fetchColumn();
+            if ($almostFullCount > 0) {
+                $actionsNeeded[] = [
+                    'type' => 'tour',
+                    'count' => $almostFullCount,
+                    'message' => 'Tour sắp đầy chỗ',
+                    'link' => BASE_URL . '?act=admin-departure-plans'
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting almost full tours: " . $e->getMessage());
+        }
+        
+        // 7. Tình trạng HDV
+        $guideStatus = [
+            'active' => 0,
+            'available' => 0,
+            'on_tour' => 0
+        ];
+        
+        try {
+            // HDV đang hoạt động (trang_thai = 1)
+            $sql = "SELECT COUNT(*) FROM huong_dan_vien WHERE trang_thai = 1";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $guideStatus['active'] = (int)$stmt->fetchColumn();
+            
+            // HDV đang dẫn tour (có assignment với da_nhan = 1 và tour đang diễn ra)
+            $today = date('Y-m-d');
+            $sql = "SELECT COUNT(DISTINCT pc.id_hdv) 
+                    FROM phan_cong_hdv pc
+                    INNER JOIN lich_khoi_hanh lkh ON pc.id_lich_khoi_hanh = lkh.id
+                    WHERE pc.da_nhan = 1 
+                    AND lkh.ngay_khoi_hanh <= :today 
+                    AND lkh.ngay_ket_thuc >= :today";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today]);
+            $guideStatus['on_tour'] = (int)$stmt->fetchColumn();
+            
+            // HDV rảnh (đang hoạt động nhưng không có tour đang diễn ra)
+            $guideStatus['available'] = max(0, $guideStatus['active'] - $guideStatus['on_tour']);
+        } catch (PDOException $e) {
+            error_log("Error getting guide status: " . $e->getMessage());
+        }
+        
+        // Lịch làm việc sắp tới của HDV
+        $upcomingGuideSchedule = [];
+        try {
+            $today = date('Y-m-d');
+            $nextMonth = date('Y-m-d', strtotime('+30 days'));
+            $sql = "SELECT hdv.ho_ten, lkh.ngay_khoi_hanh, t.tengoi as ten_tour, pc.vai_tro
+                    FROM phan_cong_hdv pc
+                    INNER JOIN huong_dan_vien hdv ON pc.id_hdv = hdv.id
+                    INNER JOIN lich_khoi_hanh lkh ON pc.id_lich_khoi_hanh = lkh.id
+                    LEFT JOIN goidulich t ON lkh.id_tour = t.id_goi
+                    WHERE pc.da_nhan = 1 
+                    AND lkh.ngay_khoi_hanh >= :today 
+                    AND lkh.ngay_khoi_hanh <= :next_month
+                    ORDER BY lkh.ngay_khoi_hanh ASC
+                    LIMIT 10";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':today' => $today, ':next_month' => $nextMonth]);
+            $upcomingGuideSchedule = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting guide schedule: " . $e->getMessage());
+        }
+        
+        $this->loadView('admin/dashboard', compact(
+            'stats',
+            'upcomingDepartures',
+            'recentBookings',
+            'todayTours',
+            'notifications',
+            'actionsNeeded',
+            'guideStatus',
+            'upcomingGuideSchedule'
+        ), 'admin/layout');
+    }
+
+    /**
+     * API: Lấy dữ liệu thống kê theo ngày/tuần/tháng cho biểu đồ
+     * Route: ?act=admin-dashboard-chart-data
+     */
+    public function getChartData() {
+        $this->checkLogin();
+        
+        $period = $_GET['period'] ?? 'day'; // day, week, month
+        $conn = connectDB();
+        
+        $data = [
+            'labels' => [],
+            'bookings' => [],
+            'revenue' => []
+        ];
+        
+        try {
+            switch ($period) {
+                case 'day':
+                    // Lấy dữ liệu 30 ngày gần nhất
+                    for ($i = 29; $i >= 0; $i--) {
+                        $date = date('Y-m-d', strtotime("-$i days"));
+                        $dateLabel = date('d/m', strtotime("-$i days"));
+                        
+                        // Đếm booking
+                        $sql = "SELECT COUNT(*) FROM booking 
+                                WHERE DATE(ngay_dat) = :date AND ngay_dat IS NOT NULL";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':date' => $date]);
+                        $bookingCount = (int)$stmt->fetchColumn();
+                        
+                        // Tính doanh thu (booking đã thanh toán)
+                        $sql = "SELECT SUM(tong_tien) FROM booking 
+                                WHERE DATE(ngay_dat) = :date 
+                                AND ngay_dat IS NOT NULL
+                                AND trang_thai IN (3, 4)";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':date' => $date]);
+                        $revenue = (float)($stmt->fetchColumn() ?? 0);
+                        
+                        $data['labels'][] = $dateLabel;
+                        $data['bookings'][] = $bookingCount;
+                        $data['revenue'][] = $revenue;
+                    }
+                    break;
+                    
+                case 'week':
+                    // Lấy dữ liệu 12 tuần gần nhất
+                    for ($i = 11; $i >= 0; $i--) {
+                        // Tính tuần từ thứ 2 đến chủ nhật
+                        $baseDate = strtotime("-$i weeks");
+                        $weekStart = date('Y-m-d', strtotime('monday this week', $baseDate));
+                        $weekEnd = date('Y-m-d', strtotime('sunday this week', $baseDate));
+                        $weekLabel = date('d/m', strtotime($weekStart)) . ' - ' . date('d/m', strtotime($weekEnd));
+                        
+                        // Đếm booking
+                        $sql = "SELECT COUNT(*) FROM booking 
+                                WHERE DATE(ngay_dat) >= :week_start 
+                                AND DATE(ngay_dat) <= :week_end
+                                AND ngay_dat IS NOT NULL";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':week_start' => $weekStart, ':week_end' => $weekEnd]);
+                        $bookingCount = (int)$stmt->fetchColumn();
+                        
+                        // Tính doanh thu
+                        $sql = "SELECT SUM(tong_tien) FROM booking 
+                                WHERE DATE(ngay_dat) >= :week_start 
+                                AND DATE(ngay_dat) <= :week_end
+                                AND ngay_dat IS NOT NULL
+                                AND trang_thai IN (3, 4)";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':week_start' => $weekStart, ':week_end' => $weekEnd]);
+                        $revenue = (float)($stmt->fetchColumn() ?? 0);
+                        
+                        $data['labels'][] = $weekLabel;
+                        $data['bookings'][] = $bookingCount;
+                        $data['revenue'][] = $revenue;
+                    }
+                    break;
+                    
+                case 'month':
+                    // Lấy dữ liệu 12 tháng gần nhất
+                    for ($i = 11; $i >= 0; $i--) {
+                        $monthStart = date('Y-m-01', strtotime("-$i months"));
+                        $monthEnd = date('Y-m-t', strtotime("-$i months"));
+                        $monthLabel = date('m/Y', strtotime("-$i months"));
+                        
+                        // Đếm booking
+                        $sql = "SELECT COUNT(*) FROM booking 
+                                WHERE DATE(ngay_dat) >= :month_start 
+                                AND DATE(ngay_dat) <= :month_end
+                                AND ngay_dat IS NOT NULL";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':month_start' => $monthStart, ':month_end' => $monthEnd]);
+                        $bookingCount = (int)$stmt->fetchColumn();
+                        
+                        // Tính doanh thu
+                        $sql = "SELECT SUM(tong_tien) FROM booking 
+                                WHERE DATE(ngay_dat) >= :month_start 
+                                AND DATE(ngay_dat) <= :month_end
+                                AND ngay_dat IS NOT NULL
+                                AND trang_thai IN (3, 4)";
+                        $stmt = $conn->prepare($sql);
+                        $stmt->execute([':month_start' => $monthStart, ':month_end' => $monthEnd]);
+                        $revenue = (float)($stmt->fetchColumn() ?? 0);
+                        
+                        $data['labels'][] = $monthLabel;
+                        $data['bookings'][] = $bookingCount;
+                        $data['revenue'][] = $revenue;
+                    }
+                    break;
+            }
+        } catch (PDOException $e) {
+            error_log("Error getting chart data: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Lỗi lấy dữ liệu thống kê']);
+            return;
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
     }
 
     /* ==================== TOUR MANAGEMENT ==================== */
@@ -1575,12 +2029,47 @@ class AdminController extends BaseController {
                             return;
                         }
                         
+                        // Kiểm tra conflict trước khi tạo phân công
+                        $ngayBatDau = $validated['ngay_khoi_hanh'] ?? null;
+                        $ngayKetThuc = $validated['ngay_ket_thuc'] ?? null;
+                        
+                        error_log("Creating assignment from departure plan: HDV={$id_hdv}, Start={$ngayBatDau}, End={$ngayKetThuc}, LichKhoiHanh={$id_lich_khoi_hanh}");
+                        
+                        if ($ngayBatDau && $ngayKetThuc) {
+                            $conflicts = $this->assignmentModel->checkScheduleConflict(
+                                $id_hdv,
+                                $ngayBatDau,
+                                $ngayKetThuc,
+                                null, // excludeAssignmentId
+                                $id_lich_khoi_hanh // exclude lịch trình hiện tại
+                            );
+                            
+                            error_log("Conflict check result: " . count($conflicts) . " conflicts found");
+                            
+                            if (!empty($conflicts)) {
+                                $guide = $this->guideModel->getGuideByID($id_hdv);
+                                $guideName = $guide ? $guide['ho_ten'] : 'HDV';
+                                $conflictInfo = [];
+                                foreach ($conflicts as $conflict) {
+                                    $start = $conflict['ngay_bat_dau'] ?? $conflict['ngay_khoi_hanh'] ?? 'N/A';
+                                    $end = $conflict['ngay_ket_thuc'] ?? $conflict['dp_ngay_ket_thuc'] ?? 'N/A';
+                                    $tourName = $conflict['ten_tour'] ?? 'N/A';
+                                    $conflictInfo[] = "{$tourName} ({$start} - {$end})";
+                                }
+                                $error = "HDV {$guideName} đã có lịch trùng trong khoảng thời gian từ {$ngayBatDau} đến {$ngayKetThuc}. Các lịch trình trùng: " . implode(', ', $conflictInfo);
+                                $allTours = $this->tourModel->getAllTours();
+                                $guides = $this->guideModel->getAllGuides(['trang_thai' => 1]);
+                                $this->loadView('admin/departure-plans/create', compact('allTours', 'tourId', 'guides', 'error'), 'admin/layout');
+                                return;
+                            }
+                        }
+                        
                         $assignmentData = [
                             'id_lich_khoi_hanh' => $id_lich_khoi_hanh,
                             'id_hdv' => $id_hdv,
                             'vai_tro' => $vaiTro,
-                            'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
-                            'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
+                            'ngay_bat_dau' => $ngayBatDau,
+                            'ngay_ket_thuc' => $ngayKetThuc,
                             'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
                             'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
                             'trang_thai' => 1
@@ -1640,6 +2129,119 @@ class AdminController extends BaseController {
     }
 
     /**
+     * Form chỉnh sửa Lịch trình tour theo ngày (chỉ trường chuongtrinh)
+     * Route: ?act=admin-departure-plan-itinerary&id=X
+     */
+    public function editDeparturePlanItinerary() {
+        $this->checkLogin();
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id);
+        if (!$departurePlan) {
+            $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        // Làm sạch chuongtrinh trước khi hiển thị
+        if (!empty($departurePlan['chuongtrinh'])) {
+            $chuongtrinh_raw = trim($departurePlan['chuongtrinh']);
+            
+            // Thử parse JSON format
+            $jsonData = json_decode($chuongtrinh_raw, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData) && !empty($jsonData)) {
+                // Convert JSON format sang HTML format để hiển thị trong CKEditor
+                $htmlContent = '';
+                foreach ($jsonData as $day) {
+                    if (isset($day['ngay']) && isset($day['noi_dung'])) {
+                        $dayNum = (int)$day['ngay'];
+                        $title = !empty($day['tieu_de']) ? $day['tieu_de'] : "Ngày {$dayNum}";
+                        $content = trim($day['noi_dung']);
+                        // Loại bỏ ký tự JSON thừa
+                        $content = preg_replace('/[\s]*[\}\]\"]+[\s]*$/', '', $content);
+                        $content = preg_replace('/^[\s]*[\{\[\"]+[\s]*/', '', $content);
+                        $htmlContent .= "<h3><strong>{$title}</strong></h3>\n{$content}\n\n";
+                    }
+                }
+                $departurePlan['chuongtrinh'] = trim($htmlContent);
+            } else {
+                // Format HTML/text cũ - làm sạch ký tự JSON thừa
+                $chuongtrinh = html_entity_decode((string)$chuongtrinh_raw, ENT_QUOTES, 'UTF-8');
+                // Loại bỏ các ký tự JSON thừa ở cuối
+                $chuongtrinh = preg_replace('/[\s]*[\}\]\"]+[\s]*$/', '', $chuongtrinh);
+                // Loại bỏ các ký tự JSON thừa ở đầu
+                $chuongtrinh = preg_replace('/^[\s]*[\{\[\"]+[\s]*/', '', $chuongtrinh);
+                // Loại bỏ các tag HTML không hợp lệ chứa JSON
+                $chuongtrinh = preg_replace('/<[^>]*>[\s]*[\}\]\"]+[\s]*<\/[^>]*>/is', '', $chuongtrinh);
+                $departurePlan['chuongtrinh'] = trim($chuongtrinh);
+            }
+        } else {
+            $departurePlan['chuongtrinh'] = '';
+        }
+
+        $tour = null;
+        if (!empty($departurePlan['id_tour'])) {
+            $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+        }
+
+        $this->loadView('admin/departure-plans/itinerary', compact('departurePlan', 'tour'), 'admin/layout');
+    }
+
+    /**
+     * Lưu Lịch trình tour theo ngày
+     * Route: ?act=admin-departure-plan-itinerary-save
+     */
+    public function saveDeparturePlanItinerary() {
+        $this->checkLogin();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        $id = filter_var($_POST['id'] ?? 0, FILTER_VALIDATE_INT);
+        $chuongtrinh = $_POST['chuongtrinh'] ?? '';
+
+        if (!$id || $id <= 0) {
+            $_SESSION['error'] = 'ID lịch khởi hành không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        $existingPlan = $this->departurePlanModel->getDeparturePlanByID($id);
+        if (!$existingPlan) {
+            $_SESSION['error'] = 'Không tìm thấy lịch khởi hành';
+            $this->redirect(BASE_URL . '?act=admin-departure-plans');
+        }
+
+        // Làm sạch chuongtrinh trước khi lưu
+        $chuongtrinh = trim($chuongtrinh);
+        // Loại bỏ các ký tự JSON thừa ở cuối
+        $chuongtrinh = preg_replace('/[\s]*[\}\]\"]+[\s]*$/', '', $chuongtrinh);
+        // Loại bỏ các ký tự JSON thừa ở đầu
+        $chuongtrinh = preg_replace('/^[\s]*[\{\[\"]+[\s]*/', '', $chuongtrinh);
+        // Loại bỏ các tag HTML không hợp lệ chứa JSON (như <p>"]}</p>)
+        $chuongtrinh = preg_replace('/<[^>]*>[\s]*[\}\]\"]+[\s]*<\/[^>]*>/is', '', $chuongtrinh);
+        // Loại bỏ các ký tự JSON trong nội dung HTML
+        $chuongtrinh = preg_replace('/[\s]*[\}\]\"]+[\s]*(?=<)/', '', $chuongtrinh);
+        $chuongtrinh = preg_replace('/(?<=>)[\s]*[\{\[\"]+[\s]*/', '', $chuongtrinh);
+        $chuongtrinh = trim($chuongtrinh);
+
+        // Chuẩn bị data đầy đủ để không mất trường khác
+        $data = $existingPlan;
+        $data['chuongtrinh'] = $chuongtrinh;
+
+        $result = $this->departurePlanModel->updateDeparturePlan($id, $data);
+
+        if ($result) {
+            $_SESSION['success'] = 'Cập nhật lịch trình tour theo ngày thành công';
+        } else {
+            $_SESSION['error'] = 'Không thể cập nhật lịch trình tour theo ngày';
+        }
+
+        $this->redirect(BASE_URL . '?act=admin-departure-plan-detail&id=' . $id);
+    }
+
+    /**
      * Cập nhật lịch khởi hành
      * Route: ?act=admin-departure-plan-update
      */
@@ -1692,12 +2294,6 @@ class AdminController extends BaseController {
             } elseif (isset($validated['so_cho']) && isset($validated['so_cho_da_dat'])) {
                 $validated['so_cho_con_lai'] = max(0, (int)$validated['so_cho'] - (int)$validated['so_cho_da_dat']);
             }
-            
-            // Lấy chuongtrinh từ POST (không escape, giữ nguyên HTML)
-            $chuongtrinh = $_POST['chuongtrinh'] ?? '';
-            // Decode HTML entities nếu có (để đảm bảo HTML thuần, không bị double-encode)
-            // Chỉ decode nếu có entities, không decode HTML tags
-            $validated['chuongtrinh'] = $chuongtrinh;
             
             // ===== UPDATE DATABASE =====
             $result = $this->departurePlanModel->updateDeparturePlan($id, $validated);
@@ -1777,18 +2373,62 @@ class AdminController extends BaseController {
                             return;
                         }
                         
+                        // Kiểm tra conflict trước khi tạo phân công
+                        $ngayBatDau = $validated['ngay_khoi_hanh'] ?? null;
+                        $ngayKetThuc = $validated['ngay_ket_thuc'] ?? null;
+                        
+                        if ($ngayBatDau && $ngayKetThuc) {
+                            $conflicts = $this->assignmentModel->checkScheduleConflict(
+                                $id_hdv,
+                                $ngayBatDau,
+                                $ngayKetThuc,
+                                null, // excludeAssignmentId
+                                $id // exclude lịch trình hiện tại
+                            );
+                            
+                            error_log("Conflict check result: " . count($conflicts) . " conflicts found");
+                            
+                            if (!empty($conflicts)) {
+                                $guide = $this->guideModel->getGuideByID($id_hdv);
+                                $guideName = $guide ? $guide['ho_ten'] : 'HDV';
+                                $conflictInfo = [];
+                                foreach ($conflicts as $conflict) {
+                                    $start = $conflict['ngay_bat_dau'] ?? $conflict['ngay_khoi_hanh'] ?? 'N/A';
+                                    $end = $conflict['ngay_ket_thuc'] ?? $conflict['dp_ngay_ket_thuc'] ?? 'N/A';
+                                    $tourName = $conflict['ten_tour'] ?? 'N/A';
+                                    $conflictInfo[] = "{$tourName} ({$start} - {$end})";
+                                }
+                                $_SESSION['error'] = "HDV {$guideName} đã có lịch trùng trong khoảng thời gian từ {$ngayBatDau} đến {$ngayKetThuc}. Các lịch trình trùng: " . implode(', ', $conflictInfo);
+                                $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                                if ($redirectTourId) {
+                                    $redirectUrl .= '&tour_id=' . $redirectTourId;
+                                }
+                                $this->redirect($redirectUrl);
+                                return;
+                            }
+                        }
+                        
                         $assignmentData = [
                             'id_lich_khoi_hanh' => $id,
                             'id_hdv' => $id_hdv,
                             'vai_tro' => $vaiTro,
-                            'ngay_bat_dau' => $validated['ngay_khoi_hanh'] ?? null,
-                            'ngay_ket_thuc' => $validated['ngay_ket_thuc'] ?? null,
+                            'ngay_bat_dau' => $ngayBatDau,
+                            'ngay_ket_thuc' => $ngayKetThuc,
                             'luong' => !empty($assignment['luong']) ? (float)$assignment['luong'] : null,
                             'ghi_chu' => !empty($assignment['ghi_chu']) ? trim($assignment['ghi_chu']) : null,
                             'trang_thai' => 1
                         ];
                         
-                        $this->assignmentModel->createAssignment($assignmentData);
+                        $result = $this->assignmentModel->createAssignment($assignmentData);
+                        if (!$result) {
+                            $_SESSION['error'] = "Không thể phân công HDV ở phân công thứ " . ($index + 1) . ". Có thể HDV đã có lịch trùng!";
+                            $redirectUrl = BASE_URL . '?act=admin-departure-plan-edit&id=' . $id;
+                            if ($redirectTourId) {
+                                $redirectUrl .= '&tour_id=' . $redirectTourId;
+                            }
+                            $this->redirect($redirectUrl);
+                            return;
+                        }
                     }
                 }
                 
@@ -2252,11 +2892,27 @@ class AdminController extends BaseController {
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Debug: Log dữ liệu nhận được
+            error_log("Update Guide - ID: " . $id);
+            error_log("POST data: " . print_r($_POST, true));
+            
             $result = $this->guideModel->updateGuide($id, $_POST);
             if ($result) {
                 $_SESSION['success'] = 'Cập nhật HDV thành công!';
             } else {
-                $_SESSION['error'] = 'Không thể cập nhật HDV';
+                $lastError = $this->guideModel->getLastError();
+                $errorMsg = 'Không thể cập nhật HDV';
+                if ($lastError) {
+                    $errorMsg .= ': ' . $lastError;
+                }
+                $_SESSION['error'] = $errorMsg;
+                error_log("Update Guide failed - ID: $id, Last error: " . $lastError);
+                error_log("POST data: " . print_r($_POST, true));
+                
+                // Trong môi trường dev, hiển thị lỗi chi tiết hơn
+                if (strpos(BASE_URL, 'localhost') !== false || strpos(BASE_URL, '127.0.0.1') !== false) {
+                    $_SESSION['error'] .= ' (Kiểm tra error log để biết chi tiết)';
+                }
             }
             $this->redirect(BASE_URL . '?act=admin-guides');
         }
@@ -2342,15 +2998,46 @@ class AdminController extends BaseController {
         $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Lấy thông tin lịch trình để kiểm tra conflict chính xác hơn
+            $idLichKhoiHanh = $_POST['id_lich_khoi_hanh'] ?? null;
+            $departurePlanForCheck = null;
+            if ($idLichKhoiHanh) {
+                $departurePlanForCheck = $this->departurePlanModel->getDeparturePlanByID($idLichKhoiHanh);
+                // Nếu có lịch trình, sử dụng ngày từ lịch trình để kiểm tra
+                if ($departurePlanForCheck && $departurePlanForCheck['ngay_khoi_hanh'] && $departurePlanForCheck['ngay_ket_thuc']) {
+                    $ngayBatDau = $departurePlanForCheck['ngay_khoi_hanh'];
+                    $ngayKetThuc = $departurePlanForCheck['ngay_ket_thuc'];
+                } else {
+                    $ngayBatDau = $_POST['ngay_bat_dau'];
+                    $ngayKetThuc = $_POST['ngay_ket_thuc'];
+                }
+            } else {
+                $ngayBatDau = $_POST['ngay_bat_dau'];
+                $ngayKetThuc = $_POST['ngay_ket_thuc'];
+            }
+            
             // Kiểm tra trùng lịch
+            error_log("Checking conflict: HDV={$_POST['id_hdv']}, Start={$ngayBatDau}, End={$ngayKetThuc}, LichKhoiHanh={$idLichKhoiHanh}");
+            
             $conflicts = $this->assignmentModel->checkScheduleConflict(
                 $_POST['id_hdv'],
-                $_POST['ngay_bat_dau'],
-                $_POST['ngay_ket_thuc']
+                $ngayBatDau,
+                $ngayKetThuc,
+                null, // excludeAssignmentId
+                $idLichKhoiHanh // exclude lịch trình hiện tại
             );
 
+            error_log("Conflict check result: " . count($conflicts) . " conflicts found");
+
             if (!empty($conflicts) && empty($_POST['force_assign'])) {
-                $error = 'HDV này đã có lịch trùng trong khoảng thời gian này!';
+                $conflictInfo = [];
+                foreach ($conflicts as $conflict) {
+                    $start = $conflict['ngay_bat_dau'] ?? $conflict['ngay_khoi_hanh'] ?? 'N/A';
+                    $end = $conflict['ngay_ket_thuc'] ?? $conflict['dp_ngay_ket_thuc'] ?? 'N/A';
+                    $tourName = $conflict['ten_tour'] ?? 'N/A';
+                    $conflictInfo[] = "{$tourName} ({$start} - {$end})";
+                }
+                $error = 'HDV này đã có lịch trùng trong khoảng thời gian này! Các lịch trình trùng: ' . implode(', ', $conflictInfo);
                 $conflictDetails = $conflicts;
                 $this->loadView('admin/assignments/create', compact('guides', 'departurePlans', 'departurePlan', 'departurePlanId', 'error', 'conflictDetails'), 'admin/layout');
                 return;
@@ -2395,12 +3082,31 @@ class AdminController extends BaseController {
         $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // Kiểm tra trùng lịch (loại trừ phân công hiện tại)
+            // Lấy thông tin lịch trình để kiểm tra conflict chính xác hơn
+            $idLichKhoiHanh = $_POST['id_lich_khoi_hanh'] ?? $assignment['id_lich_khoi_hanh'] ?? null;
+            $departurePlanForCheck = null;
+            if ($idLichKhoiHanh) {
+                $departurePlanForCheck = $this->departurePlanModel->getDeparturePlanByID($idLichKhoiHanh);
+                // Nếu có lịch trình, sử dụng ngày từ lịch trình để kiểm tra
+                if ($departurePlanForCheck && $departurePlanForCheck['ngay_khoi_hanh'] && $departurePlanForCheck['ngay_ket_thuc']) {
+                    $ngayBatDau = $departurePlanForCheck['ngay_khoi_hanh'];
+                    $ngayKetThuc = $departurePlanForCheck['ngay_ket_thuc'];
+                } else {
+                    $ngayBatDau = $_POST['ngay_bat_dau'];
+                    $ngayKetThuc = $_POST['ngay_ket_thuc'];
+                }
+            } else {
+                $ngayBatDau = $_POST['ngay_bat_dau'];
+                $ngayKetThuc = $_POST['ngay_ket_thuc'];
+            }
+            
+            // Kiểm tra trùng lịch (loại trừ phân công hiện tại và lịch trình hiện tại)
             $conflicts = $this->assignmentModel->checkScheduleConflict(
                 $_POST['id_hdv'],
-                $_POST['ngay_bat_dau'],
-                $_POST['ngay_ket_thuc'],
-                $id
+                $ngayBatDau,
+                $ngayKetThuc,
+                $id, // exclude assignment hiện tại
+                $idLichKhoiHanh // exclude lịch trình hiện tại
             );
 
             if (!empty($conflicts) && empty($_POST['force_assign'])) {
@@ -3494,6 +4200,9 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-attendance-list');
         }
         
+        // Lấy ngày điểm danh từ GET (mặc định là hôm nay)
+        $ngay_diem_danh = $_GET['ngay_diem_danh'] ?? date('Y-m-d');
+        
         // Lấy thông tin lịch trình
         $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id_lich_khoi_hanh);
         if (!$departurePlan) {
@@ -3510,15 +4219,79 @@ class AdminController extends BaseController {
         // Lấy danh sách thành viên cần điểm danh
         $members = $this->diemDanModel->getMembersForAttendance($id_lich_khoi_hanh);
         
-        // Lấy điểm danh đã có (để hiển thị trạng thái)
-        $attendanceRecords = $this->diemDanModel->getDiemDanByLichKhoiHanh($id_lich_khoi_hanh);
+        // Tính lại số chỗ đã đặt từ các booking thực tế
+        require_once './models/BookingModel.php';
+        $bookingModel = new BookingModel();
+        $bookings = $bookingModel->getBookingsByDeparturePlan($id_lich_khoi_hanh);
+        $so_cho_da_dat_thuc_te = 0;
+        foreach ($bookings as $booking) {
+            // Chỉ tính các booking chưa hủy (trang_thai != 5)
+            if (isset($booking['trang_thai']) && $booking['trang_thai'] != 5) {
+                $bookingDetails = $bookingModel->getBookingDetails($booking['id']);
+                $so_cho_da_dat_thuc_te += count($bookingDetails);
+            }
+        }
+        // Cập nhật số chỗ đã đặt trong departurePlan để hiển thị
+        $departurePlan['so_cho_da_dat'] = $so_cho_da_dat_thuc_te;
+        
+        // Lấy điểm danh đã có (để hiển thị trạng thái) - lọc theo ngày
+        // Đọc từ cả 2 bảng: diem_dan (cũ) và booking_attendance (mới - từ HDV)
+        $attendanceRecordsOld = $this->diemDanModel->getDiemDanByLichKhoiHanh($id_lich_khoi_hanh);
+        
+        // Lọc theo ngày cho diem_dan (bảng cũ)
+        if (!empty($attendanceRecordsOld)) {
+            $attendanceRecordsOld = array_filter($attendanceRecordsOld, function($record) use ($ngay_diem_danh) {
+                if (empty($record['thoi_gian_diem_dan'])) {
+                    return false;
+                }
+                $recordDate = date('Y-m-d', strtotime($record['thoi_gian_diem_dan']));
+                return $recordDate === $ngay_diem_danh;
+            });
+        }
+        
+        // Đọc từ booking_attendance (bảng mới mà HDV sử dụng) - đã có filter theo ngày
+        require_once './models/AttendanceModel.php';
+        $attendanceModel = new AttendanceModel();
+        $attendanceRecordsNew = $attendanceModel->getAttendanceByDeparturePlan($id_lich_khoi_hanh, $ngay_diem_danh);
         
         // Tạo map để dễ tra cứu điểm danh theo thành viên
         $attendanceMap = [];
-        foreach ($attendanceRecords as $record) {
+        
+        // Xử lý dữ liệu từ diem_dan (bảng cũ)
+        foreach ($attendanceRecordsOld as $record) {
             $key = $record['id_booking'] . '_' . $record['id_thanh_vien'];
             if (!isset($attendanceMap[$key]) || strtotime($record['thoi_gian_diem_dan']) > strtotime($attendanceMap[$key]['thoi_gian_diem_dan'])) {
-                $attendanceMap[$key] = $record;
+                $attendanceMap[$key] = [
+                    'id_booking' => $record['id_booking'],
+                    'id_thanh_vien' => $record['id_thanh_vien'],
+                    'trang_thai' => $record['trang_thai'],
+                    'thoi_gian_diem_dan' => $record['thoi_gian_diem_dan'],
+                    'ghi_chu' => $record['ghi_chu'] ?? null,
+                    'ten_hdv' => $record['ten_hdv'] ?? null
+                ];
+            }
+        }
+        
+        // Xử lý dữ liệu từ booking_attendance (bảng mới - từ HDV)
+        foreach ($attendanceRecordsNew as $record) {
+            // Key: id_booking + id_booking_detail (id_booking_detail = id_thanh_vien trong booking_detail)
+            $key = $record['id_booking'] . '_' . $record['id_booking_detail'];
+            $attendanceTime = $record['ngay_diem_danh'] . ' ' . ($record['gio_diem_danh'] ?? '00:00:00');
+            
+            // Chuyển đổi trang_thai: booking_attendance (1=Có mặt, 0=Vắng mặt) -> diem_dan (1=Có mặt, 2=Vắng mặt)
+            $trangThai = $record['trang_thai'] == 1 ? 1 : 2;
+            
+            // Lấy bản ghi mới nhất cho mỗi thành viên
+            $existingTime = isset($attendanceMap[$key]['thoi_gian_diem_dan']) ? $attendanceMap[$key]['thoi_gian_diem_dan'] : '';
+            if (!isset($attendanceMap[$key]) || strtotime($attendanceTime) > strtotime($existingTime)) {
+                $attendanceMap[$key] = [
+                    'id_booking' => $record['id_booking'],
+                    'id_thanh_vien' => $record['id_booking_detail'], // id_booking_detail = id_thanh_vien
+                    'trang_thai' => $trangThai,
+                    'thoi_gian_diem_dan' => $attendanceTime,
+                    'ghi_chu' => $record['ghi_chu'] ?? null,
+                    'ten_hdv' => $record['ten_hdv'] ?? null
+                ];
             }
         }
         
@@ -3543,7 +4316,7 @@ class AdminController extends BaseController {
             }
         }
         
-        $this->loadView('admin/attendance/index', compact('departurePlan', 'tour', 'members', 'attendanceMap', 'assignments', 'isAdmin', 'canAttend'), 'admin/layout');
+        $this->loadView('admin/attendance/index', compact('departurePlan', 'tour', 'members', 'attendanceMap', 'assignments', 'isAdmin', 'canAttend', 'ngay_diem_danh'), 'admin/layout');
     }
 
     /**

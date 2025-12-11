@@ -419,6 +419,28 @@ function getTrangThaiText($status) {
               <?= getTrangThaiText($departurePlan['trang_thai'] ?? 1) ?>
             </div>
           </div>
+
+          <?php if (!empty($assignments)): ?>
+          <div class="info-group">
+            <div class="info-label">Trạng thái tour</div>
+            <div class="info-value" style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <?php
+                $statusMap = [
+                  0 => ['label' => 'Ready', 'class' => 'info'],
+                  1 => ['label' => 'Đang diễn ra', 'class' => 'success'],
+                  2 => ['label' => 'Hoàn thành', 'class' => 'secondary'],
+                ];
+              ?>
+              <?php foreach ($assignments as $assignment): 
+                $st = $statusMap[$assignment['trang_thai'] ?? -1] ?? ['label' => 'Chưa xác định', 'class' => 'danger'];
+              ?>
+                <span class="status-badge <?= $st['class'] ?>" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px;">
+                  <i class="fas fa-flag"></i> <?= htmlspecialchars($st['label'], ENT_QUOTES, 'UTF-8') ?>
+                </span>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <?php endif; ?>
           
           <?php if ($departurePlan['ghi_chu']): ?>
           <div class="info-group">
@@ -485,18 +507,27 @@ function getTrangThaiText($status) {
   </div>
 
   <!-- Itinerary Section -->
-  <?php if (!empty($departurePlan['chuongtrinh'])): ?>
   <div class="card">
     <div class="card-header">
       <div class="card-title">
         <i class="fas fa-route"></i> Lịch trình tour
       </div>
+      <div class="detail-actions" style="gap: 8px;">
+        <a href="<?= BASE_URL ?>?act=admin-departure-plan-itinerary&id=<?= $departurePlan['id'] ?>" class="btn btn-primary" style="padding: 8px 14px;">
+          <i class="fas fa-edit"></i> Sửa
+        </a>
+        <a href="<?= BASE_URL ?>?act=admin-departure-plan-itinerary&id=<?= $departurePlan['id'] ?>" class="btn btn-secondary" style="padding: 8px 14px;">
+          <i class="fas fa-plus"></i> Thêm
+        </a>
+      </div>
     </div>
     <div class="card-body">
       <?php
       // Parse lịch trình theo ngày
-      $chuongtrinh = html_entity_decode($departurePlan['chuongtrinh'], ENT_QUOTES, 'UTF-8');
+      $chuongtrinh_raw = $departurePlan['chuongtrinh'] ?? '';
+      $chuongtrinh = html_entity_decode((string)$chuongtrinh_raw, ENT_QUOTES, 'UTF-8');
       $days = [];
+      $hasItinerary = !empty(trim(strip_tags($chuongtrinh)));
       
       if (!empty($chuongtrinh)) {
         // Tìm tất cả các vị trí có "NGÀY X"
@@ -579,7 +610,7 @@ function getTrangThaiText($status) {
       }
       
       // Nếu không tìm thấy marker, hiển thị toàn bộ trong 1 ngày
-      if (empty($days)) {
+      if (empty($days) && $hasItinerary) {
         $days[1] = [
           'title' => 'Ngày 1',
           'content' => $chuongtrinh
@@ -590,24 +621,27 @@ function getTrangThaiText($status) {
       ksort($days);
       ?>
       
-      <div class="content-scrollable">
-        <?php foreach ($days as $dayNum => $day): ?>
-          <div class="itinerary-day-card">
-            <div class="day-header">
-              <div class="day-number">
-                <i class="fas fa-calendar-day"></i>
-                <?= $day['title'] ?>
+      <?php if (empty($days) && !$hasItinerary): ?>
+        <div style="color: #6b7280;">Chưa có lịch trình theo ngày.</div>
+      <?php else: ?>
+        <div class="content-scrollable">
+          <?php foreach ($days as $dayNum => $day): ?>
+            <div class="itinerary-day-card">
+              <div class="day-header">
+                <div class="day-number">
+                  <i class="fas fa-calendar-day"></i>
+                  <?= $day['title'] ?>
+                </div>
+              </div>
+              <div class="day-content">
+                <?= $day['content'] ?>
               </div>
             </div>
-            <div class="day-content">
-              <?= $day['content'] ?>
-            </div>
-          </div>
-        <?php endforeach; ?>
-      </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </div>
   </div>
-  <?php endif; ?>
 
   <!-- Phân công Hướng dẫn viên -->
   <?php if (!empty($assignments)): ?>
@@ -626,6 +660,7 @@ function getTrangThaiText($status) {
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Họ tên</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Số điện thoại</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Vai trò</th>
+              <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Trạng thái</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Lương</th>
               <th style="padding: 12px; text-align: left; font-weight: 600; color: #6b7280;">Ghi chú</th>
             </tr>
@@ -642,6 +677,14 @@ function getTrangThaiText($status) {
                 $badgeClass = $vaiTro == 'HDV chính' ? 'success' : ($vaiTro == 'HDV phụ' ? 'info' : 'secondary');
                 ?>
                 <span class="status-badge <?= $badgeClass ?>"><?= htmlspecialchars($vaiTro, ENT_QUOTES, 'UTF-8') ?></span>
+              </td>
+              <td style="padding: 12px;">
+                <?php
+                  $nhan = !empty($assignment['da_nhan']) 
+                    ? ['label' => 'Đã nhận', 'class' => 'success'] 
+                    : ['label' => 'Chưa xác nhận', 'class' => 'warning'];
+                ?>
+                <span class="status-badge <?= $nhan['class'] ?>"><?= htmlspecialchars($nhan['label'], ENT_QUOTES, 'UTF-8') ?></span>
               </td>
               <td style="padding: 12px;">
                 <?php if (!empty($assignment['luong'])): ?>

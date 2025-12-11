@@ -42,6 +42,7 @@ $attendanceMap = $attendanceMap ?? [];
 $assignments = $assignments ?? [];
 $isAdmin = $isAdmin ?? false;
 $canAttend = $canAttend ?? false;
+$ngay_diem_danh = $ngay_diem_danh ?? date('Y-m-d');
 
 if (!$departurePlan) {
     echo '<div class="alert alert-danger">Không tìm thấy lịch trình</div>';
@@ -346,6 +347,26 @@ if (!$departurePlan) {
         <?php unset($_SESSION['error']); ?>
     <?php endif; ?>
 
+    <!-- Form chọn ngày điểm danh -->
+    <div class="info-card" style="margin-bottom: 24px;">
+        <div class="info-card-body">
+            <form method="GET" action="" style="display: flex; gap: 12px; align-items: end;">
+                <input type="hidden" name="act" value="admin-attendance">
+                <input type="hidden" name="id_lich_khoi_hanh" value="<?= $departurePlan['id'] ?>">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">
+                        <i class="fas fa-calendar"></i> Ngày điểm danh
+                    </label>
+                    <input type="date" name="ngay_diem_danh" value="<?= htmlspecialchars($ngay_diem_danh ?? date('Y-m-d')) ?>" 
+                           style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px;" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 24px; height: fit-content;">
+                    <i class="fas fa-search"></i> Xem danh sách
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Thông tin lịch trình -->
     <div class="info-card">
         <div class="info-card-header">
@@ -361,7 +382,19 @@ if (!$departurePlan) {
                 </div>
                 <div class="info-item">
                     <span class="info-label">Tour</span>
-                    <span class="info-value"><?= safe_html($departurePlan['tengoi'] ?? $tour['ten_tour'] ?? 'N/A') ?></span>
+                    <span class="info-value">
+                        <?php 
+                        $tourName = null;
+                        if ($tour && !empty($tour['tengoi'])) {
+                            $tourName = $tour['tengoi'];
+                        } elseif (!empty($departurePlan['tengoi'])) {
+                            $tourName = $departurePlan['tengoi'];
+                        } else {
+                            $tourName = 'Tour chưa có tên';
+                        }
+                        echo safe_html($tourName);
+                        ?>
+                    </span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Ngày khởi hành</span>
@@ -369,7 +402,17 @@ if (!$departurePlan) {
                 </div>
                 <div class="info-item">
                     <span class="info-label">Số chỗ</span>
-                    <span class="info-value"><?= $departurePlan['so_cho'] ?? 0 ?> / <?= $departurePlan['so_cho_da_dat'] ?? 0 ?> đã đặt</span>
+                    <span class="info-value">
+                        <?php 
+                        $so_cho = $departurePlan['so_cho'] ?? 0;
+                        $so_cho_da_dat = $departurePlan['so_cho_da_dat'] ?? 0;
+                        $so_cho_con_lai = max(0, $so_cho - $so_cho_da_dat);
+                        echo number_format($so_cho) . ' / ' . number_format($so_cho_da_dat) . ' đã đặt';
+                        if ($so_cho > 0) {
+                            echo ' (' . number_format($so_cho_con_lai) . ' còn lại)';
+                        }
+                        ?>
+                    </span>
                 </div>
             </div>
         </div>
@@ -381,6 +424,9 @@ if (!$departurePlan) {
         <div class="info-card-header">
             <h2 class="info-card-title">
                 <i class="fas fa-users"></i> Danh sách thành viên (<?= count($members) ?> người)
+                <span style="font-size: 14px; font-weight: normal; color: #6b7280; margin-left: 12px;">
+                    - Ngày điểm danh: <?= date('d/m/Y', strtotime($ngay_diem_danh)) ?>
+                </span>
             </h2>
         </div>
         <div class="info-card-body">
@@ -414,8 +460,22 @@ if (!$departurePlan) {
                                     </a>
                                 </td>
                                 <td><strong><?= safe_html($member['ho_ten']) ?></strong></td>
-                                <td><?= $member['gioi_tinh'] == 1 ? 'Nam' : 'Nữ' ?></td>
-                                <td><?= formatDate($member['ngay_sinh']) ?></td>
+                                <td>
+                                    <?php 
+                                    if (isset($member['gioi_tinh'])) {
+                                        if ($member['gioi_tinh'] == 1) {
+                                            echo '<span style="display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-mars" style="color: #3b82f6;"></i> Nam</span>';
+                                        } elseif ($member['gioi_tinh'] == 0) {
+                                            echo '<span style="display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-venus" style="color: #ec4899;"></i> Nữ</span>';
+                                        } else {
+                                            echo '-';
+                                        }
+                                    } else {
+                                        echo '-';
+                                    }
+                                    ?>
+                                </td>
+                                <td><?= !empty($member['ngay_sinh']) ? date('d/m/Y', strtotime($member['ngay_sinh'])) : '-' ?></td>
                                 <td><?= safe_html($member['so_dien_thoai']) ?></td>
                                 <td><?= getLoaiKhachBadge($member['loai_khach']) ?></td>
                                 <td>
