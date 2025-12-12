@@ -148,6 +148,73 @@ class IncidentReportModel extends BaseModel
     }
 
     /**
+     * Lấy tất cả báo cáo sự cố (cho admin)
+     */
+    public function getAllReports($filters = [])
+    {
+        $sql = "SELECT bcs.*, 
+                       pc.id_hdv, pc.id_lich_khoi_hanh,
+                       hdv.ho_ten AS ten_hdv, hdv.email AS email_hdv,
+                       dp.ngay_khoi_hanh,
+                       g.tengoi AS ten_tour, g.id_goi AS id_tour
+                FROM bao_cao_su_co bcs
+                LEFT JOIN phan_cong_hdv pc ON bcs.id_phan_cong = pc.id
+                LEFT JOIN huong_dan_vien hdv ON pc.id_hdv = hdv.id
+                LEFT JOIN lich_khoi_hanh dp ON pc.id_lich_khoi_hanh = dp.id
+                LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
+                WHERE 1=1";
+        $params = [];
+
+        // Filter theo HDV
+        if (!empty($filters['id_hdv'])) {
+            $sql .= " AND pc.id_hdv = :id_hdv";
+            $params[':id_hdv'] = $filters['id_hdv'];
+        }
+
+        // Filter theo tour
+        if (!empty($filters['id_tour'])) {
+            $sql .= " AND g.id_goi = :id_tour";
+            $params[':id_tour'] = $filters['id_tour'];
+        }
+
+        // Filter theo mức độ
+        if (!empty($filters['muc_do'])) {
+            $sql .= " AND bcs.muc_do = :muc_do";
+            $params[':muc_do'] = $filters['muc_do'];
+        }
+
+        // Filter theo loại sự cố
+        if (!empty($filters['loai_su_co'])) {
+            $sql .= " AND bcs.loai_su_co = :loai_su_co";
+            $params[':loai_su_co'] = $filters['loai_su_co'];
+        }
+
+        // Filter theo ngày
+        if (!empty($filters['from_date'])) {
+            $sql .= " AND bcs.ngay_xay_ra >= :from_date";
+            $params[':from_date'] = $filters['from_date'];
+        }
+
+        if (!empty($filters['to_date'])) {
+            $sql .= " AND bcs.ngay_xay_ra <= :to_date";
+            $params[':to_date'] = $filters['to_date'];
+        }
+
+        $sql .= " ORDER BY bcs.ngay_xay_ra DESC, bcs.ngay_tao DESC";
+
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Parse JSON images
+        foreach ($results as &$result) {
+            $result['hinh_anh'] = $this->parseJsonArray($result['hinh_anh'] ?? '[]');
+        }
+        
+        return $results;
+    }
+
+    /**
      * Lấy tất cả báo cáo sự cố của một guide
      */
     public function getReportsByGuideID($guideId, $filters = [])

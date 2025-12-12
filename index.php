@@ -405,6 +405,16 @@ try {
             (new AdminController())->journalDetail();
             break;
 
+        // Báo cáo sự cố
+        case 'admin-incidents':
+            require_once './models/IncidentReportModel.php';
+            (new AdminController())->listIncidents();
+            break;
+        case 'admin-incident-detail':
+            require_once './models/IncidentReportModel.php';
+            (new AdminController())->incidentDetail();
+            break;
+
         case 'admin-booking-detail':
             require_once './models/BookingModel.php';
             (new AdminController())->viewBookingDetail();
