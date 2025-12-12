@@ -235,7 +235,7 @@ class AssignmentModel extends BaseModel
                 ':ngay_bat_dau' => $data['ngay_bat_dau'] ?? null,
                 ':ngay_ket_thuc' => $data['ngay_ket_thuc'] ?? null,
                 ':luong' => $data['luong'] ?? null,
-                ':trang_thai' => $data['trang_thai'] ?? 1,
+                ':trang_thai' => $data['trang_thai'] ?? 0, // Mặc định là Ready (0)
                 ':ghi_chu' => $data['ghi_chu'] ?? null,
             ]);
 

@@ -619,6 +619,14 @@ class GuideController extends BaseController {
             $this->redirect(BASE_URL . '?act=guide-assignment-detail&id=' . $assignmentId);
         }
 
+        // Kiểm tra điều kiện: Chỉ cho phép đổi sang "Đang diễn ra" (status = 1) khi đã điểm danh hết
+        if ($status == 1 && $currentStatus == 0) {
+            if (!$this->checkAllMembersAttended($assignment['id_lich_khoi_hanh'])) {
+                $_SESSION['error'] = 'Không thể chuyển sang "Đang diễn ra". Vui lòng điểm danh tất cả thành viên trước.';
+                $this->redirect(BASE_URL . '?act=guide-assignment-detail&id=' . $assignmentId);
+            }
+        }
+
         $ok = $this->assignmentModel->setStatus($assignmentId, $status);
         if ($ok) {
             $_SESSION['success'] = 'Đã cập nhật trạng thái.';
@@ -626,6 +634,69 @@ class GuideController extends BaseController {
             $_SESSION['error'] = 'Không thể cập nhật trạng thái.';
         }
         $this->redirect(BASE_URL . '?act=guide-assignment-detail&id=' . $assignmentId);
+    }
+
+    /**
+     * Kiểm tra xem tất cả thành viên đã điểm danh chưa (ngày khởi hành)
+     */
+    private function checkAllMembersAttended($id_lich_khoi_hanh)
+    {
+        if (empty($id_lich_khoi_hanh)) {
+            return false; // Không có lịch khởi hành thì không thể kiểm tra
+        }
+
+        try {
+            // Lấy ngày khởi hành
+            $departurePlan = $this->departurePlanModel->getDeparturePlanByID($id_lich_khoi_hanh);
+            if (!$departurePlan || empty($departurePlan['ngay_khoi_hanh'])) {
+                return false;
+            }
+
+            $ngay_khoi_hanh = $departurePlan['ngay_khoi_hanh'];
+
+            // Lấy tất cả thành viên từ booking_detail của các booking thuộc lịch khởi hành này
+            $bookings = $this->bookingModel->getBookingsByDeparturePlan($id_lich_khoi_hanh);
+            $allMemberIds = [];
+
+            foreach ($bookings as $booking) {
+                // Chỉ tính các booking không bị hủy
+                if (isset($booking['trang_thai']) && $booking['trang_thai'] == 'huy') {
+                    continue;
+                }
+
+                $details = $this->bookingModel->getBookingDetails($booking['id']);
+                foreach ($details as $detail) {
+                    $allMemberIds[] = $detail['id'];
+                }
+            }
+
+            if (empty($allMemberIds)) {
+                return true; // Không có thành viên nào thì coi như đã điểm danh hết
+            }
+
+            // Lấy tất cả điểm danh trong ngày khởi hành một lần
+            require_once './models/AttendanceModel.php';
+            $attendanceModel = new AttendanceModel();
+            $attendance = $attendanceModel->getAttendanceByDeparturePlan($id_lich_khoi_hanh, $ngay_khoi_hanh);
+            
+            // Tạo mảng ID các thành viên đã điểm danh
+            $attendedMemberIds = [];
+            foreach ($attendance as $att) {
+                if ($att['ngay_diem_danh'] == $ngay_khoi_hanh) {
+                    $attendedMemberIds[] = $att['id_booking_detail'];
+                }
+            }
+
+            // Kiểm tra xem tất cả thành viên đã điểm danh chưa
+            $attendedMemberIds = array_unique($attendedMemberIds);
+            $allMemberIds = array_unique($allMemberIds);
+            
+            return count($allMemberIds) > 0 && count($attendedMemberIds) == count($allMemberIds) && 
+                   empty(array_diff($allMemberIds, $attendedMemberIds));
+        } catch (Exception $e) {
+            error_log("Lỗi checkAllMembersAttended: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
