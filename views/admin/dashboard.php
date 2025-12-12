@@ -42,14 +42,14 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
 ?>
 
 <style>
-.dashboard-container {
+  .dashboard-container {
     padding: 20px;
     max-width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
-}
+  }
 
-.dashboard-title {
+  .dashboard-title {
     font-size: 24px;
     font-weight: 700;
     color: #1f2937;
@@ -57,26 +57,26 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     display: flex;
     align-items: center;
     gap: 12px;
-}
+  }
 
 /* Overview Cards */
-.stats-grid {
+  .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
-}
+  }
 
-.stat-card {
+  .stat-card {
     background: white;
     border-radius: 12px;
     padding: 16px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     border-left: 4px solid;
-}
+  }
 
-.stat-card:hover {
+  .stat-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
@@ -87,14 +87,14 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
 .stat-card.danger { border-left-color: #ef4444; }
 .stat-card.info { border-left-color: #8b5cf6; }
 
-.stat-header {
+  .stat-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
-}
+  }
 
-.stat-icon {
+  .stat-icon {
     width: 48px;
     height: 48px;
     border-radius: 10px;
@@ -116,13 +116,13 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     font-weight: 700;
     color: #1f2937;
     margin-bottom: 4px;
-}
+  }
 
-.stat-label {
+  .stat-label {
     font-size: 14px;
     color: #6b7280;
     font-weight: 500;
-}
+  }
 
 /* Section Cards */
 .section-card {
@@ -131,9 +131,9 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin-bottom: 20px;
-}
+  }
 
-.section-title {
+  .section-title {
     font-size: 18px;
     font-weight: 700;
     color: #1f2937;
@@ -143,9 +143,9 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     gap: 8px;
     padding-bottom: 10px;
     border-bottom: 2px solid #e5e7eb;
-}
+  }
 
-.section-title i {
+  .section-title i {
     color: #3b82f6;
 }
 
@@ -155,7 +155,7 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     border-collapse: collapse;
     margin-top: 12px;
     font-size: 14px;
-}
+  }
 
 .data-table thead {
     background: #f9fafb;
@@ -206,7 +206,7 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     align-items: center;
     gap: 12px;
     transition: all 0.2s;
-}
+  }
 
 .notification-item:hover {
     transform: translateX(4px);
@@ -239,13 +239,13 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
 .action-item:hover {
     background: #f3f4f6;
     transform: translateX(4px);
-}
+  }
 
 .action-count {
     font-size: 24px;
     font-weight: 700;
     color: #3b82f6;
-}
+  }
 
 /* Empty State */
 .empty-state {
@@ -265,7 +265,7 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-}
+  }
 
 /* Responsive */
 @media (max-width: 1400px) {
@@ -293,13 +293,13 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     .dashboard-container {
         padding: 16px;
     }
-}
+  }
 
-@media (max-width: 768px) {
+  @media (max-width: 768px) {
     .dashboard-container {
         padding: 12px;
     }
-    
+
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
@@ -315,16 +315,16 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     
     .stat-label {
         font-size: 12px;
-    }
-    
+  }
+
     .section-card {
         padding: 16px;
-    }
-    
+  }
+
     .data-table {
         font-size: 12px;
-    }
-    
+  }
+
     .data-table th,
     .data-table td {
         padding: 8px;
@@ -339,23 +339,23 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
     </h1>
 
     <!-- 1. Thống kê tổng quan -->
-    <div class="stats-grid">
+  <div class="stats-grid">
         <div class="stat-card primary">
-            <div class="stat-header">
-                <div class="stat-icon">
-                    <i class="fas fa-map-marked-alt"></i>
-                </div>
-            </div>
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="fas fa-map-marked-alt"></i>
+        </div>
+      </div>
             <div class="stat-value"><?= number_format($stats['total_tours_active'] ?? 0) ?></div>
             <div class="stat-label">Tour đang mở bán</div>
         </div>
 
         <div class="stat-card success">
-            <div class="stat-header">
-                <div class="stat-icon">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-            </div>
+      <div class="stat-header">
+        <div class="stat-icon">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+      </div>
             <div class="stat-value"><?= number_format($stats['bookings_today'] ?? 0) ?></div>
             <div class="stat-label">Booking hôm nay</div>
             <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
@@ -364,11 +364,11 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
         </div>
 
         <div class="stat-card info">
-            <div class="stat-header">
-                <div class="stat-icon">
+      <div class="stat-header">
+        <div class="stat-icon">
                     <i class="fas fa-calendar-alt"></i>
-                </div>
-            </div>
+        </div>
+      </div>
             <div class="stat-value"><?= number_format($stats['upcoming_departures'] ?? 0) ?></div>
             <div class="stat-label">Lịch khởi hành sắp tới</div>
         </div>
@@ -378,19 +378,19 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
                 <div class="stat-icon">
                     <i class="fas fa-money-bill-wave"></i>
                 </div>
-            </div>
+        </div>
             <div class="stat-value"><?= formatPrice($stats['revenue_month'] ?? 0) ?></div>
             <div class="stat-label">Doanh thu tháng này</div>
         </div>
 
-    </div>
+  </div>
 
     <!-- 2. Lịch khởi hành sắp tới -->
     <div class="section-card">
-        <h3 class="section-title">
+    <h3 class="section-title">
             <i class="fas fa-calendar-alt"></i>
             Lịch khởi hành sắp tới
-        </h3>
+    </h3>
         <?php if (!empty($upcomingDepartures)): ?>
             <div style="overflow-x: auto;">
                 <table class="data-table">
@@ -476,16 +476,16 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
             <div class="empty-state">
                 <i class="fas fa-clipboard"></i>
                 <p>Chưa có booking nào</p>
-            </div>
-        <?php endif; ?>
     </div>
+        <?php endif; ?>
+  </div>
 
     <!-- 4. Tình trạng tour hôm nay -->
     <div class="section-card">
-        <h3 class="section-title">
+    <h3 class="section-title">
             <i class="fas fa-route"></i>
             Tình trạng tour hôm nay
-        </h3>
+    </h3>
         <?php if (!empty($todayTours)): ?>
             <div style="overflow-x: auto;">
                 <table class="data-table">
@@ -541,16 +541,16 @@ $upcomingGuideSchedule = $upcomingGuideSchedule ?? [];
                 <button class="chart-filter-btn active" data-period="day">Theo ngày</button>
                 <button class="chart-filter-btn" data-period="week">Theo tuần</button>
                 <button class="chart-filter-btn" data-period="month">Theo tháng</button>
-            </div>
-        </div>
-        
-        <div style="position: relative; height: 400px;">
-            <canvas id="statsChart"></canvas>
-        </div>
-    </div>
-
+  </div>
 </div>
 
+        <div style="position: relative; height: 400px;">
+            <canvas id="statsChart"></canvas>
+      </div>
+    </div>
+    
+    </div>
+    
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
@@ -587,14 +587,14 @@ let currentPeriod = 'day';
 function initChart(period = 'day') {
     currentPeriod = period;
     
-    // Cập nhật active button
+  // Cập nhật active button
     document.querySelectorAll('.chart-filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.period === period) {
-            btn.classList.add('active');
-        }
-    });
-    
+    btn.classList.remove('active');
+    if (btn.dataset.period === period) {
+      btn.classList.add('active');
+    }
+  });
+  
     // Load dữ liệu
     fetch(`?act=admin-dashboard-chart-data&period=${period}`)
         .then(response => response.json())
@@ -603,7 +603,7 @@ function initChart(period = 'day') {
                 console.error('Error loading chart data:', data.error);
                 return;
             }
-            
+  
             const ctx = document.getElementById('statsChart').getContext('2d');
             
             // Xóa biểu đồ cũ nếu có
@@ -614,7 +614,7 @@ function initChart(period = 'day') {
             // Tạo biểu đồ mới
             statsChart = new Chart(ctx, {
                 type: 'line',
-                data: {
+      data: {
                     labels: data.labels,
                     datasets: [
                         {
@@ -636,16 +636,16 @@ function initChart(period = 'day') {
                             yAxisID: 'y1'
                         }
                     ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
                     interaction: {
                         mode: 'index',
                         intersect: false,
                     },
-                    plugins: {
-                        legend: {
+        plugins: {
+          legend: {
                             display: true,
                             position: 'top',
                         },
@@ -666,10 +666,10 @@ function initChart(period = 'day') {
                                     return label;
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        y: {
+          }
+        },
+        scales: {
+          y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
@@ -679,8 +679,8 @@ function initChart(period = 'day') {
                             },
                             ticks: {
                                 stepSize: 1
-                            }
-                        },
+            }
+          },
                         y1: {
                             type: 'linear',
                             display: true,
@@ -689,13 +689,13 @@ function initChart(period = 'day') {
                                 display: true,
                                 text: 'Doanh thu (triệu VNĐ)'
                             },
-                            grid: {
+            grid: {
                                 drawOnChartArea: false,
                             },
-                        }
-                    }
-                }
-            });
+          }
+        }
+      }
+    });
         })
         .catch(error => {
             console.error('Error loading chart:', error);

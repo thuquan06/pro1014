@@ -41,7 +41,7 @@ class DashboardModel {
                 return (int)$stm->fetchColumn();
             } catch (PDOException $e2) {
                 error_log("Error counting $table by date (fallback): " . $e2->getMessage());
-                return 0;
+            return 0;
             }
         }
     }
@@ -116,22 +116,22 @@ class DashboardModel {
                 
                 if ($bookingDateField) {
                     $stats['booking'] = $this->countTableByDate($tblBooking, $bookingDateField, $startDate, $endDate);
-                    
-                    // Tính doanh thu từ booking
-                    try {
+                
+                // Tính doanh thu từ booking
+                try {
                         $revenueField = $this->conn->query("SHOW COLUMNS FROM `$tblBooking` LIKE 'tong_tien'")->fetch() ? 'tong_tien' : 
                                        ($this->conn->query("SHOW COLUMNS FROM `$tblBooking` LIKE 'tong_tien_thanh_toan'")->fetch() ? 'tong_tien_thanh_toan' : null);
                         if ($revenueField) {
                             $sql = "SELECT SUM($revenueField) FROM `$tblBooking` 
                                     WHERE DATE($bookingDateField) >= DATE(:start) AND DATE($bookingDateField) <= DATE(:end) 
                                     AND (trang_thai IN (3, 4) OR trang_thai IS NULL)"; // Đã thanh toán hoặc hoàn thành hoặc null
-                            $stm = $this->conn->prepare($sql);
-                            $stm->execute([':start' => $startDate, ':end' => $endDate]);
-                            $revenue = $stm->fetchColumn();
-                            $stats['revenue'] = (float)($revenue ?? 0);
+                    $stm = $this->conn->prepare($sql);
+                    $stm->execute([':start' => $startDate, ':end' => $endDate]);
+                    $revenue = $stm->fetchColumn();
+                    $stats['revenue'] = (float)($revenue ?? 0);
                         }
-                    } catch (PDOException $e) {
-                        error_log("Error calculating revenue: " . $e->getMessage());
+                } catch (PDOException $e) {
+                    error_log("Error calculating revenue: " . $e->getMessage());
                     }
                 }
             }

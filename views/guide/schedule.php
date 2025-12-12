@@ -74,9 +74,9 @@
               </div>
               
               <div style="display: flex; flex-direction: column; gap: 12px; align-items: end;">
-                <span style="background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
+                  <span style="background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
                   <i class="fas fa-check-circle"></i> Đã xác nhận
-                </span>
+                  </span>
                 
                 <a href="?act=guide-assignment-detail&id=<?= $assignment['id'] ?>" class="btn btn-primary btn-sm">
                   <i class="fas fa-eye"></i> Xem chi tiết

@@ -45,17 +45,17 @@
       <div class="table-responsive">
         <table>
           <thead>
-          <tr>
+            <tr>
             <th>Mã lịch</th>
-            <th>Tour</th>
-            <th>Ngày khởi hành</th>
-            <th>Vai trò</th>
+              <th>Tour</th>
+              <th>Ngày khởi hành</th>
+              <th>Vai trò</th>
             <th>Số khách</th>
             <th>Điểm tập trung</th>
             <th>Nhận</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-          </tr>
+              <th>Trạng thái</th>
+              <th>Thao tác</th>
+            </tr>
           </thead>
           <tbody>
             <?php foreach ($assignments as $assignment): ?>
@@ -92,7 +92,7 @@
                 <td>
                   <span style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);">
                     <i class="fas fa-hourglass-half"></i> Chưa xác nhận
-                  </span>
+                    </span>
                 </td>
                 <td>
                   <?php
@@ -107,7 +107,7 @@
                   ?>
                   <span style="background: <?= $cfg['bg'] ?>; color: <?= $cfg['color'] ?>; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px <?= $cfg['shadow'] ?>;">
                     <i class="fas fa-<?= $cfg['icon'] ?>"></i> <?= htmlspecialchars($st) ?>
-                  </span>
+                    </span>
                 </td>
                 <td>
                   <div style="display: flex; gap: 8px;">

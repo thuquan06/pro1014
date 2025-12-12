@@ -419,7 +419,7 @@ function getTrangThaiText($status) {
               <?= getTrangThaiText($departurePlan['trang_thai'] ?? 1) ?>
             </div>
           </div>
-
+          
           <?php if (!empty($assignments)): ?>
           <div class="info-group">
             <div class="info-label">Trạng thái tour</div>
@@ -624,21 +624,21 @@ function getTrangThaiText($status) {
       <?php if (empty($days) && !$hasItinerary): ?>
         <div style="color: #6b7280;">Chưa có lịch trình theo ngày.</div>
       <?php else: ?>
-        <div class="content-scrollable">
-          <?php foreach ($days as $dayNum => $day): ?>
-            <div class="itinerary-day-card">
-              <div class="day-header">
-                <div class="day-number">
-                  <i class="fas fa-calendar-day"></i>
-                  <?= $day['title'] ?>
-                </div>
-              </div>
-              <div class="day-content">
-                <?= $day['content'] ?>
+      <div class="content-scrollable">
+        <?php foreach ($days as $dayNum => $day): ?>
+          <div class="itinerary-day-card">
+            <div class="day-header">
+              <div class="day-number">
+                <i class="fas fa-calendar-day"></i>
+                <?= $day['title'] ?>
               </div>
             </div>
-          <?php endforeach; ?>
-        </div>
+            <div class="day-content">
+              <?= $day['content'] ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
       <?php endif; ?>
     </div>
   </div>

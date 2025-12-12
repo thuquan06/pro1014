@@ -726,23 +726,23 @@ try {
             ini_set('display_errors', 0);
             
             try {
-                require_once './models/BaseModel.php';
-                require_once './models/GuideModel.php';
+            require_once './models/BaseModel.php';
+            require_once './models/GuideModel.php';
                 require_once './models/AssignmentModel.php';
-                require_once './models/AttendanceModel.php';
+            require_once './models/AttendanceModel.php';
                 require_once './models/BookingModel.php';
                 require_once './models/ServiceAssignmentModel.php';
                 require_once './models/DeparturePlanModel.php';
                 require_once './models/TourModel.php';
                 require_once './models/TourJournalModel.php';
-                require_once './controllers/BaseController.php';
-                require_once './controllers/GuideController.php';
+            require_once './controllers/BaseController.php';
+            require_once './controllers/GuideController.php';
                 
                 // Xóa mọi output đã bắt được
                 ob_end_clean();
                 
                 // Gọi method
-                (new GuideController())->saveAttendance();
+            (new GuideController())->saveAttendance();
             } catch (Throwable $e) {
                 // Xóa output buffer và trả về JSON error
                 if (ob_get_level()) {

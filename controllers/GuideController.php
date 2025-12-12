@@ -687,7 +687,7 @@ class GuideController extends BaseController {
         }
         
         try {
-            $guideId = $_SESSION['guide_id'];
+        $guideId = $_SESSION['guide_id'];
             
             $rawInput = file_get_contents('php://input');
             $data = json_decode($rawInput, true);
@@ -698,38 +698,38 @@ class GuideController extends BaseController {
                 ini_set('display_errors', $oldDisplayErrors);
                 exit;
             }
-            
-            if (!$data || !isset($data['id_lich_khoi_hanh']) || !isset($data['ngay_diem_danh']) || !isset($data['attendance'])) {
+        
+        if (!$data || !isset($data['id_lich_khoi_hanh']) || !isset($data['ngay_diem_danh']) || !isset($data['attendance'])) {
                 error_log("Missing required fields. Data: " . print_r($data, true));
                 echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ. Thiếu thông tin bắt buộc.']);
                 ini_set('display_errors', $oldDisplayErrors);
                 exit;
-            }
-            
+        }
+        
             // Require model trong try-catch để bắt lỗi
             try {
-                require_once './models/AttendanceModel.php';
-                $attendanceModel = new AttendanceModel();
+        require_once './models/AttendanceModel.php';
+        $attendanceModel = new AttendanceModel();
             } catch (Exception $e) {
                 error_log("Error loading AttendanceModel: " . $e->getMessage());
                 echo json_encode(['success' => false, 'message' => 'Lỗi khởi tạo model: ' . $e->getMessage()]);
                 ini_set('display_errors', $oldDisplayErrors);
                 exit;
             }
-            
-            $result = $attendanceModel->markAttendanceBatch(
-                $data['id_lich_khoi_hanh'],
-                $data['id_hdv'] ?? $guideId,
-                $data['ngay_diem_danh'],
-                $data['attendance']
-            );
-            
-            if ($result) {
-                echo json_encode(['success' => true, 'message' => 'Điểm danh thành công']);
-            } else {
+        
+        $result = $attendanceModel->markAttendanceBatch(
+            $data['id_lich_khoi_hanh'],
+            $data['id_hdv'] ?? $guideId,
+            $data['ngay_diem_danh'],
+            $data['attendance']
+        );
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Điểm danh thành công']);
+        } else {
                 error_log("markAttendanceBatch failed for lich_khoi_hanh: " . $data['id_lich_khoi_hanh']);
                 echo json_encode(['success' => false, 'message' => 'Không thể lưu điểm danh. Vui lòng kiểm tra lại dữ liệu.']);
-            }
+        }
         } catch (Exception $e) {
             error_log("saveAttendance exception: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
@@ -1208,39 +1208,39 @@ class GuideController extends BaseController {
             // Debug log
             error_log("createIncident called - GET: " . print_r($_GET, true) . " POST: " . print_r($_POST, true));
             
-            $this->checkLogin();
-            
-            $guideId = $_SESSION['guide_id'];
-            $assignmentId = $_GET['assignment_id'] ?? $_POST['assignment_id'] ?? null;
+        $this->checkLogin();
+        
+        $guideId = $_SESSION['guide_id'];
+        $assignmentId = $_GET['assignment_id'] ?? $_POST['assignment_id'] ?? null;
             
             error_log("createIncident - guideId: $guideId, assignmentId: " . ($assignmentId ?? 'null'));
-            
-            $assignment = null;
-            $departurePlan = null;
-            $tour = null;
-            
-            // Nếu có assignment_id, kiểm tra quyền truy cập
-            if ($assignmentId) {
-                $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
-                if (!$assignment || $assignment['id_hdv'] != $guideId) {
-                    $_SESSION['error'] = 'Bạn không có quyền tạo báo cáo sự cố cho phân công này';
-                    $this->redirect(BASE_URL . '?act=guide-assignments');
-                    return;
-                }
-                
-                // Lấy thông tin phân công và tour
-                if ($assignment['id_lich_khoi_hanh']) {
-                    $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
-                    if ($departurePlan && $departurePlan['id_tour']) {
-                        $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
-                    }
-                }
+        
+        $assignment = null;
+        $departurePlan = null;
+        $tour = null;
+        
+        // Nếu có assignment_id, kiểm tra quyền truy cập
+        if ($assignmentId) {
+            $assignment = $this->assignmentModel->getAssignmentByID($assignmentId);
+            if (!$assignment || $assignment['id_hdv'] != $guideId) {
+                $_SESSION['error'] = 'Bạn không có quyền tạo báo cáo sự cố cho phân công này';
+                $this->redirect(BASE_URL . '?act=guide-assignments');
+                return;
             }
             
-            // Không redirect nếu không có assignment_id - chỉ hiển thị form chọn phân công
+            // Lấy thông tin phân công và tour
+            if ($assignment['id_lich_khoi_hanh']) {
+                $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+                if ($departurePlan && $departurePlan['id_tour']) {
+                    $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+                }
+            }
+        }
             
-            // Xử lý POST request
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Không redirect nếu không có assignment_id - chỉ hiển thị form chọn phân công
+        
+        // Xử lý POST request
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$assignmentId) {
                 $_SESSION['error'] = 'Vui lòng chọn phân công';
             } else {
@@ -1318,12 +1318,12 @@ class GuideController extends BaseController {
                     $_SESSION['error'] = 'Có lỗi xảy ra khi tạo báo cáo sự cố. Vui lòng thử lại.';
                 }
             }
-            }
-            
-            // Lấy danh sách phân công để chọn nếu chưa có assignment
+        }
+        
+        // Lấy danh sách phân công để chọn nếu chưa có assignment
             // Lấy cả phân công đã xác nhận (da_nhan = 1) để có thể tạo báo cáo
-            $assignments = [];
-            if (!$assignment) {
+        $assignments = [];
+        if (!$assignment) {
                 // Lấy tất cả phân công đã xác nhận (da_nhan = 1) để có thể tạo báo cáo
                 try {
                     $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['da_nhan' => 1]);
@@ -1332,17 +1332,17 @@ class GuideController extends BaseController {
                     error_log("createIncident - Error getting assignments: " . $e->getMessage());
                     $assignments = [];
                 }
-            }
-            
+        }
+        
             try {
-                $incidentModel = $this->getIncidentReportModel();
-                $incidentTypes = $incidentModel->getIncidentTypes();
-                $severityLevels = $incidentModel->getSeverityLevels();
-                
+        $incidentModel = $this->getIncidentReportModel();
+        $incidentTypes = $incidentModel->getIncidentTypes();
+        $severityLevels = $incidentModel->getSeverityLevels();
+        
                 error_log("createIncident - About to load view");
                 
                 // Luôn hiển thị form, kể cả khi không có assignments
-                $this->loadView('guide/incidents/create', compact('assignment', 'departurePlan', 'tour', 'incidentTypes', 'severityLevels', 'assignments'), 'guide/layout');
+        $this->loadView('guide/incidents/create', compact('assignment', 'departurePlan', 'tour', 'incidentTypes', 'severityLevels', 'assignments'), 'guide/layout');
             } catch (Exception $e) {
                 error_log("createIncident - Error loading view: " . $e->getMessage());
                 throw $e;
