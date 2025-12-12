@@ -568,19 +568,9 @@ $ngaydang=safe_value($tour['ngaydang']??date('Y-m-d'));
     </div>
 
     <div class="form-group-modern">
-      <p style="color: var(--text-light); margin: -4px 0 12px;">Tách riêng lịch trình tour, có thể thêm nhiều ngày chi tiết.</p>
-      <div style="margin-bottom: 16px;">
-        <button type="button" id="add-day-btn" class="btn-submit" style="padding: 10px 18px; gap: 6px;">
-          <i class="fas fa-plus"></i> Thêm lịch trình
-        </button>
-      </div>
-      <div id="days-container"></div>
-      <textarea name="chuongtrinh" id="chuongtrinh-hidden" style="display:none;"><?= htmlspecialchars($chuongtrinh ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-    </div>
+      <!-- Ẩn phần lịch trình khi chỉnh sửa -->
+      <input type="hidden" name="chuongtrinh" value="<?= htmlspecialchars($chuongtrinh ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
-    <hr style="margin:20px 0; border: none; border-top:1px solid var(--border);">
-
-    <div class="form-group-modern">
       <label for="packagedetails2">Lưu ý <span class="required">*</span></label>
       <textarea class="form-control" name="luuy" id="packagedetails2" required><?= str_replace('</textarea>', '&lt;/textarea&gt;', $luuy) ?></textarea>
     </div>

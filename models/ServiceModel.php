@@ -166,8 +166,32 @@ class ServiceModel extends BaseModel
     /**
      * Lấy danh sách loại dịch vụ
      */
-    public static function getServiceTypes()
+    /**
+     * Lấy danh sách loại dịch vụ động (distinct từ DB).
+     * Nếu không có dữ liệu, trả về bộ mặc định.
+     */
+    public function getServiceTypesDynamic()
     {
+        try {
+            $sql = "SELECT DISTINCT loai_dich_vu FROM dich_vu WHERE loai_dich_vu IS NOT NULL AND loai_dich_vu != ''";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($rows)) {
+                $types = [];
+                foreach ($rows as $row) {
+                    // Dùng chính giá trị trong DB làm key, label hiển thị có thể prettify
+                    $label = ucwords(str_replace('_', ' ', $row));
+                    $types[$row] = $label;
+                }
+                return $types;
+            }
+        } catch (PDOException $e) {
+            error_log("Lỗi lấy loại dịch vụ động: " . $e->getMessage());
+        }
+
+        // Fallback mặc định
         return [
             'xe' => 'Xe/Phương tiện',
             'khach_san' => 'Khách sạn',

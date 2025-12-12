@@ -1069,7 +1069,7 @@ class AdminController extends BaseController {
         $this->checkLogin();
 
         $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
         
         // Lấy danh sách categories và tags
         require_once './models/TourChiTietModel.php';
@@ -1468,7 +1468,7 @@ class AdminController extends BaseController {
         }
         
         $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
         $tourServices = $this->tourModel->getTourServices($id);
         $selectedServiceIds = array_column($tourServices, 'id_dich_vu');
         
@@ -1689,7 +1689,7 @@ class AdminController extends BaseController {
         
         $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($id);
         $tourServices = $this->tourModel->getTourServices($id);
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
         
         // Lấy categories và tags của tour
         require_once './models/TourChiTietModel.php';
@@ -2978,13 +2978,35 @@ class AdminController extends BaseController {
         if (!empty($_GET['ten_hdv'])) {
             $filters['ten_hdv'] = trim($_GET['ten_hdv']);
         }
-        if (!empty($_GET['ma_booking'])) {
-            $filters['ma_booking'] = trim($_GET['ma_booking']);
+        if (!empty($_GET['id_lich_khoi_hanh'])) {
+            $filters['id_lich_khoi_hanh'] = (int)$_GET['id_lich_khoi_hanh'];
         }
 
-        // Lấy dữ liệu từ booking (booking_hdv table)
-        $assignments = $this->bookingModel->getAllBookingAssignments($filters);
-        $this->loadView('admin/assignments/list', compact('assignments', 'filters'), 'admin/layout');
+        // Lấy dữ liệu từ lịch khởi hành (phan_cong_hdv table)
+        $assignments = $this->assignmentModel->getAllAssignments($filters);
+        
+        // Bổ sung thông tin booking nếu có
+        foreach ($assignments as &$assignment) {
+            if (!empty($assignment['id_lich_khoi_hanh'])) {
+                $bookings = $this->bookingModel->getBookingsByDeparturePlan($assignment['id_lich_khoi_hanh']);
+                if (!empty($bookings)) {
+                    $assignment['ma_booking'] = $bookings[0]['ma_booking'] ?? null;
+                    $assignment['id_booking'] = $bookings[0]['id'] ?? null;
+                    $assignment['trang_thai_booking'] = $bookings[0]['trang_thai'] ?? null;
+                }
+            }
+            // Đảm bảo có thông tin từ lịch khởi hành
+            $assignment['ngay_khoi_hanh_lich'] = $assignment['ngay_khoi_hanh'] ?? null;
+            $assignment['ten_hdv'] = $assignment['ho_ten'] ?? null;
+            $assignment['email_hdv'] = $assignment['email'] ?? null;
+            $assignment['sdt_hdv'] = $assignment['so_dien_thoai'] ?? null;
+        }
+        unset($assignment);
+        
+        // Lấy danh sách lịch khởi hành để filter
+        $departurePlans = $this->departurePlanModel->getAllDeparturePlans();
+        
+        $this->loadView('admin/assignments/list', compact('assignments', 'filters', 'departurePlans'), 'admin/layout');
     }
 
     /**
@@ -3194,7 +3216,7 @@ class AdminController extends BaseController {
         }
 
         $services = $this->serviceModel->getAllServices($filters);
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
         $this->loadView('admin/services/list', compact('services', 'filters', 'serviceTypes'), 'admin/layout');
     }
 
@@ -3205,7 +3227,7 @@ class AdminController extends BaseController {
     public function createService() {
         $this->checkLogin();
 
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $this->serviceModel->createService($_POST);
@@ -3239,7 +3261,7 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-services');
         }
 
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $this->serviceModel->updateService($id, $_POST);

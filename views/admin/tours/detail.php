@@ -450,109 +450,56 @@
         </div>
   </div>
 
-  <!-- Departure Plans -->
-  <?php if (!empty($departurePlans)): ?>
+  <!-- Services -->
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <i class="fas fa-calendar-alt"></i> Lịch khởi hành
+        <i class="fas fa-concierge-bell"></i> Dịch vụ
       </div>
-      <a href="<?= BASE_URL ?>?act=admin-departure-plan-create&tour_id=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary">
-        <i class="fas fa-plus"></i> Thêm lịch
+      <a href="<?= BASE_URL ?>?act=admin-services" class="btn btn-sm btn-primary">
+        <i class="fas fa-edit"></i> Sửa
       </a>
     </div>
-    <div class="departure-table-wrap">
-      <table class="departure-table">
-        <thead>
-          <tr>
-            <th>Ngày giờ</th>
-            <th>Điểm tập trung</th>
-            <th>Số chỗ</th>
-            <th>Trạng thái</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($departurePlans as $plan): ?>
+    <?php if (!empty($tourServices)): ?>
+      <div style="overflow-x: auto;">
+        <table class="departure-table" style="min-width: 600px;">
+          <thead>
             <tr>
-              <td>
-                <?php 
-                $date = !empty($plan['ngay_khoi_hanh']) ? date('d/m/Y', strtotime($plan['ngay_khoi_hanh'])) : '';
-                $time = !empty($plan['gio_khoi_hanh']) ? date('H:i', strtotime($plan['gio_khoi_hanh'])) : '';
-                echo $date . ($time ? ' ' . $time : '');
-                ?>
-              </td>
-              <td><?= htmlspecialchars($plan['diem_tap_trung'] ?? 'N/A') ?></td>
-              <td><?= htmlspecialchars($plan['so_cho'] ?? $plan['so_cho_du_kien'] ?? 'N/A') ?></td>
-              <td>
-                <?php if ($plan['trang_thai'] == 1): ?>
-                  <span class="status-active">Hoạt động</span>
-                <?php else: ?>
-                  <span class="status-inactive">Tạm dừng</span>
-                <?php endif; ?>
-              </td>
+              <th style="width: 40%;">Dịch vụ</th>
+              <th>Loại</th>
+              <th>Giá</th>
+              <th>Nhà cung cấp</th>
+              <th>Liên hệ</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <?php endif; ?>
-
-  <!-- Hướng dẫn viên -->
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">
-        <i class="fas fa-user-tie"></i> Hướng dẫn viên
+          </thead>
+          <tbody>
+            <?php foreach ($tourServices as $sv): ?>
+              <tr>
+                <td><?= htmlspecialchars($sv['ten_dich_vu'] ?? '') ?></td>
+                <td><?= htmlspecialchars($sv['loai_dich_vu'] ?? '') ?></td>
+                <td>
+                  <?php if (!empty($sv['gia'])): ?>
+                    <?= number_format((float)$sv['gia'], 0, ',', '.') ?> đ
+                    <?php if (!empty($sv['don_vi'])): ?>
+                      / <?= htmlspecialchars($sv['don_vi']) ?>
+                    <?php endif; ?>
+                  <?php else: ?>
+                    -
+                  <?php endif; ?>
+                </td>
+                <td><?= htmlspecialchars($sv['nha_cung_cap'] ?? '-') ?></td>
+                <td><?= htmlspecialchars($sv['lien_he'] ?? '-') ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
       </div>
-      <a href="<?= BASE_URL ?>?act=admin-assignment-create&tour_id=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary">
-        <i class="fas fa-plus"></i> Thêm phân công
-      </a>
-    </div>
-    <div style="padding: 4px 0;">
-      <?php if (!empty($assignments)): ?>
-        <div style="display: grid; gap: 12px;">
-          <?php foreach ($assignments as $assignment): ?>
-            <div style="background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-              <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                  <i class="fas fa-user" style="color: #3b82f6; font-size: 16px;"></i>
-                  <strong style="font-size: 15px; color: #1f2937;"><?= htmlspecialchars($assignment['ho_ten'] ?? 'N/A') ?></strong>
-                  <?php if (isset($assignment['vai_tro'])): ?>
-                    <span style="background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
-                      <?= htmlspecialchars($assignment['vai_tro']) ?>
-                    </span>
-                  <?php endif; ?>
-                </div>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; color: #6b7280; font-size: 13px;">
-                  <?php if (!empty($assignment['so_dien_thoai'])): ?>
-                    <span><i class="fas fa-phone"></i> <?= htmlspecialchars($assignment['so_dien_thoai']) ?></span>
-                  <?php endif; ?>
-                  <?php if (!empty($assignment['email'])): ?>
-                    <span><i class="fas fa-envelope"></i> <?= htmlspecialchars($assignment['email']) ?></span>
-                  <?php endif; ?>
-                  <?php if (!empty($assignment['ngay_khoi_hanh'])): ?>
-                    <span><i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($assignment['ngay_khoi_hanh'])) ?></span>
-                  <?php endif; ?>
-                </div>
-              </div>
-              <div style="display: flex; gap: 8px;">
-                <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" class="btn btn-sm btn-secondary">
-                  <i class="fas fa-edit"></i> Sửa
-                </a>
-              </div>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      <?php else: ?>
-        <div style="text-align: center; padding: 30px; color: #9ca3af;">
-          <i class="fas fa-user-tie" style="font-size: 36px; margin-bottom: 12px; opacity: 0.5;"></i>
-          <p style="margin: 0; font-size: 14px;">Chưa có phân công HDV cho tour này</p>
-          <a href="<?= BASE_URL ?>?act=admin-assignment-create&tour_id=<?= $tour['id_goi'] ?>" class="btn btn-sm btn-primary" style="margin-top: 12px;">
-            <i class="fas fa-plus"></i> Tạo phân công đầu tiên
-          </a>
-        </div>
-      <?php endif; ?>
-    </div>
+    <?php else: ?>
+      <div style="text-align: center; padding: 24px; color: #9ca3af;">
+        <i class="fas fa-info-circle" style="font-size: 20px;"></i>
+        <p style="margin: 8px 0 0 0;">Chưa chọn dịch vụ nào cho tour này</p>
+      </div>
+    <?php endif; ?>
   </div>
 
   <!-- Categories & Tags -->
