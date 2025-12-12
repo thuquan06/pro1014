@@ -1,4 +1,8 @@
 <?php
+/**
+ * TourController - Quản lý các tour du lịch
+ * @author Tienhien109
+ */
 class TourController extends BaseController
 {
     private $tourModel;

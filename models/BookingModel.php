@@ -2,6 +2,7 @@
 /**
  * BookingModel - Quản lý Booking
  * UC-View-Booking, UC-Create-Booking, UC-Update-Booking
+ * @author Tienhien109
  */
 class BookingModel extends BaseModel
 {

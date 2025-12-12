@@ -189,7 +189,7 @@
           ?>
           <span style="background: <?= $cfg['bg'] ?>; color: <?= $cfg['color'] ?>; padding: 6px 16px; border-radius: 12px; font-size: 14px; font-weight: 600;">
             <i class="fas fa-<?= $cfg['icon'] ?>"></i> <?= htmlspecialchars($st) ?>
-          </span>
+            </span>
         </p>
       </div>
     </div>

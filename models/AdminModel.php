@@ -2,6 +2,7 @@
 /**
  * AdminModel - Quản lý admin authentication
  * ĐÃ CẬP NHẬT: Sử dụng password_hash() thay vì MD5
+ * @author Tienhien109
  */
 class AdminModel {
     private $conn;
