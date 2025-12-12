@@ -24,6 +24,7 @@ class AdminController extends BaseController {
     private $bookingModel;
     private $voucherModel;
     private $diemDanModel;
+    private $journalModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
@@ -40,6 +41,8 @@ class AdminController extends BaseController {
         $this->voucherModel = new VoucherModel();
         require_once './models/DiemDanModel.php';
         $this->diemDanModel = new DiemDanModel();
+        require_once './models/TourJournalModel.php';
+        $this->journalModel = new TourJournalModel();
     }
 
     
@@ -4497,6 +4500,84 @@ class AdminController extends BaseController {
         $members = $this->bookingModel->getBookingDetails($id_booking);
         
         $this->loadView('admin/attendance/history', compact('booking', 'attendanceHistory', 'members'), 'admin/layout');
+    }
+
+    /**
+     * Danh sách nhật ký tour của HDV
+     * Route: ?act=admin-journals
+     */
+    public function listJournals() {
+        $this->checkLogin();
+        
+        $filters = [];
+        
+        // Filter theo HDV
+        if (!empty($_GET['id_hdv'])) {
+            $filters['id_hdv'] = (int)$_GET['id_hdv'];
+        }
+        
+        // Filter theo tour
+        if (!empty($_GET['id_tour'])) {
+            $filters['id_tour'] = (int)$_GET['id_tour'];
+        }
+        
+        // Filter theo lịch khởi hành
+        if (!empty($_GET['id_lich_khoi_hanh'])) {
+            $filters['id_lich_khoi_hanh'] = (int)$_GET['id_lich_khoi_hanh'];
+        }
+        
+        // Filter theo ngày
+        if (!empty($_GET['from_date'])) {
+            $filters['from_date'] = $_GET['from_date'];
+        }
+        if (!empty($_GET['to_date'])) {
+            $filters['to_date'] = $_GET['to_date'];
+        }
+        
+        $journals = $this->journalModel->getAllJournals($filters);
+        
+        // Lấy danh sách HDV và tour để filter
+        $guides = $this->guideModel->getAllGuides();
+        $tours = $this->tourModel->getAllTours();
+        
+        $this->loadView('admin/journals/list', compact('journals', 'filters', 'guides', 'tours'), 'admin/layout');
+    }
+
+    /**
+     * Chi tiết nhật ký tour
+     * Route: ?act=admin-journal-detail&id=X
+     */
+    public function journalDetail() {
+        $this->checkLogin();
+        
+        $journalId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($journalId <= 0) {
+            $_SESSION['error'] = 'ID nhật ký không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-journals');
+        }
+        
+        $journal = $this->journalModel->getJournalByID($journalId);
+        if (!$journal) {
+            $_SESSION['error'] = 'Không tìm thấy nhật ký';
+            $this->redirect(BASE_URL . '?act=admin-journals');
+        }
+        
+        // Lấy thông tin phân công, lịch khởi hành và tour
+        $assignment = null;
+        $departurePlan = null;
+        $tour = null;
+        
+        if (!empty($journal['id_phan_cong'])) {
+            $assignment = $this->assignmentModel->getAssignmentByID($journal['id_phan_cong']);
+            if ($assignment && !empty($assignment['id_lich_khoi_hanh'])) {
+                $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+                if ($departurePlan && !empty($departurePlan['id_tour'])) {
+                    $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+                }
+            }
+        }
+        
+        $this->loadView('admin/journals/detail', compact('journal', 'assignment', 'departurePlan', 'tour'), 'admin/layout');
     }
 }
    

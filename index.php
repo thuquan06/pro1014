@@ -395,6 +395,16 @@ try {
             (new AdminController())->viewAttendanceHistory();
             break;
 
+        // Nhật ký tour
+        case 'admin-journals':
+            require_once './models/TourJournalModel.php';
+            (new AdminController())->listJournals();
+            break;
+        case 'admin-journal-detail':
+            require_once './models/TourJournalModel.php';
+            (new AdminController())->journalDetail();
+            break;
+
         case 'admin-booking-detail':
             require_once './models/BookingModel.php';
             (new AdminController())->viewBookingDetail();
