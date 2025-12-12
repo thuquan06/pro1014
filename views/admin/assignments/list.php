@@ -424,11 +424,15 @@ $filters = $filters ?? [];
       </div>
       
       <div class="filter-group">
-        <label>Mã booking</label>
-        <input type="text" 
-               name="ma_booking" 
-               value="<?= htmlspecialchars($filters['ma_booking'] ?? '') ?>"
-               placeholder="Nhập mã booking...">
+        <label>Lịch khởi hành</label>
+        <select name="id_lich_khoi_hanh">
+          <option value="">Tất cả</option>
+          <?php foreach ($departurePlans ?? [] as $plan): ?>
+            <option value="<?= $plan['id'] ?>" <?= (isset($filters['id_lich_khoi_hanh']) && $filters['id_lich_khoi_hanh'] == $plan['id']) ? 'selected' : '' ?>>
+              <?= htmlspecialchars($plan['ten_tour'] ?? 'Tour #' . $plan['id']) ?> - <?= date('d/m/Y', strtotime($plan['ngay_khoi_hanh'] ?? 'now')) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
       </div>
     </div>
     
@@ -451,12 +455,12 @@ $filters = $filters ?? [];
       <thead>
         <tr>
           <th>STT</th>
-          <th>Mã booking</th>
+          <th>Mã lịch</th>
           <th>HDV</th>
           <th>Tour</th>
           <th>Ngày khởi hành</th>
           <th>Vai trò</th>
-          <th>Trạng thái booking</th>
+          <th>Trạng thái</th>
           <th>Thao tác</th>
         </tr>
       </thead>
@@ -467,24 +471,31 @@ $filters = $filters ?? [];
         ?>
           <tr>
             <td><?= $cnt ?></td>
+            <?php
+              $maLich = '';
+              if (!empty($assignment['id_lich_khoi_hanh'])) {
+                  $maLich = '#' . $assignment['id_lich_khoi_hanh'];
+              } elseif (!empty($assignment['id'])) {
+                  $maLich = '#' . $assignment['id'];
+              } else {
+                  $maLich = 'N/A';
+              }
+            ?>
             <td>
-              <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
-                 style="color: #3b82f6; font-weight: 600; text-decoration: none;">
-                <?= safe_html($assignment['ma_booking'] ?? 'N/A') ?>
-              </a>
+              <strong style="color: #3b82f6;"><?= safe_html($maLich) ?></strong>
             </td>
             <td>
               <strong><?= safe_html($assignment['ten_hdv'] ?? 'N/A') ?></strong>
-              <?php if ($assignment['email_hdv']): ?>
+              <?php if (!empty($assignment['email_hdv'])): ?>
                 <br><small style="color: var(--text-light);"><?= safe_html($assignment['email_hdv']) ?></small>
               <?php endif; ?>
-              <?php if ($assignment['sdt_hdv']): ?>
+              <?php if (!empty($assignment['sdt_hdv'])): ?>
                 <br><small style="color: var(--text-light);"><?= safe_html($assignment['sdt_hdv']) ?></small>
               <?php endif; ?>
             </td>
             <td>
               <strong><?= safe_html($assignment['ten_tour'] ?? 'N/A') ?></strong>
-              <?php if ($assignment['ma_tour']): ?>
+              <?php if (!empty($assignment['ma_tour'])): ?>
                 <br><small style="color: var(--text-light);">Mã: <?= safe_html($assignment['ma_tour']) ?></small>
               <?php endif; ?>
             </td>
@@ -513,28 +524,55 @@ $filters = $filters ?? [];
             </td>
             <td>
               <?php
-              $statusList = [
-                0 => 'Chờ xử lý',
-                1 => 'Đã liên hệ',
-                2 => 'Đã đặt cọc',
-                3 => 'Đã thanh toán',
-                4 => 'Hoàn thành',
-                5 => 'Hủy'
-              ];
-              $trangThai = (int)($assignment['trang_thai_booking'] ?? 0);
-              $statusText = $statusList[$trangThai] ?? 'Không xác định';
-              $statusClass = 'success';
-              if ($trangThai == 0) $statusClass = 'warning';
-              elseif ($trangThai == 5) $statusClass = 'danger';
+              // Hiển thị trạng thái phân công
+              $trangThaiPC = (int)($assignment['trang_thai'] ?? 0);
+              if ($trangThaiPC == 0) {
+                  $statusText = 'Ready';
+                  $statusClass = 'info';
+              } elseif ($trangThaiPC == 1) {
+                  $statusText = 'Đang diễn ra';
+                  $statusClass = 'success';
+              } elseif ($trangThaiPC == 2) {
+                  $statusText = 'Hoàn thành';
+                  $statusClass = 'success';
+              } else {
+                  $statusText = 'Tạm dừng';
+                  $statusClass = 'warning';
+              }
+              
+              // Nếu có booking, hiển thị thêm trạng thái booking
+              if (!empty($assignment['trang_thai_booking'])) {
+                  $statusList = [
+                    0 => 'Chờ xử lý',
+                    1 => 'Đã liên hệ',
+                    2 => 'Đã đặt cọc',
+                    3 => 'Đã thanh toán',
+                    4 => 'Hoàn thành',
+                    5 => 'Hủy'
+                  ];
+                  $trangThai = (int)$assignment['trang_thai_booking'];
+                  $bookingStatusText = $statusList[$trangThai] ?? 'Không xác định';
+              }
               ?>
               <span class="status-badge <?= $statusClass ?>">
                 <i class="fas fa-circle"></i> <?= $statusText ?>
               </span>
+              <?php if (!empty($bookingStatusText)): ?>
+                <br><small style="color: var(--text-light); font-size: 11px;">Booking: <?= $bookingStatusText ?></small>
+              <?php endif; ?>
             </td>
             <td style="text-align: center;">
-              <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
+              <?php if (!empty($assignment['id_booking'])): ?>
+                <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
+                   class="btn-action edit" 
+                   title="Xem chi tiết booking"
+                   style="margin-right: 8px;">
+                  <i class="fas fa-shopping-cart"></i>
+                </a>
+              <?php endif; ?>
+              <a href="<?= BASE_URL ?>?act=admin-assignment-edit&id=<?= $assignment['id'] ?>" 
                  class="btn-action edit" 
-                 title="Xem chi tiết booking">
+                 title="Xem chi tiết phân công">
                 <i class="fas fa-eye"></i>
               </a>
             </td>
@@ -548,7 +586,7 @@ $filters = $filters ?? [];
       <i class="fas fa-calendar-times"></i>
       <p>Không tìm thấy phân công nào</p>
       <p style="margin-top: 8px; color: var(--text-light); font-size: 14px;">
-        Phân công HDV được quản lý trong booking. Vui lòng tạo booking để phân công HDV.
+        Phân công HDV được quản lý từ lịch khởi hành. Vui lòng tạo lịch khởi hành và phân công HDV.
       </p>
     </div>
   <?php endif; ?>
