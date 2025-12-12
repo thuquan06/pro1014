@@ -2,6 +2,7 @@
 /**
  * DeparturePlanModel - Quản lý lịch khởi hành
  * UC-Departure-Plan: Tạo lịch khởi hành cho tour
+ * @author Tienhien109
  */
 class DeparturePlanModel extends BaseModel
 {

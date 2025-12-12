@@ -2,6 +2,7 @@
 /**
  * GuideModel - Quản lý Hướng dẫn viên
  * UC-Assign-Guide: Phân công HDV theo kỹ năng/tuyến/ngôn ngữ
+ * @author Tienhien109
  */
 class GuideModel extends BaseModel
 {
