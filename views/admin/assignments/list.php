@@ -542,14 +542,14 @@ $filters = $filters ?? [];
               
               // Nếu có booking, hiển thị thêm trạng thái booking
               if (!empty($assignment['trang_thai_booking'])) {
-                  $statusList = [
-                    0 => 'Chờ xử lý',
-                    1 => 'Đã liên hệ',
-                    2 => 'Đã đặt cọc',
-                    3 => 'Đã thanh toán',
-                    4 => 'Hoàn thành',
-                    5 => 'Hủy'
-                  ];
+              $statusList = [
+                0 => 'Chờ xử lý',
+                1 => 'Đã liên hệ',
+                2 => 'Đã đặt cọc',
+                3 => 'Đã thanh toán',
+                4 => 'Hoàn thành',
+                5 => 'Hủy'
+              ];
                   $trangThai = (int)$assignment['trang_thai_booking'];
                   $bookingStatusText = $statusList[$trangThai] ?? 'Không xác định';
               }
@@ -563,7 +563,7 @@ $filters = $filters ?? [];
             </td>
             <td style="text-align: center;">
               <?php if (!empty($assignment['id_booking'])): ?>
-                <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
+              <a href="<?= BASE_URL ?>?act=admin-booking-detail&id=<?= $assignment['id_booking'] ?>" 
                    class="btn-action edit" 
                    title="Xem chi tiết booking"
                    style="margin-right: 8px;">

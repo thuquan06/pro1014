@@ -1689,7 +1689,7 @@ class AdminController extends BaseController {
         
         $departurePlans = $this->departurePlanModel->getDeparturePlansByTourID($id);
         $tourServices = $this->tourModel->getTourServices($id);
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
         
         // Lấy categories và tags của tour
         require_once './models/TourChiTietModel.php';
@@ -3216,7 +3216,7 @@ class AdminController extends BaseController {
         }
 
         $services = $this->serviceModel->getAllServices($filters);
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
         $this->loadView('admin/services/list', compact('services', 'filters', 'serviceTypes'), 'admin/layout');
     }
 
@@ -3227,7 +3227,7 @@ class AdminController extends BaseController {
     public function createService() {
         $this->checkLogin();
 
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $this->serviceModel->createService($_POST);
@@ -3261,7 +3261,7 @@ class AdminController extends BaseController {
             $this->redirect(BASE_URL . '?act=admin-services');
         }
 
-        $serviceTypes = ServiceModel::getServiceTypes();
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $this->serviceModel->updateService($id, $_POST);
