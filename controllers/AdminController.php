@@ -25,6 +25,7 @@ class AdminController extends BaseController {
     private $voucherModel;
     private $diemDanModel;
     private $journalModel;
+    private $incidentReportModel;
 
     public function __construct() {
         $this->dashboardModel = new DashboardModel();
@@ -43,6 +44,8 @@ class AdminController extends BaseController {
         $this->diemDanModel = new DiemDanModel();
         require_once './models/TourJournalModel.php';
         $this->journalModel = new TourJournalModel();
+        require_once './models/IncidentReportModel.php';
+        $this->incidentReportModel = new IncidentReportModel();
     }
 
     
@@ -4578,6 +4581,97 @@ class AdminController extends BaseController {
         }
         
         $this->loadView('admin/journals/detail', compact('journal', 'assignment', 'departurePlan', 'tour'), 'admin/layout');
+    }
+
+    /**
+     * Danh sách báo cáo sự cố của HDV
+     * Route: ?act=admin-incidents
+     */
+    public function listIncidents() {
+        $this->checkLogin();
+        
+        $filters = [];
+        
+        // Filter theo HDV
+        if (!empty($_GET['id_hdv'])) {
+            $filters['id_hdv'] = (int)$_GET['id_hdv'];
+        }
+        
+        // Filter theo tour
+        if (!empty($_GET['id_tour'])) {
+            $filters['id_tour'] = (int)$_GET['id_tour'];
+        }
+        
+        // Filter theo mức độ
+        if (!empty($_GET['muc_do'])) {
+            $filters['muc_do'] = $_GET['muc_do'];
+        }
+        
+        // Filter theo loại sự cố
+        if (!empty($_GET['loai_su_co'])) {
+            $filters['loai_su_co'] = $_GET['loai_su_co'];
+        }
+        
+        // Filter theo ngày
+        if (!empty($_GET['from_date'])) {
+            $filters['from_date'] = $_GET['from_date'];
+        }
+        if (!empty($_GET['to_date'])) {
+            $filters['to_date'] = $_GET['to_date'];
+        }
+        
+        $incidents = $this->incidentReportModel->getAllReports($filters);
+        
+        // Lấy danh sách HDV, tour, loại sự cố và mức độ để filter
+        $guides = $this->guideModel->getAllGuides();
+        $tours = $this->tourModel->getAllTours();
+        $incidentTypes = $this->incidentReportModel->getIncidentTypes();
+        $severityLevels = $this->incidentReportModel->getSeverityLevels();
+        
+        $this->loadView('admin/incidents/list', compact('incidents', 'filters', 'guides', 'tours', 'incidentTypes', 'severityLevels'), 'admin/layout');
+    }
+
+    /**
+     * Chi tiết báo cáo sự cố
+     * Route: ?act=admin-incident-detail&id=X
+     */
+    public function incidentDetail() {
+        $this->checkLogin();
+        
+        $incidentId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($incidentId <= 0) {
+            $_SESSION['error'] = 'ID báo cáo sự cố không hợp lệ';
+            $this->redirect(BASE_URL . '?act=admin-incidents');
+        }
+        
+        $incident = $this->incidentReportModel->getReportByID($incidentId);
+        if (!$incident) {
+            $_SESSION['error'] = 'Không tìm thấy báo cáo sự cố';
+            $this->redirect(BASE_URL . '?act=admin-incidents');
+        }
+        
+        // Parse JSON images
+        $incident['hinh_anh'] = $this->incidentReportModel->parseJsonArray($incident['hinh_anh'] ?? '[]');
+        
+        // Lấy thông tin phân công, lịch khởi hành và tour
+        $assignment = null;
+        $departurePlan = null;
+        $tour = null;
+        
+        if (!empty($incident['id_phan_cong'])) {
+            $assignment = $this->assignmentModel->getAssignmentByID($incident['id_phan_cong']);
+            if ($assignment && !empty($assignment['id_lich_khoi_hanh'])) {
+                $departurePlan = $this->departurePlanModel->getDeparturePlanByID($assignment['id_lich_khoi_hanh']);
+                if ($departurePlan && !empty($departurePlan['id_tour'])) {
+                    $tour = $this->tourModel->getTourByID($departurePlan['id_tour']);
+                }
+            }
+        }
+        
+        $incidentTypes = $this->incidentReportModel->getIncidentTypes();
+        $severityLevels = $this->incidentReportModel->getSeverityLevels();
+        
+        $this->loadView('admin/incidents/detail', compact('incident', 'assignment', 'departurePlan', 'tour', 'incidentTypes', 'severityLevels'), 'admin/layout');
     }
 }
    

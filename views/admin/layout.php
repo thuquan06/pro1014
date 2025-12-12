@@ -1415,6 +1415,12 @@ $msg   = $msg   ?? null;
             <span>Nhật ký tour</span>
           </a>
         </div>
+        <div class="nav-item">
+          <a href="?act=admin-incidents" class="nav-link">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Báo cáo sự cố</span>
+          </a>
+        </div>
       </div>
       
       <div class="nav-section">
