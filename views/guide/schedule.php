@@ -74,8 +74,18 @@
               </div>
               
               <div style="display: flex; flex-direction: column; gap: 12px; align-items: end;">
-                  <span style="background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 12px; font-size: 13px; font-weight: 600;">
-                  <i class="fas fa-check-circle"></i> Đã xác nhận
+                  <?php
+                    $st = $assignment['trang_thai_hien_thi'] ?? 'Chưa xác định';
+                    $map = [
+                      'Ready' => ['bg' => 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)', 'color' => '#1d4ed8', 'icon' => 'clock', 'shadow' => 'rgba(29, 78, 216, 0.1)'],
+                      'Đang diễn ra' => ['bg' => 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', 'color' => '#065f46', 'icon' => 'play-circle', 'shadow' => 'rgba(6, 95, 70, 0.1)'],
+                      'Hoàn thành' => ['bg' => 'linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)', 'color' => '#374151', 'icon' => 'check-circle', 'shadow' => 'rgba(55, 65, 81, 0.1)'],
+                      'Chưa xác định' => ['bg' => 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', 'color' => '#991b1b', 'icon' => 'question-circle', 'shadow' => 'rgba(153, 27, 27, 0.1)']
+                    ];
+                    $cfg = $map[$st] ?? $map['Chưa xác định'];
+                  ?>
+                  <span style="background: <?= $cfg['bg'] ?>; color: <?= $cfg['color'] ?>; padding: 8px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px <?= $cfg['shadow'] ?>;">
+                    <i class="fas fa-<?= $cfg['icon'] ?>"></i> <?= htmlspecialchars($st) ?>
                   </span>
                 
                 <a href="?act=guide-assignment-detail&id=<?= $assignment['id'] ?>" class="btn btn-primary btn-sm">

@@ -942,6 +942,17 @@ class GuideController extends BaseController {
         // Chỉ lấy các phân công đã xác nhận (da_nhan = 1)
         $assignments = $this->guideModel->getAssignmentsByGuideID($guideId, ['da_nhan' => 1]);
         
+        // Tính toán trạng thái hiển thị cho mỗi assignment
+        foreach ($assignments as &$a) {
+            $a['trang_thai_hien_thi'] = 'Chưa xác định';
+            if (isset($a['trang_thai'])) {
+                if ($a['trang_thai'] == 0) $a['trang_thai_hien_thi'] = 'Ready';
+                elseif ($a['trang_thai'] == 1) $a['trang_thai_hien_thi'] = 'Đang diễn ra';
+                elseif ($a['trang_thai'] == 2) $a['trang_thai_hien_thi'] = 'Hoàn thành';
+            }
+        }
+        unset($a);
+        
         $this->loadView('guide/schedule', compact('assignments'), 'guide/layout');
     }
 
