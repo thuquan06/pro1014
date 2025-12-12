@@ -1,4 +1,5 @@
 <?php
+require_once './commons/function.php';
 require_once './models/BookingModel.php';
 require_once './models/ServiceAssignmentModel.php';
 require_once './models/DeparturePlanModel.php';
@@ -199,10 +200,82 @@ class GuideController extends BaseController {
             'to_date' => $weekEnd
         ]);
 
-        // Thông báo điều hành (placeholder)
-        $announcements = []; // chưa có nguồn, hiển thị trống
+        // Lấy phân công mới (trong 7 ngày gần đây, chưa được xác nhận)
+        $newAssignments = $this->getNewAssignments($guideId);
         
-        $this->loadView('guide/dashboard', compact('guide', 'stats', 'recentAssignments', 'todayAssignments', 'weekAssignments', 'announcements'), 'guide/layout');
+        // Thông báo điều hành
+        $announcements = [];
+        if (!empty($newAssignments)) {
+            foreach ($newAssignments as $assignment) {
+                $announcements[] = [
+                    'type' => 'new_assignment',
+                    'message' => 'Bạn có phân công mới: ' . ($assignment['ten_tour'] ?? 'Tour') . 
+                                ($assignment['ngay_khoi_hanh'] ? ' - Khởi hành: ' . date('d/m/Y', strtotime($assignment['ngay_khoi_hanh'])) : ''),
+                    'assignment_id' => $assignment['id'],
+                    'created_at' => $assignment['ngay_cap_nhat'] ?? date('Y-m-d H:i:s')
+                ];
+            }
+        }
+        
+        $this->loadView('guide/dashboard', compact('guide', 'stats', 'recentAssignments', 'todayAssignments', 'weekAssignments', 'announcements', 'newAssignments'), 'guide/layout');
+    }
+
+    /**
+     * Lấy các phân công mới (trong 7 ngày gần đây, chưa được xác nhận)
+     */
+    private function getNewAssignments($guideId)
+    {
+        try {
+            $conn = connectDB();
+            $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+            
+            // Thử query với cả ngay_tao và ngay_cap_nhat
+            try {
+                $sql = "SELECT pc.*, 
+                               dp.ngay_khoi_hanh, dp.gio_khoi_hanh, dp.diem_tap_trung,
+                               g.tengoi AS ten_tour, g.id_goi AS id_tour
+                        FROM phan_cong_hdv pc
+                        LEFT JOIN lich_khoi_hanh dp ON pc.id_lich_khoi_hanh = dp.id
+                        LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
+                        WHERE pc.id_hdv = :id_hdv
+                          AND (pc.ngay_cap_nhat >= :seven_days_ago OR pc.ngay_tao >= :seven_days_ago)
+                          AND (pc.da_nhan = 0 OR pc.da_nhan IS NULL)
+                          AND pc.trang_thai = 1
+                        ORDER BY pc.ngay_cap_nhat DESC, pc.ngay_tao DESC
+                        LIMIT 5";
+                
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([
+                    ':id_hdv' => $guideId,
+                    ':seven_days_ago' => $sevenDaysAgo
+                ]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                // Nếu không có trường ngay_tao, thử query không có điều kiện ngay_tao
+                $sql = "SELECT pc.*, 
+                               dp.ngay_khoi_hanh, dp.gio_khoi_hanh, dp.diem_tap_trung,
+                               g.tengoi AS ten_tour, g.id_goi AS id_tour
+                        FROM phan_cong_hdv pc
+                        LEFT JOIN lich_khoi_hanh dp ON pc.id_lich_khoi_hanh = dp.id
+                        LEFT JOIN goidulich g ON dp.id_tour = g.id_goi
+                        WHERE pc.id_hdv = :id_hdv
+                          AND pc.ngay_cap_nhat >= :seven_days_ago
+                          AND (pc.da_nhan = 0 OR pc.da_nhan IS NULL)
+                          AND pc.trang_thai = 1
+                        ORDER BY pc.ngay_cap_nhat DESC
+                        LIMIT 5";
+                
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([
+                    ':id_hdv' => $guideId,
+                    ':seven_days_ago' => $sevenDaysAgo
+                ]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } catch (Exception $e) {
+            error_log("Lỗi lấy phân công mới: " . $e->getMessage());
+            return [];
+        }
     }
 
     /**

@@ -50,9 +50,45 @@ foreach ($recentAssignments ?? [] as $a) {
       <h3><i class="fas fa-bullhorn"></i> Thông báo từ điều hành</h3>
     </div>
     <div class="card-body">
-      <p style="color: var(--text-light); margin:0;">Chưa có thông báo.</p>
+      <?php if (!empty($announcements)): ?>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <?php foreach ($announcements as $announcement): ?>
+            <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; display: flex; align-items: start; gap: 12px; animation: slideIn 0.3s ease-out;">
+              <div style="flex-shrink: 0; width: 40px; height: 40px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;">
+                <i class="fas fa-bell"></i>
+              </div>
+              <div style="flex: 1;">
+                <p style="margin: 0; color: #1e40af; font-weight: 600; font-size: 14px; line-height: 1.5;">
+                  <?= htmlspecialchars($announcement['message']) ?>
+                </p>
+                <?php if (!empty($announcement['assignment_id'])): ?>
+                  <a href="?act=guide-assignment-detail&id=<?= $announcement['assignment_id'] ?>" 
+                     style="display: inline-block; margin-top: 8px; color: #3b82f6; font-size: 13px; font-weight: 600; text-decoration: none;">
+                    <i class="fas fa-arrow-right"></i> Xem chi tiết
+                  </a>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <p style="color: var(--text-light); margin:0;">Chưa có thông báo.</p>
+      <?php endif; ?>
     </div>
   </div>
+
+  <style>
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
 
   <div class="card">
     <div class="card-header">
