@@ -1386,6 +1386,14 @@ class AdminController extends BaseController {
     public function storeTour() {
         $this->checkLogin();
 
+        // Chuẩn bị dữ liệu dùng lại cho view khi có lỗi
+        $services = $this->serviceModel->getAllServices(['trang_thai' => 1]);
+        $serviceTypes = $this->serviceModel->getServiceTypesDynamic();
+        require_once './models/TourChiTietModel.php';
+        $tourChiTietModel = new TourChiTietModel();
+        $categories = $tourChiTietModel->layTatCaLoaiTour();
+        $tags = $tourChiTietModel->layTatCaTags();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ===== VALIDATE INPUT =====
             $validator = $this->validateTourData($_POST, null); // null = tạo mới
@@ -1437,13 +1445,52 @@ class AdminController extends BaseController {
             $validated['khuyenmai_denngay'] = null;
             $validated['khuyenmai_mota'] = null;
             $validated['nuocngoai'] = isset($validated['nuocngoai']) ? 1 : 0;
+
+            // Giữ nguyên chuỗi nhập để hiển thị (nếu có cột songay_text), đồng thời lưu số cho cột INT
+            $rawSongay = $_POST['songay'] ?? '';
+            $validated['songay_text'] = $rawSongay;
+            $songayNumeric = isset($validated['songay']) ? (int)preg_replace('/\D+/', '', (string)$validated['songay']) : 0;
+            $validated['songay'] = $songayNumeric > 0 ? $songayNumeric : 0;
             
             // ===== SAVE TO DATABASE =====
             $validated['voucher_id'] = isset($_POST['voucher_id']) ? (int)$_POST['voucher_id'] : null;
 
-            $this->tourModel->createTour($validated, null);
+            $result = $this->tourModel->createTour($validated, null);
+
+            if ($result) {
+                $tourId = $result;
+
+                // Lưu dịch vụ được chọn
+                if (!empty($_POST['dich_vu']) && is_array($_POST['dich_vu'])) {
+                    $this->tourModel->saveTourServices($tourId, $_POST['dich_vu']);
+                }
+
+                // Lưu phân loại (categories) được chọn
+                if (!empty($_POST['loai_ids']) && is_array($_POST['loai_ids'])) {
+                    foreach ($_POST['loai_ids'] as $loaiId) {
+                        $tourChiTietModel->ganLoaiTour($tourId, $loaiId);
+                    }
+                }
+
+                // Lưu tags được chọn
+                if (!empty($_POST['tag_ids']) && is_array($_POST['tag_ids'])) {
+                    foreach ($_POST['tag_ids'] as $tagId) {
+                        $tourChiTietModel->ganTag($tourId, $tagId);
+                    }
+                }
+
             $_SESSION['success'] = 'Tạo tour thành công!';
             $this->redirect(BASE_URL . '?act=admin-tours');
+            } else {
+                $error = 'Không thể tạo tour. Vui lòng thử lại sau.';
+                $errors = [];
+                $oldData = $_POST;
+                return $this->loadView(
+                    'admin/tours/create',
+                    compact('error', 'errors', 'oldData', 'services', 'serviceTypes', 'categories', 'tags'),
+                    'admin/layout'
+                );
+            }
         }
 
         $this->redirect(BASE_URL . '?act=admin-tour-create');
@@ -1527,6 +1574,12 @@ class AdminController extends BaseController {
             $validated['chitietgoi'] = $_POST['chitietgoi'] ?? '';
             // Lấy luuy từ POST
             $validated['luuy'] = $_POST['luuy'] ?? '';
+            
+            // Lưu songay_text (chuỗi hiển thị) và ép songay về số cho cột INT
+            $rawSongay = $_POST['songay'] ?? '';
+            $validated['songay_text'] = $rawSongay;
+            $songayNumeric = isset($validated['songay']) ? (int)preg_replace('/\D+/', '', (string)$validated['songay']) : 0;
+            $validated['songay'] = $songayNumeric > 0 ? $songayNumeric : 0;
             
             // Debug: Log dữ liệu trước khi update (có thể xóa sau)
             error_log("Update Tour ID: $id");

@@ -434,7 +434,11 @@ function safe_html($value) {
           foreach ($tours as $tour):
             $id_goi = $tour['id_goi'] ?? '';
             $tengoi = $tour['tengoi'] ?? '';
-            $songay = $tour['songay'] ?? '';
+            // Ưu tiên chuỗi mô tả nếu có (songay_text), fallback sang số ngày
+            $songayDisplay = $tour['songay_text'] ?? '';
+            if ($songayDisplay === '' && isset($tour['songay'])) {
+                $songayDisplay = $tour['songay'] . ' ngày';
+            }
             $giagoi = $tour['giagoi'] ?? 0;
             $giatreem = $tour['giatreem'] ?? 0;
             $giatrenho = $tour['giatrenho'] ?? 0;
@@ -453,20 +457,19 @@ function safe_html($value) {
                 $quocGiaRaw = $tour['quocgia'] ?? '';
                 $quocGia = trim($quocGiaRaw);
 
-                // Xác định nội địa: flag nuocngoai = 0 hoặc quocgia là Việt Nam
-                $isDomestic = $nuocNgoai === 0 || stripos($quocGia, 'việt nam') !== false;
-
-                if ($isDomestic) {
-                  $locationDisplay = 'Trong nước';
+                if ($nuocNgoai === 0) {
+                  // Trong nước
+                  $locationDisplay = $quocGia !== '' ? $quocGia : 'Trong nước';
                 } else {
-                  $locationDisplay = $quocGia !== '' ? $quocGia : 'Nước ngoài';
+                  // Quốc tế
+                  $locationDisplay = $quocGia !== '' ? ('Quốc tế - ' . $quocGia) : 'Quốc tế';
                 }
 
                 echo safe_html($locationDisplay);
                 ?>
               </td>
               <td>
-                <strong><?= safe_html($songay) ?></strong> ngày
+                <strong><?= safe_html($songayDisplay) ?></strong>
               </td>
               <td class="price-cell">
                 <div class="price-breakdown">

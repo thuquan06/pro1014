@@ -396,22 +396,37 @@
               <div class="info-value"><?= htmlspecialchars($tour['noixuatphat'] ?? 'N/A') ?></div>
             </div>
             <div class="info-group">
-              <div class="info-label">Điểm đến</div>
+              <div class="info-label">Địa điểm</div>
               <div class="info-value">
                 <?php
-                $diemDen = [];
-                if (!empty($tour['quocgia']) && $tour['quocgia'] !== 'Việt Nam') {
-                  $diemDen[] = $tour['quocgia'];
-                } elseif (isset($tour['nuocngoai']) && $tour['nuocngoai'] == 1) {
-                  $diemDen[] = 'Nước ngoài';
-                }
-                echo !empty($diemDen) ? htmlspecialchars(implode(' - ', $diemDen)) : 'N/A';
+                  $nuocngoai = isset($tour['nuocngoai']) ? (int)$tour['nuocngoai'] : 0;
+                  $quocgia = trim($tour['quocgia'] ?? '');
+
+                  if ($nuocngoai === 0) {
+                      // Trong nước: hiển thị "Trong nước" hoặc giá trị quốc gia nếu có
+                      $display = $quocgia !== '' ? $quocgia : 'Trong nước';
+                  } else {
+                      // Quốc tế: ưu tiên quốc gia, fallback "Nước ngoài"
+                      $display = $quocgia !== '' ? $quocgia : 'Nước ngoài';
+                  }
+
+                  echo htmlspecialchars($display);
                 ?>
               </div>
             </div>
             <div class="info-group">
               <div class="info-label">Số ngày</div>
-              <div class="info-value"><?= htmlspecialchars($tour['songay'] ?? 'N/A') ?></div>
+              <div class="info-value">
+                <?php
+                  if (!empty($tour['songay_text'])) {
+                    echo htmlspecialchars($tour['songay_text']);
+                  } elseif (isset($tour['songay'])) {
+                    echo htmlspecialchars($tour['songay'] . ' ngày');
+                  } else {
+                    echo 'N/A';
+                  }
+                ?>
+              </div>
             </div>
             <div class="info-group">
               <div class="info-label">Ngày đăng</div>

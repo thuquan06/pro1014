@@ -30,7 +30,7 @@ $giatrenho=safe_value($tour['giatrenho']??'');
 // Không mã hóa HTML cho các trường dùng CKEditor
 $chuongtrinh=html_entity_decode($tour['chuongtrinh']??'', ENT_QUOTES, 'UTF-8');
 $luuy=html_entity_decode($tour['luuy']??'', ENT_QUOTES, 'UTF-8');
-$songay=safe_value($tour['songay']??'');
+$songay=safe_value($tour['songay_text'] ?? ($tour['songay'] ?? ''));
 $giodi=safe_value($tour['giodi']??'');
 $ngayxuatphat=safe_value($tour['ngayxuatphat']??'');
 $ngayve=safe_value($tour['ngayve']??'');

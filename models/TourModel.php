@@ -30,22 +30,35 @@ class TourModel extends BaseModel
                 throw new PDOException("Ảnh (hinhanh) đang NULL vì chưa upload được.");
             }
 
-        $sql = "INSERT INTO goidulich (
-                        khuyenmai, khuyenmai_phantram, khuyenmai_tungay, khuyenmai_denngay, khuyenmai_mota,
-                        nuocngoai, quocgia, mato, tengoi,
-                        noixuatphat, giagoi, giatreem, giatrenho,
-                        chitietgoi, chuongtrinh, luuy,
-                        songay, hinhanh, ngaydang
-                    ) VALUES (
-                        :khuyenmai, :khuyenmai_phantram, :khuyenmai_tungay, :khuyenmai_denngay, :khuyenmai_mota,
-                        :nuocngoai, :quocgia, :mato, :tengoi,
-                        :noixuatphat, :giagoi, :giatreem, :giatrenho,
-                        :chitietgoi, :chuongtrinh, :luuy,
-                        :songay, :hinhanh, NOW()
-                    )";
+            // Cho phép lưu songay_text (mô tả dạng "3 ngày 2 đêm") nếu bảng có cột này
+            $hasSongayText = $this->hasColumn('goidulich', 'songay_text');
 
-            $stmt = $this->conn->prepare($sql);
-            $stmt->execute([
+            $columns = [
+                'khuyenmai', 'khuyenmai_phantram', 'khuyenmai_tungay', 'khuyenmai_denngay', 'khuyenmai_mota',
+                'nuocngoai', 'quocgia', 'mato', 'tengoi',
+                'noixuatphat', 'giagoi', 'giatreem', 'giatrenho',
+                'chitietgoi', 'chuongtrinh', 'luuy',
+                'songay'
+            ];
+
+            if ($hasSongayText) {
+                $columns[] = 'songay_text';
+            }
+
+            $columns[] = 'hinhanh';
+            $columns[] = 'ngaydang';
+
+            $placeholders = array_map(function ($col) {
+                return ':' . $col;
+            }, $columns);
+
+            // ngaydang dùng NOW(), không bind
+            $placeholders[array_search('ngaydang', $columns)] = 'NOW()';
+
+            $sql = "INSERT INTO goidulich (" . implode(', ', $columns) . ")
+                    VALUES (" . implode(', ', $placeholders) . ")";
+
+            $params = [
                 ':khuyenmai'          => $data['khuyenmai']  ?? 0,
                 ':khuyenmai_phantram' => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_phantram'] ?? 0) : 0,
                 ':khuyenmai_tungay'   => ($data['khuyenmai'] == 1) ? ($data['khuyenmai_tungay'] ?? null) : null,
@@ -63,16 +76,21 @@ class TourModel extends BaseModel
                 ':chuongtrinh'  => $data['chuongtrinh'] ?? '',
                 ':luuy'         => $data['luuy'],
                 ':songay'       => $data['songay'],
-                ':ngayxuatphat' => $data['ngayxuatphat'] ?? null,
-                ':ngayve'       => $data['ngayve'] ?? null,
-                ':phuongtien'   => $data['phuongtien'] ?? null,
-                ':socho'        => $data['socho'] ?? null,
                 ':hinhanh'      => $hinhanh,
-            ]);
+            ];
+
+            if ($hasSongayText) {
+                $params[':songay_text'] = $data['songay_text'] ?? null;
+            }
+
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
 
             return $this->conn->lastInsertId();
         } catch (PDOException $e) {
-            echo "<pre style='color:red'>LỖI SQL: ".$e->getMessage()."</pre>";
+            // Tạm thời hiển thị lỗi SQL để debug khi tạo tour thất bại
+            error_log("LỖI SQL (createTour): " . $e->getMessage());
+            echo "<pre style='color:red'>LỖI SQL (createTour): " . htmlspecialchars($e->getMessage()) . "</pre>";
             return false;
         }
     }
@@ -149,28 +167,35 @@ class TourModel extends BaseModel
     public function updateTour($id, array $data)
     {
         try {
-            $sql = "UPDATE goidulich SET
-                        khuyenmai           = :khuyenmai,
-                        khuyenmai_phantram  = :khuyenmai_phantram,
-                        khuyenmai_tungay    = :khuyenmai_tungay,
-                        khuyenmai_denngay   = :khuyenmai_denngay,
-                        khuyenmai_mota      = :khuyenmai_mota,
-                        nuocngoai    = :nuocngoai,
-                        quocgia      = :quocgia,
-                        mato         = :mato,
-                        tengoi       = :tengoi,
-                        noixuatphat  = :noixuatphat,
-                        giagoi       = :giagoi,
-                        giatreem     = :giatreem,
-                        giatrenho    = :giatrenho,
-                        chitietgoi   = :chitietgoi,
-                        chuongtrinh  = :chuongtrinh,
-                        luuy         = :luuy,
-                        songay       = :songay
-                    WHERE id_goi = :id";
+            $hasSongayText = $this->hasColumn('goidulich', 'songay_text');
 
-            $stmt = $this->conn->prepare($sql);
-            $result = $stmt->execute([
+            $setParts = [
+                'khuyenmai           = :khuyenmai',
+                'khuyenmai_phantram  = :khuyenmai_phantram',
+                'khuyenmai_tungay    = :khuyenmai_tungay',
+                'khuyenmai_denngay   = :khuyenmai_denngay',
+                'khuyenmai_mota      = :khuyenmai_mota',
+                'nuocngoai    = :nuocngoai',
+                'quocgia      = :quocgia',
+                'mato         = :mato',
+                'tengoi       = :tengoi',
+                'noixuatphat  = :noixuatphat',
+                'giagoi       = :giagoi',
+                'giatreem     = :giatreem',
+                'giatrenho    = :giatrenho',
+                'chitietgoi   = :chitietgoi',
+                'chuongtrinh  = :chuongtrinh',
+                'luuy         = :luuy',
+                'songay       = :songay',
+            ];
+
+            if ($hasSongayText) {
+                $setParts[] = 'songay_text  = :songay_text';
+            }
+
+            $sql = "UPDATE goidulich SET " . implode(",\n                        ", $setParts) . " WHERE id_goi = :id";
+
+            $params = [
                 ':khuyenmai'          => isset($data['khuyenmai']) ? (int)$data['khuyenmai'] : 0,
                 ':khuyenmai_phantram' => isset($data['khuyenmai_phantram']) ? (float)$data['khuyenmai_phantram'] : 0,
                 ':khuyenmai_tungay'   => !empty($data['khuyenmai_tungay']) ? $data['khuyenmai_tungay'] : null,
@@ -189,7 +214,14 @@ class TourModel extends BaseModel
                 ':luuy'         => $data['luuy'] ?? '',
                 ':songay'       => $data['songay'] ?? '',
                 ':id'           => $id,
-            ]);
+            ];
+
+            if ($hasSongayText) {
+                $params[':songay_text'] = $data['songay_text'] ?? null;
+            }
+
+            $stmt = $this->conn->prepare($sql);
+            $result = $stmt->execute($params);
             
             if (!$result) {
                 $errorInfo = $stmt->errorInfo();
@@ -224,6 +256,27 @@ class TourModel extends BaseModel
         $sql = "UPDATE goidulich SET trangthai = IF(trangthai = 1, 0, 1) WHERE id_goi = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$id]);
+    }
+
+    /**
+     * Kiểm tra bảng có cột hay không (cache tạm trong request)
+     */
+    private function hasColumn(string $table, string $column): bool
+    {
+        static $cache = [];
+        $key = $table . ':' . $column;
+        if (isset($cache[$key])) {
+            return $cache[$key];
+        }
+
+        $sql = "SELECT COUNT(*) FROM information_schema.columns 
+                WHERE table_schema = DATABASE() 
+                  AND table_name = :table 
+                  AND column_name = :column";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':table' => $table, ':column' => $column]);
+        $cache[$key] = $stmt->fetchColumn() > 0;
+        return $cache[$key];
     }
 
     /**
