@@ -28,9 +28,12 @@
           <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600;">
             <?= htmlspecialchars($journal['ten_hdv'] ?? 'N/A') ?>
           </p>
-          <?php if ($journal['email_hdv']): ?>
-            <small style="color: var(--text-light);"><?= htmlspecialchars($journal['email_hdv']) ?></small>
+          <?php if (!empty($incident['email_hdv'])): ?>
+            <small style="color: var(--text-light);">
+              <?= htmlspecialchars($incident['email_hdv']) ?>
+            </small>
           <?php endif; ?>
+
         </div>
       </div>
     </div>
